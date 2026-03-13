@@ -51,6 +51,10 @@ export default function ExpensesPage() {
   const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
   const paginatedExpenses = filteredExpenses.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
+  const totalAmount = React.useMemo(() => {
+    return filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  }, [filteredExpenses]);
+
 
   return (
     <DashboardLayout>
@@ -67,35 +71,42 @@ export default function ExpensesPage() {
         </Stack>
       </Box>
 
-      {totalPages > 1 && (
+      {(totalPages > 1 || filteredExpenses.length > 0) && (
         <Box sx={{ 
           display: 'flex', 
-          justifyContent: 'flex-end', 
+          justifyContent: 'space-between', 
           alignItems: 'center',
           mb: 3,
-          gap: 2
         }}>
-          <Typography variant="body2" color="text.secondary">
-            {(page - 1) * itemsPerPage + 1}–{Math.min(page * itemsPerPage, filteredExpenses.length)} of {filteredExpenses.length}
+          <Typography variant="h5" sx={{ fontWeight: 700, color: 'error.main' }}>
+            Total: {formatAmount(totalAmount)}
           </Typography>
-          <Stack direction="row" spacing={1}>
-            <IconButton 
-              size="small" 
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              sx={{ color: 'text.secondary' }}
-            >
-              <ChevronLeft size={20} />
-            </IconButton>
-            <IconButton 
-              size="small" 
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              sx={{ color: 'text.secondary' }}
-            >
-              <ChevronRight size={20} />
-            </IconButton>
-          </Stack>
+          
+          {totalPages > 1 && (
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Typography variant="body2" color="text.secondary">
+                {(page - 1) * itemsPerPage + 1}–{Math.min(page * itemsPerPage, filteredExpenses.length)} of {filteredExpenses.length}
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <ChevronLeft size={20} />
+                </IconButton>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <ChevronRight size={20} />
+                </IconButton>
+              </Stack>
+            </Stack>
+          )}
         </Box>
       )}
 
