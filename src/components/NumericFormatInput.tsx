@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { NumericFormat, NumericFormatProps } from 'react-number-format';
-import { TextField, TextFieldProps } from '@mui/material';
+import * as React from "react";
+import { NumericFormat, NumericFormatProps } from "react-number-format";
+import { TextField, TextFieldProps } from "@mui/material";
 
 interface CustomProps {
   onChange: (event: { target: { name: string; value: string } }) => void;
@@ -29,12 +29,13 @@ const NumericFormatCustom = React.forwardRef<NumericFormatProps, CustomProps>(
         valueIsNumericString
       />
     );
-  }
+  },
 );
 
 export default function NumericFormatInput(props: TextFieldProps) {
   return (
     <TextField
+      placeholder="0.00"
       {...props}
       InputProps={{
         ...props.InputProps,

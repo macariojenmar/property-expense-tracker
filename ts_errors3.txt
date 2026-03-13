@@ -1,0 +1,2 @@
+﻿src/app/properties/`[id`]/expenses/page.tsx(85,11): error TS2339: Property 'selectedProperty' does not exist on type 'PropertyStore'.
+src/app/properties/`[id`]/payouts/page.tsx(49,11): error TS2339: Property 'selectedProperty' does not exist on type 'PropertyStore'.

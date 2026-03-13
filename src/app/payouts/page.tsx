@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   Box,
   Typography,
+  Grid,
   Card,
   Button,
   Dialog,
@@ -11,9 +12,11 @@ import {
   DialogContent,
   DialogActions,
   Stack,
+  TextField,
   InputAdornment,
   IconButton,
   alpha,
+  Autocomplete,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -24,39 +27,82 @@ import {
   ChevronRight,
   ChevronLeft,
   WalletCards,
+  Trash2,
 } from "lucide-react";
 import { format, isSameMonth, parseISO } from "date-fns";
 import { useCurrency } from "@/components/CurrencyContext";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import MonthFilter from "@/components/MonthFilter";
+import PropertyFilter from "@/components/PropertyFilter";
+import { usePropertyStore } from "@/store/usePropertyStore";
 
 const mockPayouts = [
-  { id: 1, amount: 15250, date: "2026-03-08" },
-  { id: 2, amount: 12100, date: "2026-02-28" },
-  { id: 3, amount: 18400, date: "2026-03-20" },
-  { id: 4, amount: 14200, date: "2026-03-25" },
-  { id: 5, amount: 9800, date: "2026-03-28" },
-  { id: 6, amount: 16500, date: "2026-03-30" },
+  { id: 1, amount: 15250, date: "2026-03-08", propertyId: 1 },
+  { id: 2, amount: 12100, date: "2026-02-28", propertyId: 2 },
+  { id: 3, amount: 18400, date: "2026-03-20", propertyId: 1 },
+  { id: 4, amount: 14200, date: "2026-03-25", propertyId: 2 },
+  { id: 5, amount: 9800, date: "2026-03-28", propertyId: 1 },
+  { id: 6, amount: 16500, date: "2026-03-30", propertyId: 2 },
 ];
 
 export default function PayoutsPage() {
   const { formatAmount, currency } = useCurrency();
+  const properties = usePropertyStore((state) => state.properties);
   const [open, setOpen] = React.useState(false);
-  const [selectedDate, setSelectedDate] = React.useState<Date | null>(
-    new Date(),
-  );
+  const [newItems, setNewItems] = React.useState([
+    {
+      id: 1,
+      propertyId: properties[0]?.id || ("" as number | ""),
+      label: "Property Payout",
+      amount: "",
+      date: new Date(),
+    },
+  ]);
   const [filterDate, setFilterDate] = React.useState<Date | null>(new Date());
+  const [selectedPropertyId, setSelectedPropertyId] = React.useState<
+    number | null
+  >(null);
+  const [dictionary, setDictionary] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem("propertyTracker_dictionary");
+    if (saved) {
+      try {
+        setDictionary(JSON.parse(saved));
+      } catch (e) {}
+    } else {
+      const defaults = [
+        "Internet",
+        "Rent",
+        "Transportation",
+        "Water Bill",
+        "Electricity Bill",
+        "Cleaning Fee",
+        "Maintenance",
+        "Property Tax",
+      ];
+      setDictionary(defaults);
+      localStorage.setItem(
+        "propertyTracker_dictionary",
+        JSON.stringify(defaults),
+      );
+    }
+  }, []);
 
   // Pagination state
   const [page, setPage] = React.useState(1);
   const itemsPerPage = 5;
 
   const filteredPayouts = React.useMemo(() => {
-    if (!filterDate) return mockPayouts;
-    return mockPayouts.filter((payout) =>
-      isSameMonth(parseISO(payout.date), filterDate),
-    );
-  }, [filterDate]);
+    return mockPayouts.filter((payout) => {
+      const dateMatch = filterDate
+        ? isSameMonth(parseISO(payout.date), filterDate)
+        : true;
+      const propertyMatch =
+        selectedPropertyId === null || payout.propertyId === selectedPropertyId;
+      return dateMatch && propertyMatch;
+    });
+  }, [filterDate, selectedPropertyId]);
 
   const totalPages = Math.ceil(filteredPayouts.length / itemsPerPage);
   const paginatedPayouts = filteredPayouts.slice(
@@ -87,6 +133,10 @@ export default function PayoutsPage() {
           </Typography>
         </Box>
         <Stack direction="row" spacing={2} alignItems="center">
+          <PropertyFilter
+            value={selectedPropertyId}
+            onChange={setSelectedPropertyId}
+          />
           <MonthFilter value={filterDate} onChange={setFilterDate} />
           <Button
             variant="contained"
@@ -159,8 +209,7 @@ export default function PayoutsPage() {
               transition: "all 0.2s",
               cursor: "pointer",
               "&:hover": {
-                borderColor: "success.main",
-                bgcolor: (theme) => alpha(theme.palette.success.main, 0.02),
+                bgcolor: (theme) => alpha(theme.palette.success.main, 0.04),
               },
             }}
           >
@@ -248,38 +297,192 @@ export default function PayoutsPage() {
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
-        maxWidth="xs"
+        maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Record Payout</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            <DatePicker
-              label="Date"
-              value={selectedDate}
-              onChange={(newValue) => setSelectedDate(newValue)}
-              format="MMMM d, yyyy"
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-            <NumericFormatInput
-              fullWidth
-              label="Amount"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    {currency.symbol}
-                  </InputAdornment>
-                ),
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="h6" component="div">
+            Record Payouts
+          </Typography>
+          <Button
+            startIcon={<Plus size={16} />}
+            onClick={() =>
+              setNewItems([
+                ...newItems,
+                {
+                  id: Date.now(),
+                  propertyId: properties[0]?.id || "",
+                  label: "Property Payout",
+                  amount: "",
+                  date: new Date(),
+                },
+              ])
+            }
+            size="small"
+            variant="outlined"
+          >
+            Add Row
+          </Button>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          {newItems.map((item, index) => (
+            <Box
+              key={item.id}
+              sx={{
+                p: 3,
+                borderBottom: index < newItems.length - 1 ? 1 : 0,
+                borderColor: "divider",
+                position: "relative",
               }}
-            />
-          </Stack>
+            >
+              {newItems.length > 1 && (
+                <IconButton
+                  size="small"
+                  onClick={() =>
+                    setNewItems(newItems.filter((i) => i.id !== item.id))
+                  }
+                  sx={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    color: "error.main",
+                  }}
+                >
+                  <Trash2 size={18} />
+                </IconButton>
+              )}
+              <Stack spacing={2} sx={{ mt: newItems.length > 1 ? 2 : 0 }}>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Autocomplete
+                      fullWidth
+                      options={properties}
+                      getOptionLabel={(option) => option.name}
+                      value={
+                        properties.find((p) => p.id === item.propertyId) || null
+                      }
+                      onChange={(e, newValue) =>
+                        setNewItems(
+                          newItems.map((i) =>
+                            i.id === item.id
+                              ? { ...i, propertyId: newValue?.id ?? "" }
+                              : i,
+                          ),
+                        )
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Property"
+                          placeholder="Select property"
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Autocomplete
+                      fullWidth
+                      freeSolo
+                      options={dictionary}
+                      value={item.label}
+                      onChange={(e, newValue) =>
+                        setNewItems(
+                          newItems.map((i) =>
+                            i.id === item.id
+                              ? { ...i, label: newValue || "" }
+                              : i,
+                          ),
+                        )
+                      }
+                      onInputChange={(e, newInputValue) =>
+                        setNewItems(
+                          newItems.map((i) =>
+                            i.id === item.id
+                              ? { ...i, label: newInputValue }
+                              : i,
+                          ),
+                        )
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Payout Label"
+                          placeholder="e.g. Rent, Salary"
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <NumericFormatInput
+                      fullWidth
+                      label="Amount"
+                      value={item.amount as string}
+                      onChange={(e: any) =>
+                        setNewItems(
+                          newItems.map((i) =>
+                            i.id === item.id
+                              ? { ...i, amount: e.target.value }
+                              : i,
+                          ),
+                        )
+                      }
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            {currency.symbol}
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <DatePicker
+                      label="Date"
+                      value={item.date}
+                      onChange={(newValue) =>
+                        setNewItems(
+                          newItems.map((i) =>
+                            i.id === item.id
+                              ? { ...i, date: newValue || new Date() }
+                              : i,
+                          ),
+                        )
+                      }
+                      format="MMMM d, yyyy"
+                      slotProps={{ textField: { fullWidth: true } }}
+                    />
+                  </Grid>
+                </Grid>
+              </Stack>
+            </Box>
+          ))}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setOpen(false)} color="inherit">
             Cancel
           </Button>
-          <Button onClick={() => setOpen(false)} variant="contained">
-            Record Payout
+          <Button
+            onClick={() => {
+              setOpen(false);
+              setNewItems([
+                {
+                  id: Date.now(),
+                  propertyId: properties[0]?.id || "",
+                  label: "Property Payout",
+                  amount: "",
+                  date: new Date(),
+                },
+              ]);
+            }}
+            variant="contained"
+          >
+            Save Payouts
           </Button>
         </DialogActions>
       </Dialog>
