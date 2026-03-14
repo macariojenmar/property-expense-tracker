@@ -89,6 +89,25 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
         },
       },
     },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          boxShadow: "none",
+        },
+      },
+      defaultProps: {
+        slotProps: {
+          backdrop: {
+            sx: {
+              backgroundColor:
+                mode === "light"
+                  ? "rgba(0, 0, 0, 0.7)"
+                  : "rgba(0, 0, 0, 0.8)",
+            },
+          },
+        },
+      },
+    },
   },
 });
 

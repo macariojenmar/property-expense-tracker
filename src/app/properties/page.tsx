@@ -11,44 +11,18 @@ import {
   Stack,
   Avatar,
   Divider,
+  alpha,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import {
-  Plus,
-  Home,
-  MapPin,
-  Wallet,
-  Calculator,
-  TrendingUp,
-} from "lucide-react";
+import { Plus, Home, MapPin, Wallet, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCurrency } from "@/components/CurrencyContext";
+import { usePropertyStore } from "@/store/usePropertyStore";
 
-const properties = [
-  {
-    id: 1,
-    name: "Seaside Sanctuary",
-    location: "Siargao, Philippines",
-    price: 5000,
-    funds: 25000,
-    profit: 8500,
-    estimatedFunds: 32000,
-    estimatedProfit: 12000,
-  },
-  {
-    id: 2,
-    name: "Mountain Retreat",
-    location: "Bagui, Philippines",
-    price: 3500,
-    funds: 12000,
-    profit: 4200,
-    estimatedFunds: 15500,
-    estimatedProfit: 6800,
-  },
-];
 export default function PropertiesPage() {
   const router = useRouter();
   const { formatAmount } = useCurrency();
+  const { properties } = usePropertyStore();
 
   return (
     <DashboardLayout>
@@ -56,12 +30,14 @@ export default function PropertiesPage() {
         sx={{
           mb: 4,
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: { xs: "stretch", sm: "center" },
+          gap: 2,
         }}
       >
         <Box>
-          <Typography variant="h4" sx={{ mb: 1 }}>
+          <Typography variant="h4" sx={{ mb: 0.5, fontWeight: 700 }}>
             Properties
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -72,6 +48,7 @@ export default function PropertiesPage() {
           variant="contained"
           startIcon={<Plus size={18} />}
           onClick={() => router.push("/properties/create")}
+          fullWidth={{ xs: true, sm: false } as any}
         >
           Add Property
         </Button>
@@ -83,9 +60,12 @@ export default function PropertiesPage() {
             <Card
               sx={{
                 cursor: "pointer",
-                "&:hover": { bgcolor: "action.hover" },
+                transition: "all 0.2s",
+                "&:hover": {
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+                },
               }}
-              onClick={() => {}}
+              onClick={() => router.push(`/properties/${property.id}`)}
             >
               <CardContent>
                 <Stack
@@ -137,7 +117,7 @@ export default function PropertiesPage() {
                     >
                       <TrendingUp size={14} color="#10b981" />
                       <Typography variant="caption" color="text.secondary">
-                        Current Profit
+                        Total Profit
                       </Typography>
                     </Stack>
                     <Typography
@@ -156,59 +136,17 @@ export default function PropertiesPage() {
                       alignItems="center"
                       sx={{ mb: 0.5 }}
                     >
-                      <TrendingUp size={14} color="#3b82f6" />
-                      <Typography variant="caption" color="text.secondary">
-                        Estimated Profit
-                      </Typography>
-                    </Stack>
-                    <Typography
-                      variant="h6"
-                      fontWeight={600}
-                      color="primary.main"
-                    >
-                      {formatAmount(property.estimatedProfit)}
-                    </Typography>
-                  </Grid>
-                  <Grid size={6}>
-                    <Stack
-                      direction="row"
-                      spacing={0.5}
-                      alignItems="center"
-                      sx={{ mb: 0.5 }}
-                    >
                       <Wallet size={14} color="gray" />
                       <Typography variant="caption" color="text.secondary">
-                        Current Funds
+                        Funds
                       </Typography>
                     </Stack>
                     <Typography
                       variant="h6"
                       fontWeight={500}
-                      color="text.secondary"
                       sx={{ opacity: 0.8 }}
                     >
                       {formatAmount(property.funds)}
-                    </Typography>
-                  </Grid>
-                  <Grid size={6}>
-                    <Stack
-                      direction="row"
-                      spacing={0.5}
-                      alignItems="center"
-                      sx={{ mb: 0.5 }}
-                    >
-                      <Calculator size={14} color="gray" />
-                      <Typography variant="caption" color="text.secondary">
-                        Estimated Funds
-                      </Typography>
-                    </Stack>
-                    <Typography
-                      variant="h6"
-                      fontWeight={500}
-                      color="text.secondary"
-                      sx={{ opacity: 0.8 }}
-                    >
-                      {formatAmount(property.estimatedFunds)}
                     </Typography>
                   </Grid>
                 </Grid>

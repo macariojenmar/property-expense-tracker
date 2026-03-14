@@ -7,6 +7,8 @@ export interface Property {
   price: number;
   funds: number;
   profit: number;
+  currentExpense: number;
+  estimatedExpense: number;
   estimatedFunds: number;
   estimatedProfit: number;
 }
@@ -25,6 +27,8 @@ const mockProperties: Property[] = [
     price: 5000,
     funds: 25000,
     profit: 8500,
+    currentExpense: 1200,
+    estimatedExpense: 3000,
     estimatedFunds: 32000,
     estimatedProfit: 12000,
   },
@@ -35,6 +39,8 @@ const mockProperties: Property[] = [
     price: 3500,
     funds: 12000,
     profit: 4200,
+    currentExpense: 800,
+    estimatedExpense: 1500,
     estimatedFunds: 15500,
     estimatedProfit: 6800,
   },

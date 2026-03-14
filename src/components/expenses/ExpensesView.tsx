@@ -11,8 +11,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Stack,
   TextField,
+  Stack,
   InputAdornment,
   IconButton,
   alpha,
@@ -22,46 +22,111 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Plus,
-  Banknote,
+  BanknoteArrowDown,
   Calendar,
+  FileText,
   ChevronRight,
   ChevronLeft,
-  WalletCards,
   Trash2,
 } from "lucide-react";
-import { format, isSameMonth, parseISO } from "date-fns";
+import { format, parseISO, startOfMonth, endOfDay } from "date-fns";
 import { useCurrency } from "@/components/CurrencyContext";
 import NumericFormatInput from "@/components/NumericFormatInput";
-import MonthFilter from "@/components/MonthFilter";
-import PropertyFilter from "@/components/PropertyFilter";
-import { usePropertyStore } from "@/store/usePropertyStore";
+import MonthFilter, { DateRange } from "@/components/MonthFilter";
 
-const mockPayouts = [
-  { id: 1, amount: 15250, date: "2026-03-08", propertyId: 1 },
-  { id: 2, amount: 12100, date: "2026-02-28", propertyId: 2 },
-  { id: 3, amount: 18400, date: "2026-03-20", propertyId: 1 },
-  { id: 4, amount: 14200, date: "2026-03-25", propertyId: 2 },
-  { id: 5, amount: 9800, date: "2026-03-28", propertyId: 1 },
-  { id: 6, amount: 16500, date: "2026-03-30", propertyId: 2 },
+const mockExpenses = [
+  {
+    id: 1,
+    name: "Cleaning Fee",
+    amount: 1500,
+    note: "Deep clean for Check-in",
+    date: "2026-03-10",
+    propertyId: 1,
+  },
+  {
+    id: 2,
+    name: "Water Bill",
+    amount: 800,
+    note: "February 2026",
+    date: "2026-03-05",
+    propertyId: 1,
+  },
+  {
+    id: 3,
+    name: "Internet Subscription",
+    amount: 1800,
+    note: "Fiber Plan 100Mbps",
+    date: "2026-03-01",
+    propertyId: 2,
+  },
+  {
+    id: 4,
+    name: "Property Tax",
+    amount: 5000,
+    note: "Annual payment",
+    date: "2026-03-12",
+    propertyId: 2,
+  },
+  {
+    id: 5,
+    name: "Repair: Faucet",
+    amount: 450,
+    note: "Kitchen sink leak fixed",
+    date: "2026-03-15",
+    propertyId: 1,
+  },
+  {
+    id: 6,
+    name: "Electricity Bill",
+    amount: 3200,
+    note: "Main house usage",
+    date: "2026-03-18",
+    propertyId: 2,
+  },
 ];
 
-export default function PayoutsPage() {
+import { useRouter } from "next/navigation";
+
+import { ArrowLeft } from "lucide-react";
+import { usePropertyStore } from "@/store/usePropertyStore";
+
+interface ExpensesViewProps {
+  propertyId: number | null;
+}
+
+export default function ExpensesView({ propertyId }: ExpensesViewProps) {
+  const router = useRouter();
+  const { properties, setSelectedProperty, selectedProperty } =
+    usePropertyStore();
   const { formatAmount, currency } = useCurrency();
-  const properties = usePropertyStore((state) => state.properties);
+
+  // Initialize store if we're on a property-specific page but no property is selected
+  React.useEffect(() => {
+    if (
+      propertyId &&
+      (!selectedProperty || selectedProperty.id !== propertyId)
+    ) {
+      const property = properties.find((p: any) => p.id === propertyId);
+      if (property) {
+        setSelectedProperty(property);
+      }
+    }
+  }, [propertyId, selectedProperty, properties, setSelectedProperty]);
   const [open, setOpen] = React.useState(false);
   const [newItems, setNewItems] = React.useState([
     {
       id: 1,
-      propertyId: properties[0]?.id || ("" as number | ""),
-      label: "Property Payout",
+      name: "",
       amount: "",
       date: new Date(),
+      note: "",
     },
   ]);
-  const [filterDate, setFilterDate] = React.useState<Date | null>(new Date());
-  const [selectedPropertyId, setSelectedPropertyId] = React.useState<
-    number | null
-  >(null);
+  const [filterRange, setFilterRange] = React.useState<DateRange>({
+    start: startOfMonth(new Date()),
+    end: new Date(),
+    type: "this-month",
+  });
   const [dictionary, setDictionary] = React.useState<string[]>([]);
 
   React.useEffect(() => {
@@ -93,26 +158,33 @@ export default function PayoutsPage() {
   const [page, setPage] = React.useState(1);
   const itemsPerPage = 5;
 
-  const filteredPayouts = React.useMemo(() => {
-    return mockPayouts.filter((payout) => {
-      const dateMatch = filterDate
-        ? isSameMonth(parseISO(payout.date), filterDate)
-        : true;
-      const propertyMatch =
-        selectedPropertyId === null || payout.propertyId === selectedPropertyId;
-      return dateMatch && propertyMatch;
-    });
-  }, [filterDate, selectedPropertyId]);
+  const filteredExpenses = React.useMemo(() => {
+    return mockExpenses.filter((expense) => {
+      // Filter by propertyId if provided
+      if (propertyId !== null && expense.propertyId !== propertyId) {
+        return false;
+      }
 
-  const totalPages = Math.ceil(filteredPayouts.length / itemsPerPage);
-  const paginatedPayouts = filteredPayouts.slice(
+      const expenseDate = parseISO(expense.date);
+      if (filterRange.start && filterRange.end) {
+        return (
+          expenseDate >= startOfMonth(filterRange.start) &&
+          expenseDate <= endOfDay(filterRange.end)
+        );
+      }
+      return true;
+    });
+  }, [filterRange, propertyId]);
+
+  const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+  const paginatedExpenses = filteredExpenses.slice(
     (page - 1) * itemsPerPage,
     page * itemsPerPage,
   );
 
   const totalAmount = React.useMemo(() => {
-    return filteredPayouts.reduce((sum, payout) => sum + payout.amount, 0);
-  }, [filteredPayouts]);
+    return filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  }, [filteredExpenses]);
 
   return (
     <DashboardLayout>
@@ -120,35 +192,61 @@ export default function PayoutsPage() {
         sx={{
           mb: 4,
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: { xs: "flex-start", sm: "flex-start" },
+          gap: 2,
         }}
       >
-        <Box>
-          <Typography variant="h4" sx={{ mb: 1 }}>
-            Payouts
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Track your earnings and payouts.
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={2} alignItems="center">
-          <PropertyFilter
-            value={selectedPropertyId}
-            onChange={setSelectedPropertyId}
-          />
-          <MonthFilter value={filterDate} onChange={setFilterDate} />
+        <Box sx={{ width: "100%" }}>
           <Button
-            variant="contained"
-            startIcon={<Plus size={18} />}
-            onClick={() => setOpen(true)}
+            startIcon={<ArrowLeft size={18} />}
+            onClick={() => router.push(`/properties/${propertyId}`)}
+            sx={{
+              mb: 1,
+              color: "text.secondary",
+              px: 0,
+              "&:hover": { bgcolor: "transparent", color: "primary.main" },
+            }}
           >
-            Add Payout
+            Back to Overview
           </Button>
+          <Box>
+            <Typography variant="h4" sx={{ mb: 0.5, fontWeight: 700 }}>
+              Expenses
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Track and manage your property expenditures.
+            </Typography>
+          </Box>
+        </Box>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{
+            mt: { xs: 2, sm: 5 },
+            width: { xs: "100%", sm: "auto" },
+          }}
+        >
+          <Box sx={{ flex: 1 }}>
+            <MonthFilter value={filterRange} onChange={setFilterRange} />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Button
+              variant="contained"
+              startIcon={<Plus size={18} />}
+              onClick={() => setOpen(true)}
+              fullWidth
+              sx={{ height: 44, whiteSpace: "nowrap" }}
+            >
+              Add Expense
+            </Button>
+          </Box>
         </Stack>
       </Box>
 
-      {(totalPages > 1 || filteredPayouts.length > 0) && (
+      {(totalPages > 1 || filteredExpenses.length > 0) && (
         <Box
           sx={{
             display: "flex",
@@ -159,7 +257,7 @@ export default function PayoutsPage() {
         >
           <Typography
             variant="h5"
-            sx={{ fontWeight: 700, color: "success.main" }}
+            sx={{ fontWeight: 700, color: "error.main" }}
           >
             Total: {formatAmount(totalAmount)}
           </Typography>
@@ -168,8 +266,8 @@ export default function PayoutsPage() {
             <Stack direction="row" spacing={2} alignItems="center">
               <Typography variant="body2" color="text.secondary">
                 {(page - 1) * itemsPerPage + 1}–
-                {Math.min(page * itemsPerPage, filteredPayouts.length)} of{" "}
-                {filteredPayouts.length}
+                {Math.min(page * itemsPerPage, filteredExpenses.length)} of{" "}
+                {filteredExpenses.length}
               </Typography>
               <Stack direction="row" spacing={1}>
                 <IconButton
@@ -198,9 +296,9 @@ export default function PayoutsPage() {
         spacing={2}
         sx={{ flexGrow: 1, display: "flex", flexDirection: "column", mb: 4 }}
       >
-        {paginatedPayouts.map((payout) => (
+        {paginatedExpenses.map((expense) => (
           <Card
-            key={payout.id}
+            key={expense.id}
             sx={{
               p: 2,
               display: "flex",
@@ -209,7 +307,7 @@ export default function PayoutsPage() {
               transition: "all 0.2s",
               cursor: "pointer",
               "&:hover": {
-                bgcolor: (theme) => alpha(theme.palette.success.main, 0.04),
+                bgcolor: (theme) => alpha(theme.palette.error.main, 0.04),
               },
             }}
           >
@@ -224,21 +322,21 @@ export default function PayoutsPage() {
                   p: 1.5,
                   bgcolor: (theme) =>
                     theme.palette.mode === "light"
-                      ? alpha(theme.palette.success.main, 0.1)
-                      : alpha(theme.palette.success.main, 0.2),
+                      ? alpha(theme.palette.error.main, 0.1)
+                      : alpha(theme.palette.error.main, 0.2),
                   borderRadius: 2,
-                  color: "success.main",
+                  color: "error.main",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <WalletCards size={22} />
+                <BanknoteArrowDown size={22} />
               </Box>
 
               <Box sx={{ minWidth: 200 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  Property Payout
+                  {expense.name}
                 </Typography>
                 <Stack
                   direction="row"
@@ -248,20 +346,42 @@ export default function PayoutsPage() {
                   <Stack direction="row" spacing={0.5} alignItems="center">
                     <Calendar size={14} />
                     <Typography variant="caption">
-                      {format(new Date(payout.date), "MMMM d, yyyy")}
+                      {format(new Date(expense.date), "MMMM d, yyyy")}
                     </Typography>
                   </Stack>
                 </Stack>
               </Box>
 
-              <Box sx={{ flexGrow: 1 }} />
+              <Box
+                sx={{
+                  flexGrow: 1,
+                  px: 2,
+                  display: { xs: "none", md: "block" },
+                }}
+              >
+                <Stack direction="row" spacing={1} alignItems="flex-start">
+                  <FileText size={14} color="gray" style={{ marginTop: 4 }} />
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrientation: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {expense.note}
+                  </Typography>
+                </Stack>
+              </Box>
 
-              <Box sx={{ textAlign: "right", minWidth: 120, mr: 2 }}>
+              <Box sx={{ textAlign: "right", minWidth: 120 }}>
                 <Typography
                   variant="h6"
-                  sx={{ fontWeight: 700, color: "success.main" }}
+                  sx={{ fontWeight: 700, color: "error.main" }}
                 >
-                  {formatAmount(payout.amount)}
+                  -{formatAmount(expense.amount)}
                 </Typography>
               </Box>
 
@@ -270,7 +390,7 @@ export default function PayoutsPage() {
           </Card>
         ))}
 
-        {paginatedPayouts.length === 0 && (
+        {paginatedExpenses.length === 0 && (
           <Card
             sx={{
               flexGrow: 1,
@@ -285,10 +405,10 @@ export default function PayoutsPage() {
             }}
           >
             <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-              No payouts found
+              No expenses found
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Try adjusting your filter or record a new payout.
+              Try adjusting your filter or add a new expense.
             </Typography>
           </Card>
         )}
@@ -297,7 +417,7 @@ export default function PayoutsPage() {
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
       >
         <DialogTitle
@@ -308,7 +428,7 @@ export default function PayoutsPage() {
           }}
         >
           <Typography variant="h6" component="div">
-            Record Payouts
+            Add New Expenses
           </Typography>
           <Button
             startIcon={<Plus size={16} />}
@@ -317,10 +437,10 @@ export default function PayoutsPage() {
                 ...newItems,
                 {
                   id: Date.now(),
-                  propertyId: properties[0]?.id || "",
-                  label: "Property Payout",
+                  name: "",
                   amount: "",
                   date: new Date(),
+                  note: "",
                 },
               ])
             }
@@ -359,43 +479,17 @@ export default function PayoutsPage() {
               )}
               <Stack spacing={2} sx={{ mt: newItems.length > 1 ? 2 : 0 }}>
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Autocomplete
-                      fullWidth
-                      options={properties}
-                      getOptionLabel={(option) => option.name}
-                      value={
-                        properties.find((p) => p.id === item.propertyId) || null
-                      }
-                      onChange={(e, newValue) =>
-                        setNewItems(
-                          newItems.map((i) =>
-                            i.id === item.id
-                              ? { ...i, propertyId: newValue?.id ?? "" }
-                              : i,
-                          ),
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Property"
-                          placeholder="Select property"
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid size={12}>
                     <Autocomplete
                       fullWidth
                       freeSolo
                       options={dictionary}
-                      value={item.label}
+                      value={item.name}
                       onChange={(e, newValue) =>
                         setNewItems(
                           newItems.map((i) =>
                             i.id === item.id
-                              ? { ...i, label: newValue || "" }
+                              ? { ...i, name: newValue || "" }
                               : i,
                           ),
                         )
@@ -404,7 +498,7 @@ export default function PayoutsPage() {
                         setNewItems(
                           newItems.map((i) =>
                             i.id === item.id
-                              ? { ...i, label: newInputValue }
+                              ? { ...i, name: newInputValue }
                               : i,
                           ),
                         )
@@ -412,8 +506,8 @@ export default function PayoutsPage() {
                       renderInput={(params) => (
                         <TextField
                           {...params}
-                          label="Payout Label"
-                          placeholder="e.g. Rent, Salary"
+                          label="Expense Name"
+                          placeholder="e.g. Transpo, Cleaning, Supplies"
                         />
                       )}
                     />
@@ -458,6 +552,25 @@ export default function PayoutsPage() {
                       slotProps={{ textField: { fullWidth: true } }}
                     />
                   </Grid>
+                  <Grid size={12}>
+                    <TextField
+                      fullWidth
+                      label="Note"
+                      multiline
+                      rows={2}
+                      placeholder="Add any additional details..."
+                      value={item.note}
+                      onChange={(e) =>
+                        setNewItems(
+                          newItems.map((i) =>
+                            i.id === item.id
+                              ? { ...i, note: e.target.value }
+                              : i,
+                          ),
+                        )
+                      }
+                    />
+                  </Grid>
                 </Grid>
               </Stack>
             </Box>
@@ -473,16 +586,16 @@ export default function PayoutsPage() {
               setNewItems([
                 {
                   id: Date.now(),
-                  propertyId: properties[0]?.id || "",
-                  label: "Property Payout",
+                  name: "",
                   amount: "",
                   date: new Date(),
+                  note: "",
                 },
               ]);
             }}
             variant="contained"
           >
-            Save Payouts
+            Save Expenses
           </Button>
         </DialogActions>
       </Dialog>

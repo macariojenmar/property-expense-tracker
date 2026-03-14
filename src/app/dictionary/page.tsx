@@ -117,8 +117,7 @@ export default function DictionaryPage() {
                 justifyContent: "space-between",
                 transition: "all 0.2s",
                 "&:hover": {
-                  borderColor: "primary.main",
-                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.02),
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
                 },
               }}
             >

@@ -8,21 +8,49 @@ import {
 } from "@mui/material";
 import { ChevronDown } from "lucide-react";
 import { usePropertyStore } from "@/store/usePropertyStore";
+import { useRouter, usePathname } from "next/navigation";
 
 interface PropertyFilterProps {
   value: number | null;
-  onChange: (propertyId: number | null) => void;
+  onChange?: (propertyId: number | null) => void;
 }
 
 export default function PropertyFilter({
   value,
   onChange,
 }: PropertyFilterProps) {
-  const properties = usePropertyStore((state) => state.properties);
+  const { properties, setSelectedProperty, selectedProperty } = usePropertyStore();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const handleChange = (e: SelectChangeEvent<string>) => {
     const val = e.target.value;
-    onChange(val === "all" ? null : Number(val));
+    const propertyId = val === "all" ? null : Number(val);
+    const newProperty = propertyId ? properties.find(p => p.id === propertyId) || null : null;
+    
+    setSelectedProperty(newProperty);
+
+    if (onChange) {
+      onChange(propertyId);
+    }
+
+    // Navigation logic
+    const isPropertyExpenses = pathname.includes("/expenses");
+    const isPropertyPayouts = pathname.includes("/payouts");
+
+    if (propertyId) {
+      // If on an expense/payout page, update route to reflect new property
+      if (isPropertyExpenses) {
+        router.push(`/properties/${propertyId}/expenses`);
+      } else if (isPropertyPayouts) {
+        router.push(`/properties/${propertyId}/payouts`);
+      }
+    } else {
+      // If "All Properties" is selected and we're on a property-specific page, go to dashboard
+      if (isPropertyExpenses || isPropertyPayouts || pathname.startsWith("/properties/")) {
+        router.push("/dashboard");
+      }
+    }
   };
 
   return (

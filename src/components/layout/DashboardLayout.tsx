@@ -30,25 +30,13 @@ import {
   BookText,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
+import PropertySwitcher from "@/components/layout/PropertySwitcher";
 import { ColorModeContext } from "@/components/ThemeRegistry";
+import { alpha } from "@mui/material/styles";
+
+import { usePropertyStore } from "@/store/usePropertyStore";
 
 const drawerWidth = 240;
-
-const menuItems = [
-  {
-    text: "Dashboard",
-    icon: <LayoutDashboard size={20} />,
-    path: "/dashboard",
-  },
-  { text: "Properties", icon: <Building2 size={20} />, path: "/properties" },
-  {
-    text: "Expenses",
-    icon: <BanknoteArrowDown size={20} />,
-    path: "/expenses",
-  },
-  { text: "Payouts", icon: <WalletCards size={20} />, path: "/payouts" },
-  { text: "Dictionary", icon: <BookText size={20} />, path: "/dictionary" },
-];
 
 export default function DashboardLayout({
   children,
@@ -60,6 +48,59 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const colorMode = React.useContext(ColorModeContext);
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const { selectedProperty, setSelectedProperty } = usePropertyStore();
+
+  const menuItems = React.useMemo(() => {
+    const baseItems: Array<{
+      text: string;
+      icon: React.ReactNode;
+      path: string;
+      indent?: boolean;
+    }> = [
+      {
+        text: "Dashboard",
+        icon: <LayoutDashboard size={20} />,
+        path: "/dashboard",
+      },
+      {
+        text: "Properties",
+        icon: <Building2 size={20} />,
+        path: "/properties",
+      },
+    ];
+
+    if (selectedProperty) {
+      baseItems.push(
+        {
+          text: "Expenses",
+          icon: <BanknoteArrowDown size={20} />,
+          path: `/properties/${selectedProperty.id}/expenses`,
+          indent: true,
+        },
+        {
+          text: "Payouts",
+          icon: <WalletCards size={20} />,
+          path: `/properties/${selectedProperty.id}/payouts`,
+          indent: true,
+        },
+      );
+    }
+
+    baseItems.push({
+      text: "Dictionary",
+      icon: <BookText size={20} />,
+      path: "/dictionary",
+    });
+
+    return baseItems;
+  }, [selectedProperty]);
+
+  // Automatically clear context when navigating back to the main properties list
+  React.useEffect(() => {
+    if (pathname === "/properties") {
+      setSelectedProperty(null);
+    }
+  }, [pathname, setSelectedProperty]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -96,10 +137,16 @@ export default function DashboardLayout({
           return (
             <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
-                onClick={() => router.push(item.path)}
+                onClick={() => {
+                  if (item.text === "Dashboard" || item.text === "Properties") {
+                    setSelectedProperty(null);
+                  }
+                  router.push(item.path);
+                }}
                 selected={isActive}
                 sx={{
                   borderRadius: 2,
+                  pl: item.indent ? 5 : 2,
                   "&.Mui-selected": {
                     bgcolor:
                       theme.palette.mode === "light"
@@ -232,7 +279,9 @@ export default function DashboardLayout({
           >
             <Menu />
           </IconButton>
-          <Box />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <PropertySwitcher />
+          </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <IconButton
               onClick={colorMode.toggleColorMode}

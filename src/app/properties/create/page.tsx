@@ -12,7 +12,12 @@ import {
   Stack,
   IconButton,
   InputAdornment,
+  Popover,
+  Paper,
+  ButtonBase,
+  Autocomplete,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, Trash2, ArrowLeft, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -23,13 +28,57 @@ export default function CreatePropertyPage() {
   const router = useRouter();
   const { currency } = useCurrency();
   const [initialExpenses, setInitialExpenses] = React.useState([
-    { name: "", amount: "" },
+    { name: "", amount: "", day: 1 },
   ]);
+  const [dayAnchorEl, setDayAnchorEl] = React.useState<HTMLDivElement | null>(
+    null
+  );
+  const [selectedExpenseIndex, setSelectedExpenseIndex] = React.useState<
+    number | null
+  >(null);
+  const [dictionaryWords, setDictionaryWords] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem("propertyTracker_dictionary");
+    if (saved) {
+      try {
+        setDictionaryWords(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse dictionary", e);
+      }
+    }
+  }, []);
 
   const handleAddInitialExpense = () =>
-    setInitialExpenses([...initialExpenses, { name: "", amount: "" }]);
+    setInitialExpenses([...initialExpenses, { name: "", amount: "", day: 1 }]);
   const handleRemoveInitialExpense = (index: number) =>
     setInitialExpenses(initialExpenses.filter((_, i) => i !== index));
+
+  const handleExpenseChange = (
+    index: number,
+    field: "name" | "amount" | "day",
+    value: string | number
+  ) => {
+    const newExpenses = [...initialExpenses];
+    newExpenses[index] = { ...newExpenses[index], [field]: value };
+    setInitialExpenses(newExpenses);
+  };
+
+  const handleDayClick = (
+    event: React.MouseEvent<HTMLDivElement>,
+    index: number
+  ) => {
+    setDayAnchorEl(event.currentTarget);
+    setSelectedExpenseIndex(index);
+  };
+
+  const handleDaySelect = (day: number) => {
+    if (selectedExpenseIndex !== null) {
+      handleExpenseChange(selectedExpenseIndex, "day", day);
+    }
+    setDayAnchorEl(null);
+    setSelectedExpenseIndex(null);
+  };
 
   return (
     <DashboardLayout>
@@ -109,17 +158,54 @@ export default function CreatePropertyPage() {
               <Stack spacing={2}>
                 {initialExpenses.map((exp, index) => (
                   <Grid container spacing={2} key={index} alignItems="center">
-                    <Grid size={7}>
+                    <Grid size={5}>
+                      <Autocomplete
+                        freeSolo
+                        options={dictionaryWords}
+                        value={exp.name}
+                        onInputChange={(_, newValue) =>
+                          handleExpenseChange(index, "name", newValue)
+                        }
+                        onChange={(_, newValue) =>
+                          handleExpenseChange(index, "name", newValue || "")
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            fullWidth
+                            placeholder="Expense Name"
+                            size="small"
+                          />
+                        )}
+                      />
+                    </Grid>
+                    <Grid size={2}>
                       <TextField
                         fullWidth
-                        placeholder="Expense Name"
+                        label="Day"
                         size="small"
+                        value={exp.day}
+                        onClick={(e) =>
+                          handleDayClick(
+                            e as unknown as React.MouseEvent<HTMLDivElement>,
+                            index
+                          )
+                        }
+                        sx={{ cursor: "pointer" }}
+                        InputProps={{
+                          readOnly: true,
+                          sx: { cursor: "pointer" },
+                        }}
                       />
                     </Grid>
                     <Grid size={4}>
                       <NumericFormatInput
                         fullWidth
                         size="small"
+                        value={exp.amount}
+                        onChange={(e) =>
+                          handleExpenseChange(index, "amount", e.target.value)
+                        }
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">
@@ -157,6 +243,60 @@ export default function CreatePropertyPage() {
           </Box>
         </Stack>
       </Box>
+
+      <Popover
+        open={Boolean(dayAnchorEl)}
+        anchorEl={dayAnchorEl}
+        onClose={() => setDayAnchorEl(null)}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "left",
+        }}
+        PaperProps={{
+          sx: {
+            p: 2,
+            width: 280,
+            borderRadius: 2,
+            mt: 1,
+            boxShadow: (theme) => theme.shadows[10],
+          },
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ mb: 1.5, px: 0.5 }}>
+          Select Day of Month
+        </Typography>
+        <Grid container spacing={1}>
+          {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+            const isSelected =
+              selectedExpenseIndex !== null &&
+              initialExpenses[selectedExpenseIndex]?.day === day;
+            return (
+              <Grid size={12 / 7} key={day}>
+                <ButtonBase
+                  onClick={() => handleDaySelect(day)}
+                  sx={{
+                    width: "100%",
+                    aspectRatio: "1/1",
+                    borderRadius: 1,
+                    fontSize: "0.875rem",
+                    fontWeight: isSelected ? 600 : 400,
+                    bgcolor: isSelected ? "primary.main" : "transparent",
+                    color: isSelected ? "primary.contrastText" : "text.primary",
+                    "&:hover": {
+                      bgcolor: isSelected
+                        ? "primary.dark"
+                        : (theme) => alpha(theme.palette.primary.main, 0.08),
+                    },
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {day}
+                </ButtonBase>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </Popover>
     </DashboardLayout>
   );
 }

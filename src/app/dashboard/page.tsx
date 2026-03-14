@@ -23,8 +23,10 @@ import {
 } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 import { useCurrency } from "@/components/CurrencyContext";
-import MonthFilter from "@/components/MonthFilter";
+import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import PropertyFilter from "@/components/PropertyFilter";
+import { startOfMonth } from "date-fns";
+import { usePropertyStore } from "@/store/usePropertyStore";
 
 const StatCard = ({
   title,
@@ -101,10 +103,27 @@ const StatCard = ({
 
 export default function DashboardPage() {
   const { formatAmount } = useCurrency();
-  const [filterDate, setFilterDate] = React.useState<Date | null>(new Date());
-  const [filterProperty, setFilterProperty] = React.useState<number | null>(
-    null,
-  );
+  const { selectedProperty, properties } = usePropertyStore();
+  const selectedPropertyId = selectedProperty?.id || null;
+
+  // Use property-specific funds if a property is selected, otherwise total
+  const totalFunds = selectedProperty
+    ? selectedProperty.funds
+    : properties.reduce((sum, p) => sum + p.funds, 0);
+
+  const totalProfit = selectedProperty
+    ? selectedProperty.profit
+    : properties.reduce((sum, p) => sum + p.profit, 0);
+
+  const totalExpense = selectedProperty
+    ? selectedProperty.currentExpense
+    : properties.reduce((sum, p) => sum + p.currentExpense, 0);
+
+  const [filterRange, setFilterRange] = React.useState<DateRange>({
+    start: startOfMonth(new Date()),
+    end: new Date(),
+    type: "this-month",
+  });
 
   return (
     <DashboardLayout>
@@ -112,25 +131,35 @@ export default function DashboardPage() {
         <Box
           sx={{
             display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: { xs: "stretch", sm: "center" },
+            gap: 2,
             mb: 2,
           }}
         >
           <Box>
-            <Typography variant="h4" sx={{ mb: 0.5 }}>
+            <Typography variant="h4" sx={{ mb: 0.5, fontWeight: 700 }}>
               Overview
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Welcome back! Here&apos;s how your properties are performing.
             </Typography>
           </Box>
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <PropertyFilter
-              value={filterProperty}
-              onChange={setFilterProperty}
-            />
-            <MonthFilter value={filterDate} onChange={setFilterDate} />
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              gap: 1,
+              width: { xs: "100%", sm: "auto" },
+            }}
+          >
+            <Box sx={{ flex: 1 }}>
+              <PropertyFilter value={selectedPropertyId} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <MonthFilter value={filterRange} onChange={setFilterRange} />
+            </Box>
           </Box>
         </Box>
       </Box>
