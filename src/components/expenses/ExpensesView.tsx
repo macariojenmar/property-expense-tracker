@@ -19,6 +19,9 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  ToggleButton,
+  ToggleButtonGroup,
+  Autocomplete,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import {
@@ -36,124 +39,174 @@ import {
   Ban,
   Undo2,
   TriangleAlert,
+  Settings,
 } from "lucide-react";
-import { format, parseISO, startOfMonth, endOfDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, endOfDay } from "date-fns";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import { usePropertyStore } from "@/store/usePropertyStore";
+import Loader from "@/components/Loader";
 
-const mockExpenses = [
-  {
-    id: 1,
-    name: "Cleaning Fee",
-    amount: 1500,
-    note: "Deep clean for Check-in",
-    date: "2026-03-10",
-    propertyId: 1,
-  },
-  {
-    id: 2,
-    name: "Water Bill",
-    amount: 800,
-    note: "February 2026",
-    date: "2026-03-05",
-    propertyId: 1,
-  },
-  {
-    id: 3,
-    name: "Internet Subscription",
-    amount: 1800,
-    note: "Fiber Plan 100Mbps",
-    date: "2026-03-01",
-    propertyId: 2,
-  },
-  {
-    id: 4,
-    name: "Property Tax",
-    amount: 5000,
-    note: "Annual payment",
-    date: "2026-03-12",
-    propertyId: 2,
-  },
-  {
-    id: 5,
-    name: "Repair: Faucet",
-    amount: 450,
-    note: "Kitchen sink leak fixed",
-    date: "2026-03-15",
-    propertyId: 1,
-  },
-  {
-    id: 6,
-    name: "Electricity Bill",
-    amount: 3200,
-    note: "Main house usage",
-    date: "2026-03-18",
-    propertyId: 2,
-  },
-];
+export interface Expense {
+  id: string;
+  name: string;
+  amount: number;
+  date: string;
+  propertyId: string;
+  note?: string;
+  recurringRef?: string;
+  isRecurring?: boolean;
+  status: "PENDING" | "SETTLED";
+  pendingTo?: { name: string };
+}
+
+const mockExpenses: Expense[] = [];
 
 interface ExpensesViewProps {
-  propertyId: number | null;
+  propertyId: string | null;
 }
 
-function getStorageKey(
-  propertyId: number | null,
-  monthKey: string,
-  type: "added" | "waived" | "expanded" = "added",
-) {
-  return `recurring_${type}_${monthKey}_${propertyId}`;
+interface RecurringExpense {
+  id: string;
+  name: string;
+  amount: number;
+  day: number;
+  pendingToId?: string;
+  pendingTo?: { name: string };
 }
+
+import { getProperty } from "@/lib/actions/property";
+import {
+  createExpense,
+  deleteExpense,
+  settleExpenses,
+  unsettleExpenses,
+} from "@/lib/actions/expense";
+import {
+  waiveRecurringExpense,
+  unwaiveRecurringExpense,
+} from "@/lib/actions/recurring-expense";
+import { getPendingToEntities } from "@/lib/actions/pending-to";
+import { CheckCircle } from "lucide-react";
 
 export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const router = useRouter();
-  const { properties, setSelectedProperty, selectedProperty } =
+  const { properties, setSelectedProperty, selectedProperty, setProperties } =
     usePropertyStore();
   const { formatAmount, currency } = useCurrency();
+  const [loading, setLoading] = React.useState(true);
+  const [expenses, setExpenses] = React.useState<Expense[]>([]);
 
   // Initialize store if we're on a property-specific page but no property is selected
   React.useEffect(() => {
-    if (
-      propertyId &&
-      (!selectedProperty || selectedProperty.id !== propertyId)
-    ) {
-      const property = properties.find((p: any) => p.id === propertyId);
-      if (property) {
-        setSelectedProperty(property);
+    const fetchProperty = async () => {
+      if (!propertyId) return;
+
+      setLoading(true);
+      try {
+        const data = await getProperty(propertyId);
+        if (data) {
+          setSelectedProperty(data as any);
+          setExpenses(data.expenses as any);
+
+          // Use functional update to ensure we don't depend on stale closure
+          setProperties((prev: any[]) => {
+            if (prev.some((p: any) => p.id === propertyId)) {
+              return prev.map((p: any) =>
+                p.id === propertyId ? (data as any) : p,
+              );
+            }
+            return [...prev, data as any];
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch property for expenses:", error);
+      } finally {
+        setLoading(false);
       }
-    }
-  }, [propertyId, selectedProperty, properties, setSelectedProperty]);
+    };
+    fetchProperty();
+  }, [propertyId, setSelectedProperty, setExpenses, setProperties]);
 
   const [filterRange, setFilterRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
-    end: new Date(),
+    end: endOfMonth(new Date()),
     type: "this-month",
   });
+
+  const [statusFilter, setStatusFilter] = React.useState<string>("all");
+  const [pendingToFilter, setPendingToFilter] = React.useState<string | null>(
+    null,
+  );
+  const [entities, setEntities] = React.useState<any[]>([]);
+
+  const handleSettleIndividual = async (id: string) => {
+    if (!propertyId) return;
+    try {
+      await settleExpenses([id], propertyId);
+      setExpenses((prev) =>
+        prev.map((exp) => (exp.id === id ? { ...exp, status: "SETTLED" } : exp)),
+      );
+    } catch (error) {
+      console.error("Failed to settle expense:", error);
+    }
+  };
+
+
+  React.useEffect(() => {
+    const fetchEntities = async () => {
+      try {
+        const data = await getPendingToEntities();
+        setEntities(data);
+      } catch (e) {
+        console.error("Failed to fetch entities:", e);
+      }
+    };
+    fetchEntities();
+  }, []);
 
   // Pagination state
   const [page, setPage] = React.useState(1);
   const itemsPerPage = 5;
 
-  // ── Expenses list state ────────────────────────────────────────────────
-  const [expenses, setExpenses] = React.useState(mockExpenses);
-
   const filteredExpenses = React.useMemo(() => {
-    return expenses.filter((expense) => {
-      if (propertyId !== null && expense.propertyId !== propertyId) {
+    return expenses.filter((expense: any) => {
+      if (
+        propertyId !== null &&
+        String(expense.propertyId) !== String(propertyId)
+      ) {
         return false;
       }
-      const expenseDate = parseISO(expense.date);
+      const expenseDate = new Date(expense.date);
       if (filterRange.start && filterRange.end) {
-        return (
-          expenseDate >= startOfMonth(filterRange.start) &&
-          expenseDate <= endOfDay(filterRange.end)
-        );
+        if (
+          expenseDate < startOfMonth(filterRange.start) ||
+          expenseDate > endOfDay(filterRange.end)
+        ) {
+          return false;
+        }
       }
+
+      if (
+        statusFilter !== "all" &&
+        (expense.status || "SETTLED") !== statusFilter
+      ) {
+        return false;
+      }
+
+      if (
+        statusFilter === "PENDING" &&
+        pendingToFilter &&
+        expense.pendingToId !== pendingToFilter
+      ) {
+        return false;
+      }
+
       return true;
     });
-  }, [filterRange, propertyId, expenses]);
+  }, [filterRange, propertyId, expenses, statusFilter, pendingToFilter]);
 
   const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
   const paginatedExpenses = filteredExpenses.slice(
@@ -162,248 +215,337 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   );
 
   const totalAmount = React.useMemo(() => {
-    return filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    return filteredExpenses.reduce(
+      (sum: number, expense: Expense) => sum + expense.amount,
+      0,
+    );
   }, [filteredExpenses]);
 
   // ── Recurring expenses state ────────────────────────────────────────────────
-  const property = properties.find((p: any) => p.id === propertyId);
-  const recurringExpenses = property?.recurringExpenses ?? [];
+  // Prioritize selectedProperty if it matches propertyId, then search in properties list
+  const property = (
+    selectedProperty?.id === propertyId
+      ? selectedProperty
+      : properties.find((p: any) => p.id === propertyId)
+  ) as any;
+  const recurringExpenses = (property?.recurringExpenses ??
+    []) as RecurringExpense[];
+  const waivedRecurringExpenses = ((property as any)?.waivedRecurringExpenses ??
+    []) as any[];
 
   // Month key e.g. "2026-03"
   const monthKey = format(new Date(), "yyyy-MM");
-  const addedStorageKey = getStorageKey(propertyId, monthKey, "added");
-  const waivedStorageKey = getStorageKey(propertyId, monthKey, "waived");
+  const expandedStorageKey = `recurring_expanded_${monthKey}_${propertyId}`;
 
-  // Which rows are "added" (persisted)
-  const [addedSet, setAddedSet] = React.useState<Set<number>>(new Set());
-  // Which rows are "waived" (persisted)
-  const [waivedSet, setWaivedSet] = React.useState<Set<number>>(new Set());
-  // Which rows are checked
-  const [checkedSet, setCheckedSet] = React.useState<Set<number>>(new Set());
+  // Which rows are "added" (derived from real expenses)
+  const addedSet = React.useMemo(() => {
+    const set = new Set<string>();
+    expenses.forEach((exp: any) => {
+      if (exp.recurringRef && exp.recurringRef.endsWith(monthKey)) {
+        const id = exp.recurringRef.split("_")[0];
+        set.add(id);
+      }
+    });
+    return set;
+  }, [expenses, monthKey]);
+
+  // Which rows are "waived" (persisted in DB)
+  const waivedSet = React.useMemo(() => {
+    const set = new Set<string>();
+    waivedRecurringExpenses.forEach((w: any) => {
+      if (w.monthKey === monthKey) {
+        set.add(w.recurringExpenseId);
+      }
+    });
+    return set;
+  }, [waivedRecurringExpenses, monthKey]);
+
+  // Which rows are checked (local UI state)
+  const [checkedSet, setCheckedSet] = React.useState<Set<string>>(new Set());
   // Controlled accordion state
   const [accordionExpanded, setAccordionExpanded] = React.useState(false);
 
-  const expandedStorageKey = getStorageKey(propertyId, monthKey, "expanded");
-
-  // Editable amounts per index
+  // Editable amounts per recurring ID
   const [editedAmounts, setEditedAmounts] = React.useState<
-    Record<number, string>
+    Record<string, string>
   >({});
-
-  // Load persisted "added", "waived", and "expanded" state on mount
-  React.useEffect(() => {
-    try {
-      const savedAdded = localStorage.getItem(addedStorageKey);
-      if (savedAdded) {
-        setAddedSet(new Set(JSON.parse(savedAdded)));
-      }
-      const savedWaived = localStorage.getItem(waivedStorageKey);
-      if (savedWaived) {
-        setWaivedSet(new Set(JSON.parse(savedWaived)));
-      }
-      const savedExpanded = localStorage.getItem(expandedStorageKey);
-      if (savedExpanded) {
-        setAccordionExpanded(JSON.parse(savedExpanded));
-      }
-    } catch {}
-  }, [addedStorageKey, waivedStorageKey, expandedStorageKey]);
 
   // Pre-fill editable amounts from recurring data
   React.useEffect(() => {
-    const initial: Record<number, string> = {};
-    recurringExpenses.forEach((exp, i) => {
-      initial[i] = String(exp.amount);
+    const initial: Record<string, string> = {};
+    recurringExpenses.forEach((exp) => {
+      initial[exp.id] = String(exp.amount);
     });
     setEditedAmounts(initial);
   }, [property]);
 
   const allChecked =
     recurringExpenses.length > 0 &&
-    recurringExpenses.every((_, i) => checkedSet.has(i));
+    recurringExpenses.every((exp) => checkedSet.has(exp.id));
   const someChecked =
-    !allChecked && recurringExpenses.some((_, i) => checkedSet.has(i));
+    !allChecked && recurringExpenses.some((exp) => checkedSet.has(exp.id));
 
   const handleToggleAll = () => {
     if (allChecked) {
       setCheckedSet(new Set());
     } else {
-      setCheckedSet(new Set(recurringExpenses.map((_, i) => i)));
+      setCheckedSet(new Set(recurringExpenses.map((exp) => exp.id)));
     }
   };
 
-  const handleToggle = (i: number) => {
+  const handleToggle = (id: string) => {
     const next = new Set(checkedSet);
-    if (next.has(i)) next.delete(i);
-    else next.add(i);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     setCheckedSet(next);
   };
 
-  const handleAmountChange = (i: number, val: string) => {
-    setEditedAmounts((prev) => ({ ...prev, [i]: val }));
+  const handleAmountChange = (id: string, val: string) => {
+    setEditedAmounts((prev) => ({ ...prev, [id]: val }));
   };
 
-  const handleWaive = (i: number) => {
-    const next = new Set(waivedSet);
-    if (next.has(i)) {
-      next.delete(i);
+  const handleWaive = async (recurringExpId: string) => {
+    if (!propertyId) return;
+
+    if (waivedSet.has(recurringExpId)) {
+      try {
+        await unwaiveRecurringExpense({
+          recurringExpenseId: recurringExpId,
+          monthKey,
+          propertyId,
+        });
+        // State will refresh from getProperty in useEffect or we can update locally
+        const updated = await getProperty(propertyId);
+        if (updated) setSelectedProperty(updated as any);
+      } catch (error) {
+        console.error("Failed to unwaive:", error);
+      }
     } else {
-      next.add(i);
-      // If we waive it, uncheck it
-      const nextChecked = new Set(checkedSet);
-      nextChecked.delete(i);
-      setCheckedSet(nextChecked);
+      try {
+        await waiveRecurringExpense({
+          recurringExpenseId: recurringExpId,
+          monthKey,
+          propertyId,
+        });
+        const nextChecked = new Set(checkedSet);
+        nextChecked.delete(recurringExpId);
+        setCheckedSet(nextChecked);
+
+        const updated = await getProperty(propertyId);
+        if (updated) setSelectedProperty(updated as any);
+      } catch (error) {
+        console.error("Failed to waive:", error);
+      }
     }
-    setWaivedSet(next);
-    try {
-      localStorage.setItem(waivedStorageKey, JSON.stringify([...next]));
-    } catch {}
   };
 
-  const checkedAndAvailable = [...checkedSet].filter(
-    (i) => !addedSet.has(i) && !waivedSet.has(i),
-  );
-  const checkedAndAdded = [...checkedSet].filter((i) => addedSet.has(i));
-  const checkedToWaive = [...checkedSet].filter(
-    (i) => !addedSet.has(i) && !waivedSet.has(i),
-  );
-  const checkedToUnwaive = [...checkedSet].filter((i) => waivedSet.has(i));
+  const checkedAndAvailable = recurringExpenses
+    .filter(
+      (exp) =>
+        checkedSet.has(exp.id) &&
+        !addedSet.has(exp.id) &&
+        !waivedSet.has(exp.id),
+    )
+    .map((exp) => exp.id);
+  const checkedAndAdded = recurringExpenses
+    .filter((exp) => checkedSet.has(exp.id) && addedSet.has(exp.id))
+    .map((exp) => exp.id);
+  const checkedToWaive = recurringExpenses
+    .filter(
+      (exp) =>
+        checkedSet.has(exp.id) &&
+        !addedSet.has(exp.id) &&
+        !waivedSet.has(exp.id),
+    )
+    .map((exp) => exp.id);
+  const checkedToUnwaive = recurringExpenses
+    .filter((exp) => checkedSet.has(exp.id) && waivedSet.has(exp.id))
+    .map((exp) => exp.id);
 
-  const handleAddSelected = () => {
-    if (checkedAndAvailable.length === 0) return;
+  const handleAddSelected = async () => {
+    if (checkedAndAvailable.length === 0 || !propertyId) return;
 
-    // Create new expense items
+    setLoading(true);
+    try {
+      const today = format(new Date(), "yyyy-MM-dd");
+      for (const id of checkedAndAvailable) {
+        const recurring = recurringExpenses.find((exp) => exp.id === id);
+        if (!recurring) continue;
+
+        await createExpense({
+          name: recurring.name,
+          amount: parseFloat(editedAmounts[id] || "0"),
+          note: `Recurring expense for ${format(new Date(), "MMMM yyyy")}`,
+          date: today,
+          propertyId,
+          recurringRef: `${id}_${monthKey}`,
+          isRecurring: true,
+          status: recurring.pendingToId ? "PENDING" : "SETTLED",
+          pendingToId: recurring.pendingToId,
+        });
+      }
+
+      const updated = await getProperty(propertyId);
+      if (updated) {
+        setSelectedProperty(updated as any);
+        setExpenses(updated.expenses as any);
+      }
+
+      // Deselect the just-added ones
+      const nextChecked = new Set(checkedSet);
+      checkedAndAvailable.forEach((id) => nextChecked.delete(id));
+      setCheckedSet(nextChecked);
+    } catch (error) {
+      console.error("Failed to add selected recurring:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddOne = async (id: string) => {
+    if (!propertyId) return;
     const today = format(new Date(), "yyyy-MM-dd");
-    const newItems = checkedAndAvailable.map((i) => {
-      const recurring = recurringExpenses[i];
-      return {
-        id: Date.now() + i, // Unique-ish ID
+    const recurring = recurringExpenses.find((exp) => exp.id === id);
+    if (!recurring) return;
+
+    try {
+      await createExpense({
         name: recurring.name,
-        amount: parseFloat(editedAmounts[i] || "0"),
+        amount: parseFloat(editedAmounts[id] || "0"),
         note: `Recurring expense for ${format(new Date(), "MMMM yyyy")}`,
         date: today,
-        propertyId: propertyId!,
-        recurringRef: `${i}_${monthKey}`, // Store ref for reverting
-      };
-    });
-    (newItems as any).forEach((item: any) => {
-      (item as any).isRecurring = true;
-    });
+        propertyId,
+        recurringRef: `${id}_${monthKey}`,
+        isRecurring: true,
+        status: recurring.pendingToId ? "PENDING" : "SETTLED",
+        pendingToId: recurring.pendingToId,
+      });
 
-    // Update expenses list
-    setExpenses((prev) => [...newItems, ...prev]);
-
-    // Update added status
-    const next = new Set(addedSet);
-    checkedAndAvailable.forEach((i) => next.add(i));
-    setAddedSet(next);
-
-    try {
-      localStorage.setItem(addedStorageKey, JSON.stringify([...next]));
-    } catch {}
-
-    // Deselect the just-added ones
-    const nextChecked = new Set(checkedSet);
-    checkedAndAvailable.forEach((i) => nextChecked.delete(i));
-    setCheckedSet(nextChecked);
+      const updated = await getProperty(propertyId);
+      if (updated) {
+        setSelectedProperty(updated as any);
+        setExpenses(updated.expenses as any);
+      }
+    } catch (error) {
+      console.error("Failed to add recurring expense:", error);
+    }
   };
 
-  const handleAddOne = (i: number) => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    const recurring = recurringExpenses[i];
-    const item = {
-      id: Date.now(),
-      name: recurring.name,
-      amount: parseFloat(editedAmounts[i] || "0"),
-      note: `Recurring expense for ${format(new Date(), "MMMM yyyy")}`,
-      date: today,
-      propertyId: propertyId!,
-      recurringRef: `${i}_${monthKey}`,
-      isRecurring: true,
-    };
-
-    setExpenses((prev) => [item, ...prev]);
-    const nextAdded = new Set(addedSet);
-    nextAdded.add(i);
-    setAddedSet(nextAdded);
-    try {
-      localStorage.setItem(addedStorageKey, JSON.stringify([...nextAdded]));
-    } catch {}
-  };
-
-  const handleRevert = (i: number) => {
-    // Remove from addedSet
-    const nextAdded = new Set(addedSet);
-    nextAdded.delete(i);
-    setAddedSet(nextAdded);
-
-    // Remove from main expenses list
-    const ref = `${i}_${monthKey}`;
-    setExpenses((prev) => prev.filter((exp: any) => exp.recurringRef !== ref));
-
-    // Update localStorage
-    try {
-      localStorage.setItem(addedStorageKey, JSON.stringify([...nextAdded]));
-    } catch {}
-  };
-
-  const handleRevertSelected = () => {
-    if (checkedAndAdded.length === 0) return;
-
-    // Remove from addedSet
-    const nextAdded = new Set(addedSet);
-    checkedAndAdded.forEach((i) => nextAdded.delete(i));
-    setAddedSet(nextAdded);
-
-    // Remove from main expenses list
-    const refs = new Set(checkedAndAdded.map((i) => `${i}_${monthKey}`));
-    setExpenses((prev) =>
-      prev.filter((exp: any) => !refs.has(exp.recurringRef)),
+  const handleRevert = async (id: string) => {
+    if (!propertyId) return;
+    const ref = `${id}_${monthKey}`;
+    const expenseToDelele = expenses.find(
+      (exp: any) => exp.recurringRef === ref,
     );
 
-    // Update localStorage
-    try {
-      localStorage.setItem(addedStorageKey, JSON.stringify([...nextAdded]));
-    } catch {}
+    if (expenseToDelele) {
+      try {
+        const { deleteExpense } = await import("@/lib/actions/expense");
+        await deleteExpense(expenseToDelele.id);
 
-    // Deselect
-    const nextChecked = new Set(checkedSet);
-    checkedAndAdded.forEach((i) => nextChecked.delete(i));
-    setCheckedSet(nextChecked);
+        const updated = await getProperty(propertyId);
+        if (updated) {
+          setSelectedProperty(updated as any);
+          setExpenses(updated.expenses as any);
+        }
+      } catch (error) {
+        console.error("Failed to revert expense:", error);
+      }
+    }
   };
 
-  const handleWaiveSelected = () => {
-    if (checkedToWaive.length === 0) return;
+  const handleRevertSelected = async () => {
+    if (checkedAndAdded.length === 0 || !propertyId) return;
 
-    const nextWaived = new Set(waivedSet);
-    checkedToWaive.forEach((i) => nextWaived.add(i));
-    setWaivedSet(nextWaived);
-
+    setLoading(true);
     try {
-      localStorage.setItem(waivedStorageKey, JSON.stringify([...nextWaived]));
-    } catch {}
+      const { deleteExpense } = await import("@/lib/actions/expense");
+      for (const id of checkedAndAdded) {
+        const ref = `${id}_${monthKey}`;
+        const exp = expenses.find((e: any) => e.recurringRef === ref);
+        if (exp) {
+          await deleteExpense(exp.id);
+        }
+      }
 
-    // Deselect
-    const nextChecked = new Set(checkedSet);
-    checkedToWaive.forEach((i) => nextChecked.delete(i));
-    setCheckedSet(nextChecked);
+      const updated = await getProperty(propertyId);
+      if (updated) {
+        setSelectedProperty(updated as any);
+        setExpenses(updated.expenses as any);
+      }
+
+      // Deselect
+      const nextChecked = new Set(checkedSet);
+      checkedAndAdded.forEach((id) => nextChecked.delete(id));
+      setCheckedSet(nextChecked);
+    } catch (error) {
+      console.error("Failed to revert selected:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleUnwaiveSelected = () => {
-    if (checkedToUnwaive.length === 0) return;
+  const handleWaiveSelected = async () => {
+    if (checkedToWaive.length === 0 || !propertyId) return;
 
-    const nextWaived = new Set(waivedSet);
-    checkedToUnwaive.forEach((i) => nextWaived.delete(i));
-    setWaivedSet(nextWaived);
-
+    setLoading(true);
     try {
-      localStorage.setItem(waivedStorageKey, JSON.stringify([...nextWaived]));
-    } catch {}
+      for (const id of checkedToWaive) {
+        await waiveRecurringExpense({
+          recurringExpenseId: id,
+          monthKey,
+          propertyId,
+        });
+      }
 
-    // Deselect
-    const nextChecked = new Set(checkedSet);
-    checkedToUnwaive.forEach((i) => nextChecked.delete(i));
-    setCheckedSet(nextChecked);
+      const updated = await getProperty(propertyId);
+      if (updated) setSelectedProperty(updated as any);
+
+      // Deselect
+      const nextChecked = new Set(checkedSet);
+      checkedToWaive.forEach((id) => nextChecked.delete(id));
+      setCheckedSet(nextChecked);
+    } catch (error) {
+      console.error("Failed to waive selected:", error);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleUnwaiveSelected = async () => {
+    if (checkedToUnwaive.length === 0 || !propertyId) return;
+
+    setLoading(true);
+    try {
+      for (const id of checkedToUnwaive) {
+        await unwaiveRecurringExpense({
+          recurringExpenseId: id,
+          monthKey,
+          propertyId,
+        });
+      }
+
+      const updated = await getProperty(propertyId);
+      if (updated) setSelectedProperty(updated as any);
+
+      // Deselect
+      const nextChecked = new Set(checkedSet);
+      checkedToUnwaive.forEach((id) => nextChecked.delete(id));
+      setCheckedSet(nextChecked);
+    } catch (error) {
+      console.error("Failed to unwaive selected:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <Loader message="Loading expenses..." />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -411,60 +553,56 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         sx={{
           mb: 4,
           display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
+          flexDirection: "row",
           justifyContent: "space-between",
-          alignItems: { xs: "flex-start", sm: "flex-start" },
-          gap: 2,
+          alignItems: "flex-end",
+          gap: 3,
         }}
       >
-        <Box sx={{ width: "100%" }}>
+        <Box sx={{ flex: 1 }}>
           <Button
             startIcon={<ArrowLeft size={18} />}
             onClick={() => router.push(`/properties/${propertyId}`)}
             sx={{
-              mb: 1,
+              mb: 1.5,
               color: "text.secondary",
               px: 0,
               "&:hover": { bgcolor: "transparent", color: "primary.main" },
+              fontSize: "0.875rem",
             }}
           >
             Back to Overview
           </Button>
           <Box>
-            <Typography variant="h4" sx={{ mb: 0.5, fontWeight: 700 }}>
+            <Typography
+              variant="h4"
+              sx={{ mb: 1, fontWeight: 800, letterSpacing: "-0.02em" }}
+            >
               Expenses
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ opacity: 0.8 }}
+            >
               Track and manage your property expenditures.
             </Typography>
           </Box>
         </Box>
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="center"
+        <Button
+          variant="outlined"
+          startIcon={<Settings size={18} />}
+          onClick={() => router.push("/entities")}
           sx={{
-            mt: { xs: 2, sm: 5 },
-            width: { xs: "100%", sm: "auto" },
+            height: 48,
+            borderRadius: 1.5,
+            minWidth: { sm: 160 },
           }}
         >
-          <Box sx={{ flex: 1 }}>
-            <MonthFilter value={filterRange} onChange={setFilterRange} />
+          <Box sx={{ display: { xs: "block", sm: "none", md: "block" } }}>
+            Entities
           </Box>
-          <Box sx={{ flex: 1 }}>
-            <Button
-              variant="contained"
-              startIcon={<Plus size={18} />}
-              onClick={() =>
-                router.push(`/properties/${propertyId}/expenses/create`)
-              }
-              fullWidth
-              sx={{ height: 44, whiteSpace: "nowrap" }}
-            >
-              Add Expense
-            </Button>
-          </Box>
-        </Stack>
+        </Button>
       </Box>
 
       {/* ── Recurring Expenses Quick-Add ───────────────────────────────────── */}
@@ -495,7 +633,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
           <AccordionSummary
             expandIcon={<ChevronDown size={20} />}
             sx={{
-              px: 2,
+              px: { xs: 1.5, sm: 2 },
               "&.Mui-expanded": {
                 borderBottom: "1px solid",
                 borderColor: "divider",
@@ -514,11 +652,15 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                   color="currentColor"
                   style={{ opacity: 0.6 }}
                 />
-                <Typography variant="h6" fontWeight={700}>
-                  Recurring Expenses
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}
+                >
+                  Recurring
                 </Typography>
                 <Chip
-                  label={`${addedSet.size + waivedSet.size}/${recurringExpenses.length} processed`}
+                  label={`${addedSet.size + waivedSet.size}/${recurringExpenses.length}`}
                   size="small"
                   sx={{
                     fontSize: "0.7rem",
@@ -555,8 +697,8 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
             <Box>
               {/* Header row with Add Selected Button */}
               <Stack
-                direction="row"
-                alignItems="center"
+                direction={{ xs: "column", sm: "row" }}
+                alignItems={{ xs: "stretch", sm: "center" }}
                 justifyContent="space-between"
                 sx={{
                   px: 2,
@@ -564,6 +706,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                   bgcolor: (t) => alpha(t.palette.primary.main, 0.01),
                   borderBottom: "1px solid",
                   borderColor: "divider",
+                  gap: { xs: 1.5, sm: 0 },
                 }}
               >
                 <Stack
@@ -598,6 +741,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                       letterSpacing: "0.08em",
                       width: 200,
                       mr: 2,
+                      display: { xs: "none", sm: "block" },
                     }}
                   >
                     Amount
@@ -611,6 +755,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                       letterSpacing: "0.08em",
                       width: 120,
                       mr: 2,
+                      display: { xs: "none", sm: "block" },
                     }}
                   >
                     Status
@@ -618,7 +763,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
 
                   <Box
                     sx={{
-                      width: 280,
+                      width: { xs: "100%", sm: 280 },
                       display: "flex",
                       justifyContent: "flex-end",
                       gap: 1,
@@ -670,7 +815,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                             px: 1.5,
                           }}
                         >
-                          Waive ({checkedToWaive.length})
+                          Waive ({checkedAndAvailable.length})
                         </Button>
                         <Button
                           variant="contained"
@@ -693,18 +838,19 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
               </Stack>
 
               {/* Expense rows */}
-              {recurringExpenses.map((exp, i) => {
-                const isAdded = addedSet.has(i);
-                const isChecked = checkedSet.has(i);
+              {recurringExpenses.map((exp: RecurringExpense) => {
+                const isAdded = addedSet.has(exp.id);
+                const isChecked = checkedSet.has(exp.id);
+                const isWaived = waivedSet.has(exp.id);
 
                 return (
-                  <Box key={i}>
+                  <Box key={exp.id}>
                     <Stack
-                      direction="row"
-                      alignItems="center"
+                      direction={{ xs: "column", sm: "row" }}
+                      alignItems={{ xs: "stretch", sm: "center" }}
                       sx={{
                         px: 2,
-                        py: 1.25,
+                        py: { xs: 2.5, sm: 1.25 },
                         transition: "background 0.15s",
                         bgcolor: isChecked
                           ? (t) => alpha(t.palette.primary.main, 0.04)
@@ -714,227 +860,251 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                         },
                       }}
                     >
-                      {/* Checkbox */}
-                      <Checkbox
-                        size="small"
-                        checked={isChecked}
-                        onChange={() => handleToggle(i)}
-                        sx={{
-                          mr: 1,
-                        }}
-                      />
-
-                      {/* Name + due day */}
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography
-                          variant="body2"
-                          fontWeight={600}
+                      {/* Top Row: Checkbox, Info, and mobile Actions */}
+                      <Stack
+                        direction="row"
+                        alignItems="flex-start"
+                        sx={{ mb: { xs: 2, sm: 0 }, flex: 1 }}
+                      >
+                        <Checkbox
+                          size="small"
+                          checked={isChecked}
+                          onChange={() => handleToggle(exp.id)}
                           sx={{
-                            color: (isAdded || waivedSet.has(i)) ? "text.secondary" : "text.primary",
+                            mr: 1,
+                            mt: -0.5,
                           }}
-                        >
-                          {exp.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Due on day {exp.day} of the month
-                        </Typography>
-                      </Box>
+                        />
 
-                      {/* Editable amount */}
-                      <NumericFormatInput
-                        size="small"
-                        value={editedAmounts[i] ?? String(exp.amount)}
-                        onChange={(e: any) =>
-                          handleAmountChange(i, e.target.value)
-                        }
-                        disabled={isAdded || waivedSet.has(i)}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {currency.symbol}
-                              </Typography>
-                            </InputAdornment>
-                          ),
-                        }}
-                        sx={{
-                          width: 200,
-                          mr: 2,
-                          "& .MuiInputBase-input": {
-                            fontWeight: 700,
-                          },
-                          "& .MuiInputBase-input.Mui-disabled": {
-                            WebkitTextFillColor: "inherit",
-                            opacity: 0.6,
-                          },
-                        }}
-                      />
-
-                      {/* Status badge */}
-                      <Box
-                        sx={{
-                          width: 120,
-                          display: "flex",
-                          mr: 2,
-                        }}
-                      >
-                        {isAdded ? (
-                          <Chip
-                            icon={<CheckCircle2 size={13} />}
-                            label="Added"
-                            size="small"
+                        {/* Name + due day */}
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography
+                            variant="body2"
+                            fontWeight={600}
                             sx={{
-                              bgcolor: (t) =>
-                                alpha(t.palette.success.main, 0.12),
-                              color: "success.main",
-                              fontWeight: 700,
-                              fontSize: "0.72rem",
-                              "& .MuiChip-icon": { color: "success.main" },
+                              fontSize: { xs: "0.9rem", sm: "0.875rem" },
+                              color:
+                                isAdded || isWaived
+                                  ? "text.secondary"
+                                  : "text.primary",
                             }}
-                          />
-                        ) : waivedSet.has(i) ? (
-                          <Chip
-                            icon={<Ban size={13} />}
-                            label="Waived"
-                            size="small"
-                            sx={{
-                              bgcolor: (t) => alpha(t.palette.divider, 0.1),
-                              color: "text.secondary",
-                              fontWeight: 700,
-                              fontSize: "0.72rem",
-                              "& .MuiChip-icon": { color: "text.secondary" },
-                            }}
-                          />
-                        ) : (
-                          (() => {
-                            const today = new Date().getDate();
-                            const isMissed = exp.day < today;
-                            const isClose =
-                              exp.day >= today && exp.day <= today + 2;
-
-                            if (isMissed) {
-                              return (
-                                <Chip
-                                  icon={<TriangleAlert size={13} />}
-                                  label="Missed"
-                                  size="small"
-                                  sx={{
-                                    bgcolor: (t) =>
-                                      alpha(t.palette.error.main, 0.1),
-                                    color: "error.main",
-                                    fontWeight: 700,
-                                    fontSize: "0.72rem",
-                                    "& .MuiChip-icon": { color: "error.main" },
-                                  }}
-                                />
-                              );
-                            }
-
-                            if (isClose) {
-                              return (
-                                <Chip
-                                  icon={<Clock size={13} />}
-                                  label="Due Soon"
-                                  size="small"
-                                  sx={{
-                                    bgcolor: (t) =>
-                                      alpha(t.palette.warning.main, 0.15),
-                                    color: "#b45309", // Darker amber
-                                    fontWeight: 700,
-                                    fontSize: "0.72rem",
-                                    "& .MuiChip-icon": { color: "#b45309" },
-                                  }}
-                                />
-                              );
-                            }
-
-                            return (
-                              <Chip
-                                icon={<Clock size={13} />}
-                                label="Not Yet Added"
-                                size="small"
+                          >
+                            {exp.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Due on day {exp.day}
+                            {exp.pendingTo && (
+                              <Box
+                                component="span"
                                 sx={{
-                                  bgcolor: (t) =>
-                                    alpha(t.palette.warning.main, 0.1),
-                                  color: "warning.main",
-                                  fontWeight: 600,
-                                  fontSize: "0.72rem",
-                                  "& .MuiChip-icon": { color: "warning.main" },
+                                  ml: 1,
+                                  fontStyle: "italic",
+                                  opacity: 0.8,
                                 }}
-                              />
-                            );
-                          })()
-                        )}
-                      </Box>
+                              >
+                                • Pending to {exp.pendingTo.name}
+                              </Box>
+                            )}
+                          </Typography>
+                        </Box>
 
-                      {/* Action buttons (Add/Waive/Revert) */}
-                      <Box
-                        sx={{
-                          width: 280,
-                          display: "flex",
-                          justifyContent: "flex-end",
-                          gap: 0.5,
-                        }}
-                      >
-                        {isAdded ? (
-                          <Tooltip title="Revert">
+                        {/* Mobile-only Action buttons */}
+                        <Box
+                          sx={{ display: { xs: "flex", sm: "none" }, gap: 1 }}
+                        >
+                          {isAdded ? (
                             <IconButton
                               size="small"
-                              onClick={() => handleRevert(i)}
-                              sx={{
-                                color: "text.secondary",
-                                "&:hover": {
-                                  color: "primary.main",
-                                  bgcolor: (t) =>
-                                    alpha(t.palette.primary.main, 0.05),
-                                },
-                              }}
+                              onClick={() => handleRevert(exp.id)}
+                              sx={{ color: "text.secondary" }}
                             >
-                              <RefreshCw size={16} />
+                              <RefreshCw size={18} />
                             </IconButton>
-                          </Tooltip>
-                        ) : waivedSet.has(i) ? (
-                          <Tooltip title="Unwaive">
+                          ) : isWaived ? (
                             <IconButton
                               size="small"
-                              onClick={() => handleWaive(i)}
-                              sx={{
-                                color: "primary.main",
-                                "&:hover": {
-                                  color: "primary.main",
-                                  bgcolor: (t) =>
-                                    alpha(t.palette.primary.main, 0.05),
-                                },
-                              }}
+                              onClick={() => handleWaive(exp.id)}
+                              sx={{ color: "primary.main" }}
                             >
                               <Undo2 size={18} />
                             </IconButton>
-                          </Tooltip>
-                        ) : (
-                          <>
-                            <Tooltip title="Add Now">
+                          ) : (
+                            <>
                               <IconButton
                                 size="small"
-                                onClick={() => handleAddOne(i)}
-                                sx={{
-                                  color: "primary.main",
-                                  "&:hover": {
-                                    color: "primary.main",
-                                    bgcolor: (t) =>
-                                      alpha(t.palette.primary.main, 0.05),
-                                  },
-                                }}
+                                onClick={() => handleAddOne(exp.id)}
+                                sx={{ color: "primary.main" }}
                               >
                                 <Plus size={18} />
                               </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Waive">
                               <IconButton
                                 size="small"
-                                onClick={() => handleWaive(i)}
+                                onClick={() => handleWaive(exp.id)}
+                                sx={{ color: "text.secondary" }}
+                              >
+                                <Ban size={18} />
+                              </IconButton>
+                            </>
+                          )}
+                        </Box>
+                      </Stack>
+
+                      {/* Bottom Group (Desktop Row Parts) */}
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={2}
+                        sx={{ pl: { xs: 5, sm: 0 } }}
+                      >
+                        {/* Editable amount */}
+                        <NumericFormatInput
+                          size="small"
+                          value={editedAmounts[exp.id] ?? String(exp.amount)}
+                          onChange={(e: any) =>
+                            handleAmountChange(exp.id, e.target.value)
+                          }
+                          disabled={isAdded || isWaived}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  {currency.symbol}
+                                </Typography>
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{
+                            width: { xs: 120, sm: 200 },
+                            mr: { xs: 0, sm: 2 },
+                            "& .MuiInputBase-input": {
+                              fontWeight: 700,
+                              fontSize: { xs: "0.8rem", sm: "0.875rem" },
+                            },
+                            "& .MuiInputBase-input.Mui-disabled": {
+                              WebkitTextFillColor: "inherit",
+                              opacity: 0.6,
+                            },
+                          }}
+                        />
+
+                        {/* Status badge */}
+                        <Box
+                          sx={{
+                            width: { xs: "auto", sm: 120 },
+                            display: "flex",
+                            mr: { xs: 0, sm: 2 },
+                          }}
+                        >
+                          {isAdded ? (
+                            <Chip
+                              icon={<CheckCircle2 size={13} />}
+                              label="Added"
+                              size="small"
+                              sx={{
+                                bgcolor: (t) =>
+                                  alpha(t.palette.success.main, 0.12),
+                                color: "success.main",
+                                fontWeight: 700,
+                                fontSize: "0.72rem",
+                                "& .MuiChip-icon": { color: "success.main" },
+                              }}
+                            />
+                          ) : isWaived ? (
+                            <Chip
+                              icon={<Ban size={13} />}
+                              label="Waived"
+                              size="small"
+                              sx={{
+                                bgcolor: (t) => alpha(t.palette.divider, 0.1),
+                                color: "text.secondary",
+                                fontWeight: 700,
+                                fontSize: "0.72rem",
+                                "& .MuiChip-icon": { color: "text.secondary" },
+                              }}
+                            />
+                          ) : (
+                            (() => {
+                              const today = new Date().getDate();
+                              const isMissed = exp.day < today;
+                              const isClose =
+                                exp.day >= today && exp.day <= today + 2;
+
+                              if (isMissed) {
+                                return (
+                                  <Chip
+                                    icon={<TriangleAlert size={13} />}
+                                    label="Missed"
+                                    size="small"
+                                    sx={{
+                                      bgcolor: (t) =>
+                                        alpha(t.palette.error.main, 0.1),
+                                      color: "error.main",
+                                      fontWeight: 700,
+                                      fontSize: "0.72rem",
+                                      "& .MuiChip-icon": {
+                                        color: "error.main",
+                                      },
+                                    }}
+                                  />
+                                );
+                              }
+
+                              if (isClose) {
+                                return (
+                                  <Chip
+                                    icon={<Clock size={13} />}
+                                    label="Soon"
+                                    size="small"
+                                    sx={{
+                                      bgcolor: (t) =>
+                                        alpha(t.palette.warning.main, 0.15),
+                                      color: "#b45309",
+                                      fontWeight: 700,
+                                      fontSize: "0.72rem",
+                                      "& .MuiChip-icon": { color: "#b45309" },
+                                    }}
+                                  />
+                                );
+                              }
+
+                              return (
+                                <Chip
+                                  icon={<Clock size={13} />}
+                                  label="Not Added"
+                                  size="small"
+                                  sx={{
+                                    bgcolor: (t) =>
+                                      alpha(t.palette.warning.main, 0.1),
+                                    color: "warning.main",
+                                    fontWeight: 600,
+                                    fontSize: "0.72rem",
+                                    "& .MuiChip-icon": {
+                                      color: "warning.main",
+                                    },
+                                  }}
+                                />
+                              );
+                            })()
+                          )}
+                        </Box>
+
+                        {/* Desktop-only Action buttons (Add/Waive/Revert) */}
+                        <Box
+                          sx={{
+                            width: 280,
+                            display: { xs: "none", sm: "flex" },
+                            justifyContent: "flex-end",
+                            gap: 0.5,
+                          }}
+                        >
+                          {isAdded ? (
+                            <Tooltip title="Revert">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleRevert(exp.id)}
                                 sx={{
                                   color: "text.secondary",
                                   "&:hover": {
@@ -944,14 +1114,67 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                                   },
                                 }}
                               >
-                                <Ban size={18} />
+                                <RefreshCw size={16} />
                               </IconButton>
                             </Tooltip>
-                          </>
-                        )}
-                      </Box>
+                          ) : isWaived ? (
+                            <Tooltip title="Unwaive">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleWaive(exp.id)}
+                                sx={{
+                                  color: "primary.main",
+                                  "&:hover": {
+                                    color: "primary.main",
+                                    bgcolor: (t) =>
+                                      alpha(t.palette.primary.main, 0.05),
+                                  },
+                                }}
+                              >
+                                <Undo2 size={18} />
+                              </IconButton>
+                            </Tooltip>
+                          ) : (
+                            <>
+                              <Tooltip title="Add Now">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleAddOne(exp.id)}
+                                  sx={{
+                                    color: "primary.main",
+                                    "&:hover": {
+                                      color: "primary.main",
+                                      bgcolor: (t) =>
+                                        alpha(t.palette.primary.main, 0.05),
+                                    },
+                                  }}
+                                >
+                                  <Plus size={18} />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Waive">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleWaive(exp.id)}
+                                  sx={{
+                                    color: "text.secondary",
+                                    "&:hover": {
+                                      color: "primary.main",
+                                      bgcolor: (t) =>
+                                        alpha(t.palette.primary.main, 0.05),
+                                    },
+                                  }}
+                                >
+                                  <Ban size={18} />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          )}
+                        </Box>
+                      </Stack>
                     </Stack>
-                    {i < recurringExpenses.length - 1 && (
+                    {exp !==
+                      recurringExpenses[recurringExpenses.length - 1] && (
                       <Divider sx={{ borderStyle: "dashed", mx: 2 }} />
                     )}
                   </Box>
@@ -962,24 +1185,158 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         </Accordion>
       )}
 
+      <Box
+        sx={{
+          mb: 4,
+          display: "flex",
+          flexDirection: { xs: "column-reverse", sm: "row" },
+          justifyContent: "space-between",
+          alignItems: { xs: "stretch", sm: "center" },
+          gap: 2,
+        }}
+      >
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          alignItems={{ xs: "stretch", sm: "center" }}
+          sx={{ width: { xs: "100%", sm: "auto" } }}
+        >
+          <ToggleButtonGroup
+            value={statusFilter}
+            exclusive
+            onChange={(_, v) => v && setStatusFilter(v)}
+            size="small"
+            sx={{
+              p: 0.5,
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor: "divider",
+              width: { xs: "100%", sm: "auto" },
+              "& .MuiToggleButton-root": {
+                flex: { xs: 1, sm: "initial" },
+                border: "none",
+                borderRadius: 1.5,
+                px: 3,
+                py: 1,
+                mx: 0.25,
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+                color: "text.secondary",
+                "&.Mui-selected": {
+                  bgcolor: (t) =>
+                    t.palette.mode === "light"
+                      ? "rgba(0,0,0,0.04)"
+                      : "rgba(255,255,255,0.06)",
+                  color: "text.primary",
+                  "&:hover": {
+                    bgcolor: (t) =>
+                      t.palette.mode === "light"
+                        ? "rgba(0,0,0,0.06)"
+                        : "rgba(255,255,255,0.08)",
+                  },
+                },
+                "&:hover": {
+                  bgcolor: (t) =>
+                    t.palette.mode === "light"
+                      ? "rgba(0,0,0,0.02)"
+                      : "rgba(255,255,255,0.02)",
+                  color: "text.primary",
+                },
+              },
+            }}
+          >
+            <ToggleButton value="all">All</ToggleButton>
+            <ToggleButton value="SETTLED">Settled</ToggleButton>
+            <ToggleButton value="PENDING">Pending</ToggleButton>
+          </ToggleButtonGroup>
+
+          {statusFilter === "PENDING" && (
+            <Autocomplete
+              size="small"
+              options={entities}
+              getOptionLabel={(option) => option.name}
+              value={entities.find((e) => e.id === pendingToFilter) || null}
+              onChange={(_, newValue) =>
+                setPendingToFilter(newValue?.id || null)
+              }
+              sx={{ width: { xs: "100%", sm: 300 } }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Filter by Entity"
+                  placeholder="Select name..."
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 1.5,
+                    },
+                  }}
+                />
+              )}
+            />
+          )}
+        </Stack>
+
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          alignItems="center"
+          sx={{
+            width: { xs: "100%", sm: "auto" },
+          }}
+        >
+          <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
+            <MonthFilter value={filterRange} onChange={setFilterRange} />
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<Plus size={18} />}
+            onClick={() =>
+              router.push(`/properties/${propertyId}/expenses/create`)
+            }
+            fullWidth
+            sx={{
+              height: 48,
+              px: 3,
+              borderRadius: 1.5,
+              whiteSpace: "nowrap",
+              minWidth: { sm: 160 },
+            }}
+          >
+            Add Expense
+          </Button>
+        </Stack>
+      </Box>
+
       {(totalPages > 1 || filteredExpenses.length > 0) && (
         <Box
           sx={{
             display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: { xs: "flex-start", sm: "center" },
+            gap: 1.5,
             mb: 3,
           }}
         >
           <Typography
             variant="h5"
-            sx={{ fontWeight: 700, color: "error.main" }}
+            sx={{
+              fontWeight: 700,
+              color: "error.main",
+              fontSize: { xs: "1.25rem", sm: "1.5rem" },
+            }}
           >
             Total: {formatAmount(totalAmount)}
           </Typography>
 
           {totalPages > 1 && (
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              sx={{ alignSelf: { xs: "flex-end", sm: "center" } }}
+            >
               <Typography variant="body2" color="text.secondary">
                 {(page - 1) * itemsPerPage + 1}–
                 {Math.min(page * itemsPerPage, filteredExpenses.length)} of{" "}
@@ -1008,6 +1365,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         </Box>
       )}
 
+
       <Stack
         spacing={2}
         sx={{ flexGrow: 1, display: "flex", flexDirection: "column", mb: 4 }}
@@ -1016,7 +1374,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
           <Card
             key={expense.id}
             sx={{
-              p: 2,
+              p: { xs: 1.5, sm: 2 },
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -1029,13 +1387,13 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
           >
             <Stack
               direction="row"
-              spacing={3}
+              spacing={{ xs: 2, sm: 3 }}
               alignItems="center"
-              sx={{ flexGrow: 1 }}
+              sx={{ flexGrow: 1, minWidth: 0 }}
             >
               <Box
                 sx={{
-                  p: 1.5,
+                  p: { xs: 1, sm: 1.5 },
                   bgcolor: (theme) =>
                     theme.palette.mode === "light"
                       ? alpha(theme.palette.error.main, 0.1)
@@ -1045,26 +1403,57 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  flexShrink: 0,
                 }}
               >
                 <BanknoteArrowDown size={22} />
               </Box>
 
-              <Box sx={{ minWidth: 200 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: { xs: "0.9rem", sm: "1rem" },
+                    lineHeight: 1.2,
+                    mb: 0.5,
+                  }}
+                >
                   {expense.name}
                 </Typography>
-                <Stack
-                  direction="row"
-                  spacing={2}
-                  sx={{ color: "text.secondary", mt: 0.5 }}
-                >
+                <Stack direction="row" spacing={2} sx={{ color: "text.secondary", flexWrap: "wrap", rowGap: 0.5 }}>
                   <Stack direction="row" spacing={0.5} alignItems="center">
                     <Calendar size={14} />
-                    <Typography variant="caption">
-                      {format(new Date(expense.date), "MMMM d, yyyy")}
+                    <Typography variant="caption" sx={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                      {format(new Date(expense.date), "MMM d, yyyy")}
                     </Typography>
                   </Stack>
+                  <Chip
+                    label={expense.status === "PENDING" ? "Pending" : "Settled"}
+                    size="small"
+                    sx={{
+                      height: 20,
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      bgcolor: (t) =>
+                        expense.status === "PENDING"
+                          ? alpha(t.palette.warning.main, 0.1)
+                          : alpha(t.palette.success.main, 0.1),
+                      color: (t) =>
+                        expense.status === "PENDING"
+                          ? "warning.main"
+                          : "success.main",
+                    }}
+                  />
+                  {expense.status === "PENDING" && expense.pendingTo && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontSize: "0.7rem", fontStyle: "italic", whiteSpace: "nowrap" }}
+                    >
+                      to {expense.pendingTo.name}
+                    </Typography>
+                  )}
                 </Stack>
               </Box>
 
@@ -1072,7 +1461,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                 sx={{
                   flexGrow: 1,
                   px: 2,
-                  display: { xs: "none", md: "block" },
+                  display: { xs: "none", lg: "block" },
                 }}
               >
                 <Stack direction="row" spacing={1} alignItems="flex-start">
@@ -1092,16 +1481,47 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                 </Stack>
               </Box>
 
-              <Box sx={{ textAlign: "right", minWidth: 120 }}>
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 700, color: "error.main" }}
-                >
-                  -{formatAmount(expense.amount)}
-                </Typography>
-              </Box>
+              <Stack 
+                direction="row" 
+                alignItems="center" 
+                spacing={{ xs: 1, sm: 2 }} 
+                sx={{ ml: "auto", flexShrink: 0 }}
+              >
+                <Box sx={{ textAlign: "right" }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      color: "error.main",
+                      fontSize: { xs: "0.95rem", sm: "1.1rem", md: "1.25rem" },
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    -{formatAmount(expense.amount)}
+                  </Typography>
+                </Box>
 
-              <ChevronRight size={20} color="gray" />
+                {expense.status === "PENDING" && (
+                  <Tooltip title="Mark as Settled">
+                    <IconButton
+                      size="small"
+                      color="success"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSettleIndividual(expense.id);
+                      }}
+                      sx={{
+                        bgcolor: (t) => alpha(t.palette.success.main, 0.1),
+                        "&:hover": {
+                          bgcolor: (t) => alpha(t.palette.success.main, 0.2),
+                        },
+                      }}
+                    >
+                      <CheckCircle2 size={18} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Stack>
             </Stack>
           </Card>
         ))}

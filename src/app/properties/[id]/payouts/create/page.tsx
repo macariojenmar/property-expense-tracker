@@ -21,16 +21,17 @@ import { useRouter, useParams } from "next/navigation";
 import { useCurrency } from "@/components/CurrencyContext";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import { usePropertyStore } from "@/store/usePropertyStore";
+import { createPayout } from "@/lib/actions/payout";
 
 export default function CreatePayoutPage() {
   const router = useRouter();
   const params = useParams();
-  const propertyId = params.id;
+  const propertyId = params.id as string;
   const { currency } = useCurrency();
-  const { payouts } = usePropertyStore();
+  const [loading, setLoading] = React.useState(false);
 
   const [items, setItems] = React.useState([
-    { id: 1, label: "Property Payout", amount: "", date: new Date() },
+    { id: Date.now(), label: "Property Payout", amount: "", date: new Date() },
   ]);
   const [dictionary, setDictionary] = React.useState<string[]>([]);
 
@@ -76,12 +77,24 @@ export default function CreatePayoutPage() {
       items.map((i) => (i.id === id ? { ...i, date: value || new Date() } : i)),
     );
 
-  const handleSave = () => {
-    // In a real app, we would dispatch an action to add these payouts
-    // For now, since we're using a mock store that isn't persistent,
-    // we'll just navigate back.
-    // However, I'll update the store to support adding payouts if needed.
-    router.push(`/properties/${propertyId}/payouts`);
+  const handleSave = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      for (const item of items) {
+        if (!item.amount) continue;
+        await createPayout({
+          amount: parseFloat(item.amount),
+          date: item.date.toISOString(),
+          propertyId,
+        });
+      }
+      router.push(`/properties/${propertyId}/payouts`);
+    } catch (error) {
+      console.error("Failed to save payouts:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -212,10 +225,11 @@ export default function CreatePayoutPage() {
             </Button>
             <Button
               variant="contained"
-              startIcon={<Save size={18} />}
+              startIcon={loading ? null : <Save size={18} />}
               onClick={handleSave}
+              disabled={loading}
             >
-              Save Payouts
+              {loading ? "Saving..." : "Save Payouts"}
             </Button>
           </Box>
         </Stack>

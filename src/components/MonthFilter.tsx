@@ -60,14 +60,14 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
 
     if (type === "this-month") {
       start = startOfMonth(now);
-      end = now;
+      end = endOfMonth(now);
     } else if (type === "last-month") {
       const lastMonth = subMonths(now, 1);
       start = startOfMonth(lastMonth);
       end = endOfMonth(lastMonth);
     } else if (type === "this-year") {
       start = startOfYear(now);
-      end = now;
+      end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999); // End of year
     }
 
     onChange({ start, end, type });

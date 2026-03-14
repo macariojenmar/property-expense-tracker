@@ -11,8 +11,8 @@ import { usePropertyStore } from "@/store/usePropertyStore";
 import { useRouter, usePathname } from "next/navigation";
 
 interface PropertyFilterProps {
-  value: number | null;
-  onChange?: (propertyId: number | null) => void;
+  value: string | null;
+  onChange?: (propertyId: string | null) => void;
 }
 
 export default function PropertyFilter({
@@ -25,7 +25,7 @@ export default function PropertyFilter({
 
   const handleChange = (e: SelectChangeEvent<string>) => {
     const val = e.target.value;
-    const propertyId = val === "all" ? null : Number(val);
+    const propertyId = val === "all" ? null : val;
     const newProperty = propertyId ? properties.find(p => p.id === propertyId) || null : null;
     
     setSelectedProperty(newProperty);

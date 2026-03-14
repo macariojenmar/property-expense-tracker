@@ -13,87 +13,98 @@ import {
   IconButton,
   InputAdornment,
   Popover,
-  Paper,
   ButtonBase,
   Autocomplete,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, Trash2, ArrowLeft, Save } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useCurrency } from "@/components/CurrencyContext";
 import NumericFormatInput from "@/components/NumericFormatInput";
-import { createProperty } from "@/lib/actions/property";
+import { getProperty, updateProperty } from "@/lib/actions/property";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
+import Loader from "@/components/Loader";
 
 type PendingTo = {
   id: string;
   name: string;
 };
 
-export default function CreatePropertyPage() {
+export default function EditPropertyPage() {
   const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
   const { currency } = useCurrency();
+  
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
   const [name, setName] = React.useState("");
   const [location, setLocation] = React.useState("");
   const [initialFunds, setInitialFunds] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
-
-  const [initialExpenses, setInitialExpenses] = React.useState<
-    { name: string; amount: string | number; day: number; pendingToId: string }[]
-  >([{ name: "", amount: "", day: 1, pendingToId: "" }]);
+  const [recurringExpenses, setRecurringExpenses] = React.useState<any[]>([]);
   const [entities, setEntities] = React.useState<PendingTo[]>([]);
-  const [dayAnchorEl, setDayAnchorEl] = React.useState<HTMLDivElement | null>(
-    null
-  );
-  const [selectedExpenseIndex, setSelectedExpenseIndex] = React.useState<
-    number | null
-  >(null);
   const [dictionaryWords, setDictionaryWords] = React.useState<string[]>([]);
+  
+  const [dayAnchorEl, setDayAnchorEl] = React.useState<HTMLDivElement | null>(null);
+  const [selectedExpenseIndex, setSelectedExpenseIndex] = React.useState<number | null>(null);
 
   React.useEffect(() => {
-    const saved = localStorage.getItem("propertyTracker_dictionary");
-    if (saved) {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        setDictionaryWords(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse dictionary", e);
-      }
-    }
+        const [propertyData, entitiesData] = await Promise.all([
+          getProperty(id),
+          getPendingToEntities()
+        ]);
 
-    const fetchEntities = async () => {
-      try {
-        const data = await getPendingToEntities();
-        setEntities(data);
+        if (propertyData) {
+          setName(propertyData.name);
+          setLocation(propertyData.location || "");
+          setInitialFunds(String(propertyData.initialFunds || 0));
+          setRecurringExpenses(propertyData.recurringExpenses.map(re => ({
+            id: re.id,
+            name: re.name,
+            amount: String(re.amount),
+            day: re.day,
+            pendingToId: re.pendingToId || ""
+          })));
+        }
+        setEntities(entitiesData);
+
+        const saved = localStorage.getItem("propertyTracker_dictionary");
+        if (saved) {
+          setDictionaryWords(JSON.parse(saved));
+        }
       } catch (error) {
-        console.error("Failed to fetch entities:", error);
+        console.error("Failed to fetch property data:", error);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchEntities();
-  }, []);
+    fetchData();
+  }, [id]);
 
-  const handleAddInitialExpense = () =>
-    setInitialExpenses([
-      ...initialExpenses,
+  const handleAddExpense = () =>
+    setRecurringExpenses([
+      ...recurringExpenses,
       { name: "", amount: "", day: 1, pendingToId: "" },
     ]);
-  const handleRemoveInitialExpense = (index: number) =>
-    setInitialExpenses(initialExpenses.filter((_, i) => i !== index));
+
+  const handleRemoveExpense = (index: number) =>
+    setRecurringExpenses(recurringExpenses.filter((_, i) => i !== index));
 
   const handleExpenseChange = (
     index: number,
-    field: "name" | "amount" | "day" | "pendingToId",
+    field: string,
     value: string | number
   ) => {
-    const newExpenses = [...initialExpenses];
+    const newExpenses = [...recurringExpenses];
     newExpenses[index] = { ...newExpenses[index], [field]: value };
-    setInitialExpenses(newExpenses);
+    setRecurringExpenses(newExpenses);
   };
 
-  const handleDayClick = (
-    event: React.MouseEvent<HTMLDivElement>,
-    index: number
-  ) => {
+  const handleDayClick = (event: React.MouseEvent<HTMLDivElement>, index: number) => {
     setDayAnchorEl(event.currentTarget);
     setSelectedExpenseIndex(index);
   };
@@ -106,30 +117,39 @@ export default function CreatePropertyPage() {
     setSelectedExpenseIndex(null);
   };
 
-  const handleCreate = async () => {
-    if (!name) return;
-    setLoading(true);
+  const handleUpdate = async () => {
+    if (!name || saving) return;
+    setSaving(true);
     try {
-      await createProperty({
+      await updateProperty(id, {
         name,
         location,
         initialFunds: parseFloat(initialFunds) || 0,
-        recurringExpenses: initialExpenses
+        recurringExpenses: recurringExpenses
           .filter((exp) => exp.name && exp.amount)
           .map((exp) => ({
+            id: exp.id,
             name: exp.name,
-            amount: parseFloat(exp.amount as string),
+            amount: parseFloat(exp.amount),
             day: exp.day,
             pendingToId: exp.pendingToId || undefined,
           })),
       });
-      router.push("/properties");
+      router.push(`/properties/${id}`);
     } catch (error) {
-      console.error("Failed to create property:", error);
+      console.error("Failed to update property:", error);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <Loader message="Loading property details..." />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -139,9 +159,9 @@ export default function CreatePropertyPage() {
             <ArrowLeft size={20} />
           </IconButton>
           <Box>
-            <Typography variant="h4">Create New Property</Typography>
+            <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: "-0.02em" }}>Edit Property</Typography>
             <Typography variant="body2" color="text.secondary">
-              Add details for your Airbnb listing.
+              Update details for {name}.
             </Typography>
           </Box>
         </Box>
@@ -149,7 +169,7 @@ export default function CreatePropertyPage() {
         <Stack spacing={4}>
           <Card>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
                 Basic Information
               </Typography>
               <Grid container spacing={3}>
@@ -157,18 +177,18 @@ export default function CreatePropertyPage() {
                   <TextField
                     fullWidth
                     label="Property Name"
-                    placeholder="e.g. Cozy Beachfront Villa"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
                   />
                 </Grid>
                 <Grid size={12}>
                   <TextField
                     fullWidth
                     label="Location (Optional)"
-                    placeholder="Siargao, Philippines"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
                   />
                 </Grid>
                 <Grid size={12}>
@@ -184,6 +204,7 @@ export default function CreatePropertyPage() {
                         </InputAdornment>
                       ),
                     }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
                   />
                 </Grid>
               </Grid>
@@ -192,32 +213,23 @@ export default function CreatePropertyPage() {
 
           <Card>
             <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography variant="h6">Recurring Expenses</Typography>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>Recurring Expenses</Typography>
                 <Button
                   startIcon={<Plus size={16} />}
-                  onClick={handleAddInitialExpense}
+                  onClick={handleAddExpense}
                   size="small"
+                  sx={{ borderRadius: 1.5 }}
                 >
                   Add Expense
                 </Button>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Monthly bills (Rent, Association Dues, Internet, etc.)
-              </Typography>
               <Stack spacing={2}>
-                {initialExpenses.map((exp, index) => (
+                {recurringExpenses.map((exp, index) => (
                   <Card 
                     variant="outlined" 
                     key={index} 
-                    sx={{ p: 2, bgcolor: (t) => alpha(t.palette.primary.main, 0.02) }}
+                    sx={{ p: 2, bgcolor: (t) => alpha(t.palette.primary.main, 0.02), borderRadius: 2 }}
                   >
                     <Grid container spacing={2} alignItems="center">
                       <Grid size={5}>
@@ -225,19 +237,15 @@ export default function CreatePropertyPage() {
                           freeSolo
                           options={dictionaryWords}
                           value={exp.name}
-                          onInputChange={(_, newValue) =>
-                            handleExpenseChange(index, "name", newValue)
-                          }
-                          onChange={(_, newValue) =>
-                            handleExpenseChange(index, "name", newValue || "")
-                          }
+                          onInputChange={(_, newValue) => handleExpenseChange(index, "name", newValue)}
+                          onChange={(_, newValue) => handleExpenseChange(index, "name", newValue || "")}
                           renderInput={(params) => (
                             <TextField
                               {...params}
                               fullWidth
                               label="Expense Name"
-                              placeholder="e.g. Rent"
                               size="small"
+                              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
                             />
                           )}
                         />
@@ -248,17 +256,9 @@ export default function CreatePropertyPage() {
                           label="Day"
                           size="small"
                           value={exp.day}
-                          onClick={(e) =>
-                            handleDayClick(
-                              e as unknown as React.MouseEvent<HTMLDivElement>,
-                              index
-                            )
-                          }
-                          sx={{ cursor: "pointer" }}
-                          InputProps={{
-                            readOnly: true,
-                            sx: { cursor: "pointer" },
-                          }}
+                          onClick={(e) => handleDayClick(e as any, index)}
+                          sx={{ cursor: "pointer", '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
+                          InputProps={{ readOnly: true, sx: { cursor: "pointer" } }}
                         />
                       </Grid>
                       <Grid size={4}>
@@ -267,24 +267,20 @@ export default function CreatePropertyPage() {
                           size="small"
                           label="Amount"
                           value={exp.amount}
-                          onChange={(e: any) =>
-                            handleExpenseChange(index, "amount", e.target.value)
-                          }
+                          onChange={(e: any) => handleExpenseChange(index, "amount", e.target.value)}
                           InputProps={{
                             startAdornment: (
-                              <InputAdornment position="start">
-                                {currency.symbol}
-                              </InputAdornment>
+                              <InputAdornment position="start">{currency.symbol}</InputAdornment>
                             ),
                           }}
+                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
                         />
                       </Grid>
                       <Grid size={1} sx={{ textAlign: 'center' }}>
                         <IconButton
                           color="error"
-                          onClick={() => handleRemoveInitialExpense(index)}
+                          onClick={() => handleRemoveExpense(index)}
                           size="small"
-                          disabled={initialExpenses.length === 1}
                         >
                           <Trash2 size={18} />
                         </IconButton>
@@ -293,24 +289,15 @@ export default function CreatePropertyPage() {
                         <Autocomplete
                           options={entities}
                           getOptionLabel={(option) => option.name}
-                          value={
-                            entities.find((e) => e.id === exp.pendingToId) ||
-                            null
-                          }
-                          onChange={(_, newValue) =>
-                            handleExpenseChange(
-                              index,
-                              "pendingToId",
-                              newValue?.id || ""
-                            )
-                          }
+                          value={entities.find((e) => e.id === exp.pendingToId) || null}
+                          onChange={(_, newValue) => handleExpenseChange(index, "pendingToId", newValue?.id || "")}
                           renderInput={(params) => (
                             <TextField
                               {...params}
                               fullWidth
                               label="Pending To (Optional)"
                               size="small"
-                              placeholder="Select person or organization"
+                              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
                             />
                           )}
                         />
@@ -322,19 +309,18 @@ export default function CreatePropertyPage() {
             </CardContent>
           </Card>
 
-          <Box
-            sx={{ display: "flex", justifyContent: "flex-end", gap: 2, pb: 4 }}
-          >
-            <Button variant="outlined" onClick={() => router.back()}>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, pb: 4 }}>
+            <Button variant="outlined" onClick={() => router.back()} sx={{ borderRadius: 1.5, px: 3 }}>
               Cancel
             </Button>
             <Button
               variant="contained"
-              startIcon={loading ? null : <Save size={18} />}
-              onClick={handleCreate}
-              disabled={loading || !name}
+              startIcon={saving ? null : <Save size={18} />}
+              onClick={handleUpdate}
+              disabled={saving || !name}
+              sx={{ borderRadius: 1.5, px: 3, bgcolor: 'text.primary', color: 'background.paper', '&:hover': { bgcolor: 'primary.main', opacity: 0.9 } }}
             >
-              {loading ? "Creating..." : "Create Property"}
+              {saving ? "Saving..." : "Save Changes"}
             </Button>
           </Box>
         </Stack>
@@ -344,28 +330,13 @@ export default function CreatePropertyPage() {
         open={Boolean(dayAnchorEl)}
         anchorEl={dayAnchorEl}
         onClose={() => setDayAnchorEl(null)}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "left",
-        }}
-        PaperProps={{
-          sx: {
-            p: 2,
-            width: 280,
-            borderRadius: 2,
-            mt: 1,
-            boxShadow: (theme) => theme.shadows[10],
-          },
-        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        PaperProps={{ sx: { p: 2, width: 280, borderRadius: 2, mt: 1, boxShadow: 10 } }}
       >
-        <Typography variant="subtitle2" sx={{ mb: 1.5, px: 0.5 }}>
-          Select Day of Month
-        </Typography>
+        <Typography variant="subtitle2" sx={{ mb: 1.5, px: 0.5 }}>Select Day of Month</Typography>
         <Grid container spacing={1}>
           {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
-            const isSelected =
-              selectedExpenseIndex !== null &&
-              initialExpenses[selectedExpenseIndex]?.day === day;
+            const isSelected = selectedExpenseIndex !== null && recurringExpenses[selectedExpenseIndex]?.day === day;
             return (
               <Grid size={12 / 7} key={day}>
                 <ButtonBase
@@ -378,12 +349,7 @@ export default function CreatePropertyPage() {
                     fontWeight: isSelected ? 600 : 400,
                     bgcolor: isSelected ? "primary.main" : "transparent",
                     color: isSelected ? "primary.contrastText" : "text.primary",
-                    "&:hover": {
-                      bgcolor: isSelected
-                        ? "primary.dark"
-                        : (theme) => alpha(theme.palette.primary.main, 0.08),
-                    },
-                    transition: "all 0.2s",
+                    "&:hover": { bgcolor: isSelected ? "primary.dark" : (theme) => alpha(theme.palette.primary.main, 0.08) },
                   }}
                 >
                   {day}

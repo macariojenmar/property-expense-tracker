@@ -13,13 +13,15 @@ import {
   alpha,
   useTheme,
 } from "@mui/material";
-import { ArrowLeft, TrendingUp, Wallet, Receipt, MapPin } from "lucide-react";
+import { ArrowLeft, TrendingUp, Wallet, Receipt, MapPin, Settings } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
-import { startOfMonth } from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
+import { getProperty } from "@/lib/actions/property";
+import Loader from "@/components/Loader";
 
 const FinanceCard = ({
   title,
@@ -87,7 +89,10 @@ const FinanceCard = ({
             <Typography
               variant="h3"
               fontWeight={700}
-              sx={{ letterSpacing: "-0.02em" }}
+              sx={{ 
+                letterSpacing: "-0.02em",
+                color: currentValue < 0 ? "#f43f5e" : "text.primary"
+              }}
             >
               {formatAmount(currentValue)}
             </Typography>
@@ -102,7 +107,7 @@ const FinanceCard = ({
             <Typography
               variant="h6"
               fontWeight={600}
-              color={color}
+              color={estimatedValue < 0 ? "#f43f5e" : color}
               sx={{ opacity: 0.9 }}
             >
               {formatAmount(estimatedValue)}
@@ -124,31 +129,128 @@ const FinanceCard = ({
 export default function PropertyDetailsPage() {
   const router = useRouter();
   const params = useParams();
-  const { properties, setSelectedProperty, selectedProperty } =
-    usePropertyStore();
+  const {
+    properties,
+    setSelectedProperty,
+    selectedProperty,
+    setProperties,
+  } = usePropertyStore();
   const { formatAmount } = useCurrency();
+  const [loading, setLoading] = React.useState(true);
   const [filterRange, setFilterRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
-    end: new Date(),
+    end: endOfMonth(new Date()),
     type: "this-month",
   });
 
-  const propertyId = typeof params.id === "string" ? parseInt(params.id) : null;
-  const property = properties.find((p: any) => p.id === propertyId);
+  const propertyId = typeof params.id === "string" ? params.id : null;
 
-  // Initialize store if we're on a property-specific page but no property is selected
   React.useEffect(() => {
-    if (
-      propertyId &&
-      (!selectedProperty || selectedProperty.id !== propertyId)
-    ) {
-      if (property) {
-        setSelectedProperty(property);
+    const fetchProperty = async () => {
+      if (!propertyId) return;
+      setLoading(true);
+      try {
+        const data = await getProperty(propertyId);
+        if (data) {
+          setSelectedProperty(data as any);
+          // Also update in properties list if it exists
+          setProperties(
+            properties.map((p) => (p.id === propertyId ? (data as any) : p))
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch property:", error);
+      } finally {
+        setLoading(false);
       }
-    }
-  }, [propertyId, selectedProperty, property, setSelectedProperty]);
+    };
+    fetchProperty();
+  }, [propertyId, setSelectedProperty, setProperties]);
 
-  if (!property) {
+  const property = selectedProperty;
+
+  const stats = React.useMemo(() => {
+    if (!property || !filterRange.start || !filterRange.end) {
+      return {
+        currentProfit: 0,
+        estimatedProfit: 0,
+        currentFunds: 0,
+        estimatedFunds: 0,
+        currentExpenses: 0,
+        estimatedExpenses: 0,
+      };
+    }
+
+    const { start, end } = filterRange;
+    
+    // Filter transactions by date range
+    const rangeExpenses = (property.expenses as any[]).filter(e => {
+      const d = new Date(e.date);
+      return d >= start && d <= end;
+    });
+    
+    const rangePayouts = (property.payouts as any[]).filter(p => {
+      const d = new Date(p.date);
+      return d >= start && d <= end;
+    });
+
+    // Current Values for the range
+    const currentExpenses = rangeExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const rangePayoutTotal = rangePayouts.reduce((sum, p) => sum + (p.amount - (p.refundAmount || 0)), 0);
+    const currentProfit = rangePayoutTotal - currentExpenses;
+
+    // Funds is cumulative up to the 'end' date
+    const allPriorExpenses = (property.expenses as any[]).filter(e => new Date(e.date) <= end);
+    const allPriorPayouts = (property.payouts as any[]).filter(p => new Date(p.date) <= end);
+    const cumulativeProfit = allPriorPayouts.reduce((sum, p) => sum + (p.amount - (p.refundAmount || 0)), 0) - 
+                             allPriorExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const currentFunds = (property.initialFunds || 0) + cumulativeProfit;
+
+    // Estimations
+    // For simplicity, we estimate by adding pending recurring expenses if the range includes the current/future months
+    const now = new Date();
+    let estimatedAddon = 0;
+    
+    // Only add recurring expenses if the filter end date is at least the end of this month
+    if (end >= startOfMonth(now)) {
+      const recurring = (property.recurringExpenses as any[]) || [];
+      const waived = (property.waivedRecurringExpenses as any[]) || [];
+      
+      recurring.forEach(re => {
+        // Check if this recurring expense has already been recorded in THIS month
+        // In a real app, we'd check if an expense with type 'RECURRING' and this name exists for this month
+        // For now, let's assume if it's not waived and we are looking at this month, it's an estimated expense
+        const isWaived = waived.some(w => w.recurringExpenseId === re.id && 
+                                        new Date(w.date).getMonth() === now.getMonth() &&
+                                        new Date(w.date).getFullYear() === now.getFullYear());
+        
+        const alreadyRecorded = rangeExpenses.some(e => e.name === re.name); // Simple heuristic
+
+        if (!isWaived && !alreadyRecorded) {
+          estimatedAddon += re.amount;
+        }
+      });
+    }
+
+    return {
+      currentProfit,
+      estimatedProfit: currentProfit - estimatedAddon, // Profit decreases with more expenses
+      currentFunds,
+      estimatedFunds: currentFunds - estimatedAddon,
+      currentExpenses,
+      estimatedExpenses: currentExpenses + estimatedAddon,
+    };
+  }, [property, filterRange]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <Loader message="Loading property details..." />
+      </DashboardLayout>
+    );
+  }
+
+  if (!property || property.id !== propertyId) {
     return (
       <DashboardLayout>
         <Box sx={{ p: 4, textAlign: "center" }}>
@@ -204,6 +306,19 @@ export default function PropertyDetailsPage() {
               <Typography variant="body1">{property.location}</Typography>
             </Stack>
           </Box>
+
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<Settings size={18} />}
+            onClick={() => router.push(`/properties/${property.id}/edit`)}
+            sx={{
+              alignSelf: { xs: "stretch", sm: "center" },
+              px: 3,
+            }}
+          >
+            Edit Property
+          </Button>
         </Stack>
       </Box>
 
@@ -221,8 +336,8 @@ export default function PropertyDetailsPage() {
           <FinanceCard
             title="Funds"
             icon={Wallet}
-            currentValue={property.funds}
-            estimatedValue={property.estimatedFunds}
+            currentValue={stats.currentFunds}
+            estimatedValue={stats.estimatedFunds}
             color="#3b82f6"
             formatAmount={formatAmount}
           />
@@ -231,8 +346,8 @@ export default function PropertyDetailsPage() {
           <FinanceCard
             title="Profit"
             icon={TrendingUp}
-            currentValue={property.profit}
-            estimatedValue={property.estimatedProfit}
+            currentValue={stats.currentProfit}
+            estimatedValue={stats.estimatedProfit}
             color="#10b981"
             formatAmount={formatAmount}
             onAction={() => router.push(`/properties/${property.id}/payouts`)}
@@ -242,8 +357,8 @@ export default function PropertyDetailsPage() {
           <FinanceCard
             title="Expenses"
             icon={Receipt}
-            currentValue={property.currentExpense}
-            estimatedValue={property.estimatedExpense}
+            currentValue={stats.currentExpenses}
+            estimatedValue={stats.estimatedExpenses}
             color="#f43f5e"
             formatAmount={formatAmount}
             onAction={() => router.push(`/properties/${property.id}/expenses`)}
@@ -296,6 +411,11 @@ export default function PropertyDetailsPage() {
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
                                 Due on day {exp.day}
+                                {exp.pendingTo && (
+                                  <Box component="span" sx={{ ml: 1, fontStyle: "italic", opacity: 0.8 }}>
+                                    • Pending to {exp.pendingTo.name}
+                                  </Box>
+                                )}
                               </Typography>
                             </Box>
                           </Stack>

@@ -13,10 +13,14 @@ import {
   IconButton,
   InputAdornment,
   Autocomplete,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, Trash2, ArrowLeft, Save } from "lucide-react";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { createExpense } from "@/lib/actions/expense";
+import { getPendingToEntities } from "@/lib/actions/pending-to";
 import { useRouter, useParams } from "next/navigation";
 import { useCurrency } from "@/components/CurrencyContext";
 import NumericFormatInput from "@/components/NumericFormatInput";
@@ -24,12 +28,22 @@ import NumericFormatInput from "@/components/NumericFormatInput";
 export default function CreateExpensePage() {
   const router = useRouter();
   const params = useParams();
-  const propertyId = params.id;
+  const propertyId = params.id as string;
   const { currency } = useCurrency();
+  const [loading, setLoading] = React.useState(false);
 
-  const [items, setItems] = React.useState([
-    { id: 1, name: "", amount: "", date: new Date(), note: "" },
+  const [items, setItems] = React.useState<any[]>([
+    {
+      id: Date.now(),
+      name: "",
+      amount: "",
+      date: new Date(),
+      note: "",
+      status: "SETTLED",
+      pendingToId: "",
+    },
   ]);
+  const [entities, setEntities] = React.useState<any[]>([]);
   const [dictionary, setDictionary] = React.useState<string[]>([]);
 
   React.useEffect(() => {
@@ -55,31 +69,63 @@ export default function CreateExpensePage() {
         JSON.stringify(defaults),
       );
     }
+
+    const fetchEntities = async () => {
+      try {
+        const data = await getPendingToEntities();
+        setEntities(data);
+      } catch (e) {}
+    };
+    fetchEntities();
   }, []);
 
   const handleAddRow = () =>
     setItems([
       ...items,
-      { id: Date.now(), name: "", amount: "", date: new Date(), note: "" },
+      {
+        id: Date.now(),
+        name: "",
+        amount: "",
+        date: new Date(),
+        note: "",
+        status: "SETTLED",
+        pendingToId: "",
+      },
     ]);
 
   const handleRemove = (id: number) =>
     setItems(items.filter((i) => i.id !== id));
 
-  const handleChange = (
-    id: number,
-    field: "name" | "amount" | "note",
-    value: string,
-  ) => setItems(items.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
+  const handleChange = (id: number, field: string, value: any) =>
+    setItems(items.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
 
   const handleDateChange = (id: number, value: Date | null) =>
     setItems(
       items.map((i) => (i.id === id ? { ...i, date: value || new Date() } : i)),
     );
 
-  const handleSave = () => {
-    // TODO: save expenses
-    router.push(`/properties/${propertyId}/expenses`);
+  const handleSave = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      for (const item of items) {
+        if (!item.name || !item.amount) continue;
+        await createExpense({
+          name: item.name,
+          amount: parseFloat(item.amount),
+          date: item.date.toISOString(),
+          note: item.note,
+          propertyId,
+          status: item.status,
+          pendingToId: item.status === "PENDING" ? item.pendingToId : undefined,
+        });
+      }
+      router.push(`/properties/${propertyId}/expenses`);
+    } catch (error) {
+      console.error("Failed to save expenses:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -144,7 +190,7 @@ export default function CreateExpensePage() {
                         </IconButton>
                       </Box>
                     )}
-                    <Grid container spacing={2}>
+                    <Grid container spacing={3} alignItems="center">
                       <Grid size={12}>
                         <Autocomplete
                           fullWidth
@@ -162,6 +208,11 @@ export default function CreateExpensePage() {
                               {...params}
                               label="Expense Name"
                               placeholder="e.g. Transpo, Cleaning, Supplies"
+                              sx={{
+                                "& .MuiOutlinedInput-root": {
+                                  borderRadius: 1.5,
+                                },
+                              }}
                             />
                           )}
                         />
@@ -181,6 +232,11 @@ export default function CreateExpensePage() {
                               </InputAdornment>
                             ),
                           }}
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: 1.5,
+                            },
+                          }}
                         />
                       </Grid>
                       <Grid size={{ xs: 12, sm: 6 }}>
@@ -189,9 +245,103 @@ export default function CreateExpensePage() {
                           value={item.date}
                           onChange={(v) => handleDateChange(item.id, v)}
                           format="MMMM d, yyyy"
-                          slotProps={{ textField: { fullWidth: true } }}
+                          slotProps={{
+                            textField: {
+                              fullWidth: true,
+                              sx: {
+                                "& .MuiOutlinedInput-root": {
+                                  borderRadius: 1.5,
+                                },
+                              },
+                            },
+                          }}
                         />
                       </Grid>
+                      <Grid
+                        size={{
+                          xs: 12,
+                          sm: item.status === "PENDING" ? 6 : 12,
+                        }}
+                      >
+                        <ToggleButtonGroup
+                          fullWidth
+                          value={item.status}
+                          exclusive
+                          onChange={(_, v) =>
+                            v && handleChange(item.id, "status", v)
+                          }
+                          size="small"
+                          sx={{
+                            p: 0.5,
+                            borderRadius: 2,
+                            border: "1px solid",
+                            borderColor: "divider",
+                            height: 48,
+                            "& .MuiToggleButton-root": {
+                              border: "none",
+                              borderRadius: 1.5,
+                              textTransform: "none",
+                              fontWeight: 600,
+                              color: "text.secondary",
+                              "&.Mui-selected": {
+                                bgcolor: (t) =>
+                                  t.palette.mode === "light"
+                                    ? "rgba(0,0,0,0.04)"
+                                    : "rgba(255,255,255,0.06)",
+                                color: "text.primary",
+                                "&:hover": {
+                                  bgcolor: (t) =>
+                                    t.palette.mode === "light"
+                                      ? "rgba(0,0,0,0.06)"
+                                      : "rgba(255,255,255,0.08)",
+                                },
+                              },
+                              "&:hover": {
+                                bgcolor: (t) =>
+                                  t.palette.mode === "light"
+                                    ? "rgba(0,0,0,0.02)"
+                                    : "rgba(255,255,255,0.02)",
+                                color: "text.primary",
+                              },
+                            },
+                          }}
+                        >
+                          <ToggleButton value="SETTLED">Settled</ToggleButton>
+                          <ToggleButton value="PENDING">Pending</ToggleButton>
+                        </ToggleButtonGroup>
+                      </Grid>
+                      {item.status === "PENDING" && (
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <Autocomplete
+                            fullWidth
+                            options={entities}
+                            getOptionLabel={(option) => option.name}
+                            value={
+                              entities.find((e) => e.id === item.pendingToId) ||
+                              null
+                            }
+                            onChange={(_, newValue) =>
+                              handleChange(
+                                item.id,
+                                "pendingToId",
+                                newValue?.id || "",
+                              )
+                            }
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Pending To"
+                                placeholder="Select person or organization"
+                                sx={{
+                                  "& .MuiOutlinedInput-root": {
+                                    borderRadius: 1.5,
+                                  },
+                                }}
+                              />
+                            )}
+                          />
+                        </Grid>
+                      )}
                       <Grid size={12}>
                         <TextField
                           fullWidth
@@ -203,6 +353,11 @@ export default function CreateExpensePage() {
                           onChange={(e) =>
                             handleChange(item.id, "note", e.target.value)
                           }
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: 1.5,
+                            },
+                          }}
                         />
                       </Grid>
                     </Grid>
@@ -218,15 +373,24 @@ export default function CreateExpensePage() {
             <Button
               variant="outlined"
               onClick={() => router.push(`/properties/${propertyId}/expenses`)}
+              sx={{ borderRadius: 1.5, px: 3 }}
             >
               Cancel
             </Button>
             <Button
               variant="contained"
-              startIcon={<Save size={18} />}
+              startIcon={loading ? null : <Save size={18} />}
               onClick={handleSave}
+              disabled={loading}
+              sx={{
+                borderRadius: 1.5,
+                px: 3,
+                bgcolor: "text.primary",
+                color: "background.paper",
+                "&:hover": { bgcolor: "primary.main", opacity: 0.9 },
+              }}
             >
-              Save Expenses
+              {loading ? "Saving..." : "Save Expenses"}
             </Button>
           </Box>
         </Stack>

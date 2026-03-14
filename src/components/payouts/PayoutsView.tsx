@@ -31,17 +31,27 @@ import {
   Undo2,
   History,
 } from "lucide-react";
-import { format, parseISO, startOfMonth, endOfDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, endOfDay } from "date-fns";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { usePropertyStore, Payout } from "@/store/usePropertyStore";
+import { usePropertyStore, Property } from "@/store/usePropertyStore";
 import NumericFormatInput from "@/components/NumericFormatInput";
+import Loader from "@/components/Loader";
+
+export interface Payout {
+  id: string;
+  amount: number;
+  date: string;
+  propertyId: string;
+  refundAmount?: number;
+  status?: "PAID" | "REFUNDED" | "PARTIALLY_REFUNDED";
+}
 
 interface PayoutsViewProps {
-  propertyId: number | null;
+  propertyId: string | null;
 }
 
 interface RefundDialogProps {
@@ -195,39 +205,54 @@ function RevertConfirmationDialog({
   );
 }
 
+import { getProperty } from "@/lib/actions/property";
+import { refundPayout as refundPayoutAction, revertRefund as revertRefundAction } from "@/lib/actions/payout";
+
 export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const router = useRouter();
   const {
     properties,
     setSelectedProperty,
     selectedProperty,
-    payouts,
-    refundPayout,
-    revertRefund,
+    setProperties,
   } = usePropertyStore();
   const { formatAmount, currency } = useCurrency();
+
+  const [payouts, setPayouts] = React.useState<Payout[]>([]);
 
   const [refundDialogOpen, setRefundDialogOpen] = React.useState(false);
   const [revertDialogOpen, setRevertDialogOpen] = React.useState(false);
   const [selectedPayout, setSelectedPayout] = React.useState<Payout | null>(
     null,
   );
+  const [loading, setLoading] = React.useState(!selectedProperty || selectedProperty.id !== propertyId);
 
   // Initialize store if we're on a property-specific page but no property is selected
   React.useEffect(() => {
-    if (
-      propertyId &&
-      (!selectedProperty || selectedProperty.id !== propertyId)
-    ) {
-      const property = properties.find((p: any) => p.id === propertyId);
-      if (property) {
-        setSelectedProperty(property);
+    const fetchProperty = async () => {
+      if (!propertyId) return;
+
+      setLoading(true);
+      try {
+        const data = await getProperty(propertyId);
+        if (data) {
+          setSelectedProperty(data as any);
+          setPayouts(data.payouts as any);
+          setProperties(
+            properties.map((p) => (p.id === propertyId ? (data as any) : p))
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch property for payouts:", error);
+      } finally {
+        setLoading(false);
       }
-    }
-  }, [propertyId, selectedProperty, properties, setSelectedProperty]);
+    };
+    fetchProperty();
+  }, [propertyId, setSelectedProperty, setPayouts, setProperties]);
   const [filterRange, setFilterRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
-    end: new Date(),
+    end: endOfMonth(new Date()),
     type: "this-month",
   });
 
@@ -236,13 +261,13 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const itemsPerPage = 5;
 
   const filteredPayouts = React.useMemo(() => {
-    return payouts.filter((payout) => {
+    return payouts.filter((payout: any) => {
       // Filter by propertyId if provided
-      if (propertyId !== null && payout.propertyId !== propertyId) {
+      if (propertyId !== null && String(payout.propertyId) !== String(propertyId)) {
         return false;
       }
 
-      const payoutDate = parseISO(payout.date);
+      const payoutDate = new Date(payout.date);
       if (filterRange.start && filterRange.end) {
         return (
           payoutDate >= startOfMonth(filterRange.start) &&
@@ -272,11 +297,26 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
     setRefundDialogOpen(true);
   };
 
-  const handleRefundConfirm = (amount: number) => {
+  const handleRefundConfirm = async (amount: number) => {
     if (selectedPayout) {
-      refundPayout(selectedPayout.id, amount);
+      try {
+        const updated = await refundPayoutAction(selectedPayout.id, amount);
+        setPayouts((prev) =>
+          prev.map((p) => (p.id === updated.id ? (updated as any) : p))
+        );
+      } catch (error) {
+        console.error("Failed to refund payout:", error);
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <Loader message="Loading payouts..." />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -344,20 +384,26 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         <Box
           sx={{
             display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: { xs: "flex-start", sm: "center" },
+            gap: 1.5,
             mb: 3,
           }}
         >
           <Typography
             variant="h5"
-            sx={{ fontWeight: 700, color: "success.main" }}
+            sx={{ 
+              fontWeight: 700, 
+              color: "success.main",
+              fontSize: { xs: "1.25rem", sm: "1.5rem" }
+            }}
           >
             Total: {formatAmount(totalAmount)}
           </Typography>
 
           {totalPages > 1 && (
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack direction="row" spacing={2} alignItems="center" sx={{ alignSelf: { xs: "flex-end", sm: "center" } }}>
               <Typography variant="body2" color="text.secondary">
                 {(page - 1) * itemsPerPage + 1}–
                 {Math.min(page * itemsPerPage, filteredPayouts.length)} of{" "}
@@ -390,16 +436,16 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         spacing={2}
         sx={{ flexGrow: 1, display: "flex", flexDirection: "column", mb: 4 }}
       >
-        {paginatedPayouts.map((payout) => {
-          const isRefunded = payout.status === "refunded";
-          const isPartiallyRefunded = payout.status === "partially-refunded";
+        {paginatedPayouts.map((payout: any) => {
+          const isRefunded = payout.status === "REFUNDED";
+          const isPartiallyRefunded = payout.status === "PARTIALLY_REFUNDED";
           const displayAmount = payout.amount - (payout.refundAmount || 0);
 
           return (
             <Card
               key={payout.id}
               sx={{
-                p: 2,
+                p: { xs: 1.5, sm: 2 },
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -419,13 +465,13 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
             >
               <Stack
                 direction="row"
-                spacing={3}
+                spacing={{ xs: 2, sm: 3 }}
                 alignItems="center"
-                sx={{ flexGrow: 1 }}
+                sx={{ flexGrow: 1, minWidth: 0 }}
               >
                 <Box
                   sx={{
-                    p: 1.5,
+                    p: { xs: 1, sm: 1.5 },
                     bgcolor: (theme) =>
                       isRefunded
                         ? alpha(theme.palette.action.disabled, 0.1)
@@ -437,41 +483,46 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    flexShrink: 0,
                   }}
                 >
                   <WalletCards size={22} />
                 </Box>
 
-                <Box sx={{ minWidth: 200, flexGrow: 1 }}>
-                  <Stack direction="row" spacing={1} alignItems="center">
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 0.5, sm: 1 }} alignItems={{ xs: "flex-start", sm: "center" }}>
                     <Typography
                       variant="subtitle1"
                       sx={{
                         fontWeight: 600,
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
                         color: isRefunded ? "text.disabled" : "text.primary",
                         textDecoration: isRefunded ? "line-through" : "none",
+                        lineHeight: 1.2
                       }}
                     >
                       Property Payout
                     </Typography>
-                    {isRefunded && (
-                      <Chip
-                        label="Refunded"
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                        sx={{ height: 20, fontSize: "0.65rem" }}
-                      />
-                    )}
-                    {isPartiallyRefunded && (
-                      <Chip
-                        label="Partially Refunded"
-                        size="small"
-                        color="warning"
-                        variant="outlined"
-                        sx={{ height: 20, fontSize: "0.65rem" }}
-                      />
-                    )}
+                    <Box sx={{ display: "flex", gap: 0.5 }}>
+                      {isRefunded && (
+                        <Chip
+                          label="Refunded"
+                          size="small"
+                          color="error"
+                          variant="outlined"
+                          sx={{ height: 18, fontSize: "0.6rem" }}
+                        />
+                      )}
+                      {isPartiallyRefunded && (
+                        <Chip
+                          label="Partial Refund"
+                          size="small"
+                          color="warning"
+                          variant="outlined"
+                          sx={{ height: 18, fontSize: "0.6rem" }}
+                        />
+                      )}
+                    </Box>
                   </Stack>
                   <Stack
                     direction="row"
@@ -480,71 +531,79 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                   >
                     <Stack direction="row" spacing={0.5} alignItems="center">
                       <Calendar size={14} />
-                      <Typography variant="caption">
-                        {format(new Date(payout.date), "MMMM d, yyyy")}
+                      <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
+                        {format(new Date(payout.date), "MMM d, yyyy")}
                       </Typography>
                     </Stack>
                     {isPartiallyRefunded && (
-                      <Typography variant="caption" color="error.main">
+                      <Typography variant="caption" color="error.main" sx={{ display: { xs: 'none', sm: 'block' } }}>
                         Refunded: {formatAmount(payout.refundAmount || 0)}
                       </Typography>
                     )}
                   </Stack>
                 </Box>
 
-                <Box sx={{ textAlign: "right", minWidth: 120, mr: 2 }}>
+                <Box sx={{ textAlign: "right", ml: 1, flexShrink: 0 }}>
                   <Typography
                     variant="h6"
                     sx={{
                       fontWeight: 700,
                       color: isRefunded ? "text.disabled" : "success.main",
+                      fontSize: { xs: '0.95rem', sm: '1.25rem' }
                     }}
                   >
                     {formatAmount(displayAmount)}
                   </Typography>
+                  {isPartiallyRefunded && (
+                    <Typography variant="caption" color="error.main" sx={{ display: { xs: 'block', sm: 'none' }, fontSize: '0.65rem' }}>
+                      -{formatAmount(payout.refundAmount || 0)}
+                    </Typography>
+                  )}
                 </Box>
 
-                {(isRefunded || isPartiallyRefunded) && (
-                  <Tooltip title="Revert Refund" arrow>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedPayout(payout);
-                        setRevertDialogOpen(true);
-                      }}
-                      sx={{
-                        color: "text.secondary",
-                        "&:hover": {
-                          color: "primary.main",
-                          bgcolor: (theme) =>
-                            alpha(theme.palette.primary.main, 0.08),
-                        },
-                      }}
-                    >
-                      <History size={18} />
-                    </IconButton>
-                  </Tooltip>
-                )}
+                <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
+                  {(isRefunded || isPartiallyRefunded) && (
+                    <Tooltip title="Revert Refund" arrow>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPayout(payout);
+                          setRevertDialogOpen(true);
+                        }}
+                        sx={{
+                          color: "text.secondary",
+                          "&:hover": {
+                            color: "primary.main",
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.primary.main, 0.08),
+                          },
+                        }}
+                      >
+                        <History size={18} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
 
-                {(!isRefunded && !isPartiallyRefunded) && (
-                  <Tooltip title="Refund Payout" arrow>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleRefundClick(e, payout)}
-                      sx={{
-                        color: "text.secondary",
-                        "&:hover": {
-                          color: "error.main",
-                          bgcolor: (theme) =>
-                            alpha(theme.palette.error.main, 0.08),
-                        },
-                      }}
-                    >
-                      <Undo2 size={18} />
-                    </IconButton>
-                  </Tooltip>
-                )}
+                  {(!isRefunded && !isPartiallyRefunded) && (
+                    <Tooltip title="Refund Payout" arrow>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleRefundClick(e, payout)}
+                        sx={{
+                          color: "text.secondary",
+                          "&:hover": {
+                            color: "error.main",
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.error.main, 0.08),
+                          },
+                        }}
+                      >
+                        <Undo2 size={18} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
               </Stack>
             </Card>
           );
@@ -585,9 +644,16 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         open={revertDialogOpen}
         onClose={() => setRevertDialogOpen(false)}
         payout={selectedPayout}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (selectedPayout) {
-            revertRefund(selectedPayout.id);
+            try {
+              const updated = await revertRefundAction(selectedPayout.id);
+              setPayouts((prev) =>
+                prev.map((p) => (p.id === updated.id ? (updated as any) : p))
+              );
+            } catch (error) {
+              console.error("Failed to revert refund:", error);
+            }
           }
           setRevertDialogOpen(false);
         }}

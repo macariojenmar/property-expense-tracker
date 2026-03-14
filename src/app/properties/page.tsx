@@ -18,11 +18,37 @@ import { Plus, Home, MapPin, Wallet, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCurrency } from "@/components/CurrencyContext";
 import { usePropertyStore } from "@/store/usePropertyStore";
+import { getProperties } from "@/lib/actions/property";
+import Loader from "@/components/Loader";
 
 export default function PropertiesPage() {
   const router = useRouter();
   const { formatAmount } = useCurrency();
-  const { properties } = usePropertyStore();
+  const { properties, setProperties } = usePropertyStore();
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const data = await getProperties();
+        setProperties(data as any);
+      } catch (error) {
+        console.error("Failed to fetch properties:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [setProperties]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <Loader message="Loading your properties..." />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -123,7 +149,7 @@ export default function PropertiesPage() {
                     <Typography
                       variant="h6"
                       fontWeight={600}
-                      color="success.main"
+                      color={property.profit < 0 ? "error.main" : "success.main"}
                     >
                       {formatAmount(property.profit)}
                     </Typography>
@@ -143,8 +169,9 @@ export default function PropertiesPage() {
                     </Stack>
                     <Typography
                       variant="h6"
-                      fontWeight={500}
-                      sx={{ opacity: 0.8 }}
+                      fontWeight={600}
+                      color={property.funds < 0 ? "error.main" : "text.primary"}
+                      sx={{ opacity: property.funds < 0 ? 1 : 0.8 }}
                     >
                       {formatAmount(property.funds)}
                     </Typography>

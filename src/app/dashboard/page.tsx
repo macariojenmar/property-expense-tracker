@@ -25,7 +25,7 @@ import { useTheme } from "@mui/material/styles";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import PropertyFilter from "@/components/PropertyFilter";
-import { startOfMonth } from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
 import { usePropertyStore } from "@/store/usePropertyStore";
 
 const StatCard = ({
@@ -34,12 +34,14 @@ const StatCard = ({
   icon,
   color,
   trend,
+  isNegative,
 }: {
   title: string;
   value: string;
   icon: React.ReactNode;
   color?: string;
   trend?: string;
+  isNegative?: boolean;
 }) => {
   const theme = useTheme();
   const defaultColor = theme.palette.mode === "light" ? "#000000" : "#ffffff";
@@ -92,7 +94,11 @@ const StatCard = ({
         </Typography>
         <Typography
           variant="h4"
-          sx={{ fontWeight: 700, letterSpacing: "-0.02em" }}
+          sx={{ 
+            fontWeight: 700, 
+            letterSpacing: "-0.02em",
+            color: isNegative ? "error.main" : "text.primary"
+          }}
         >
           {value}
         </Typography>
@@ -121,7 +127,7 @@ export default function DashboardPage() {
 
   const [filterRange, setFilterRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
-    end: new Date(),
+    end: endOfMonth(new Date()),
     type: "this-month",
   });
 
@@ -169,18 +175,19 @@ export default function DashboardPage() {
         <Grid size={{ xs: 12, sm: 6, md: 6 }}>
           <StatCard
             title="Current Profit"
-            value={formatAmount(12400)}
+            value={formatAmount(totalProfit)}
             icon={<TrendingUp size={20} />}
             color="#10b981"
+            isNegative={totalProfit < 0}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 6 }}>
           <StatCard
             title="Estimated Profit"
-            value={formatAmount(18200)}
+            value={formatAmount(selectedProperty?.estimatedProfit || 0)}
             icon={<TrendingUp size={20} />}
             color="#3b82f6"
-            trend="+48%"
+            isNegative={(selectedProperty?.estimatedProfit || 0) < 0}
           />
         </Grid>
 
@@ -188,22 +195,23 @@ export default function DashboardPage() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Current Funds"
-            value={formatAmount(45250)}
+            value={formatAmount(totalFunds)}
             icon={<Wallet size={20} />}
+            isNegative={totalFunds < 0}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Estimated Funds"
-            value={formatAmount(52100)}
+            value={formatAmount(selectedProperty?.estimatedFunds || 0)}
             icon={<Calculator size={20} />}
-            trend="+15%"
+            isNegative={(selectedProperty?.estimatedFunds || 0) < 0}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Expenses"
-            value={formatAmount(32850)}
+            value={formatAmount(totalExpense)}
             icon={<TrendingDown size={20} />}
             color="#ef4444"
           />
@@ -211,10 +219,9 @@ export default function DashboardPage() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Estimated Expenses"
-            value={formatAmount(33900)}
+            value={formatAmount(selectedProperty?.estimatedExpense || 0)}
             icon={<TrendingDown size={20} />}
             color="#f97316"
-            trend="-3%"
           />
         </Grid>
       </Grid>
