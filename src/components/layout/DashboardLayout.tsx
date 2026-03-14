@@ -356,7 +356,6 @@ export default function DashboardLayout({
           mt: "64px",
           display: "flex",
           flexDirection: "column",
-          height: "calc(100vh - 64px)",
           overflow: "auto",
         }}
       >

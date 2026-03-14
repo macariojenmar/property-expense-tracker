@@ -204,15 +204,18 @@ export default function PropertyDetailsPage() {
               <Typography variant="body1">{property.location}</Typography>
             </Stack>
           </Box>
-          <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
-            <MonthFilter value={filterRange} onChange={setFilterRange} />
-          </Box>
         </Stack>
       </Box>
 
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Overview
-      </Typography>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 2 }}
+      >
+        <Typography variant="h6">Overview</Typography>
+        <MonthFilter value={filterRange} onChange={setFilterRange} />
+      </Stack>
       <Grid container spacing={4}>
         <Grid size={{ xs: 12, md: 4 }}>
           <FinanceCard
@@ -247,6 +250,76 @@ export default function PropertyDetailsPage() {
           />
         </Grid>
       </Grid>
+
+      {/* Recurring Expenses */}
+      {property.recurringExpenses && property.recurringExpenses.length > 0 && (
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Recurring Expenses
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Card
+                sx={{
+                  border: "1px solid",
+                  borderColor: alpha("#f43f5e", 0.15),
+                  bgcolor: "transparent",
+                }}
+              >
+                <CardContent>
+                  <Stack spacing={0}>
+                    {property.recurringExpenses.map((exp, index) => (
+                      <Box key={index}>
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          sx={{ py: 1.5 }}
+                        >
+                          <Stack direction="row" spacing={1.5} alignItems="center">
+                            <Box
+                              sx={{
+                                p: 0.75,
+                                borderRadius: 1.5,
+                                bgcolor: alpha("#f43f5e", 0.1),
+                                color: "#f43f5e",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Receipt size={16} />
+                            </Box>
+                            <Box>
+                              <Typography variant="body2" fontWeight={600}>
+                                {exp.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Due on day {exp.day}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                          <Typography
+                            variant="body1"
+                            fontWeight={700}
+                            color="#f43f5e"
+                            sx={{ opacity: 0.9 }}
+                          >
+                            {formatAmount(exp.amount)}
+                          </Typography>
+                        </Stack>
+                        {index < property.recurringExpenses.length - 1 && (
+                          <Divider sx={{ borderStyle: "dashed" }} />
+                        )}
+                      </Box>
+                    ))}
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
     </DashboardLayout>
   );
 }

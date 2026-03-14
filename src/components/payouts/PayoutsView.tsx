@@ -4,34 +4,22 @@ import * as React from "react";
 import {
   Box,
   Typography,
-  Grid,
   Card,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Stack,
-  TextField,
-  InputAdornment,
   IconButton,
   alpha,
-  Autocomplete,
 } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Plus,
-  Banknote,
   Calendar,
   ChevronRight,
   ChevronLeft,
   WalletCards,
-  Trash2,
 } from "lucide-react";
 import { format, parseISO, startOfMonth, endOfDay } from "date-fns";
 import { useCurrency } from "@/components/CurrencyContext";
-import NumericFormatInput from "@/components/NumericFormatInput";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 
 const mockPayouts = [
@@ -69,46 +57,11 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
       }
     }
   }, [propertyId, selectedProperty, properties, setSelectedProperty]);
-  const [open, setOpen] = React.useState(false);
-  const [newItems, setNewItems] = React.useState([
-    {
-      id: 1,
-      label: "Property Payout",
-      amount: "",
-      date: new Date(),
-    },
-  ]);
   const [filterRange, setFilterRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
     end: new Date(),
     type: "this-month",
   });
-  const [dictionary, setDictionary] = React.useState<string[]>([]);
-
-  React.useEffect(() => {
-    const saved = localStorage.getItem("propertyTracker_dictionary");
-    if (saved) {
-      try {
-        setDictionary(JSON.parse(saved));
-      } catch (e) {}
-    } else {
-      const defaults = [
-        "Internet",
-        "Rent",
-        "Transportation",
-        "Water Bill",
-        "Electricity Bill",
-        "Cleaning Fee",
-        "Maintenance",
-        "Property Tax",
-      ];
-      setDictionary(defaults);
-      localStorage.setItem(
-        "propertyTracker_dictionary",
-        JSON.stringify(defaults),
-      );
-    }
-  }, []);
 
   // Pagination state
   const [page, setPage] = React.useState(1);
@@ -192,7 +145,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
             <Button
               variant="contained"
               startIcon={<Plus size={18} />}
-              onClick={() => setOpen(true)}
+              onClick={() => router.push(`/properties/${propertyId}/payouts/create`)}
               fullWidth
               sx={{ height: 44, whiteSpace: "nowrap" }}
             >
@@ -348,170 +301,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         )}
       </Stack>
 
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Typography variant="h6" component="div">
-            Record Payouts
-          </Typography>
-          <Button
-            startIcon={<Plus size={16} />}
-            onClick={() =>
-              setNewItems([
-                ...newItems,
-                {
-                  id: Date.now(),
-                  label: "Property Payout",
-                  amount: "",
-                  date: new Date(),
-                },
-              ])
-            }
-            size="small"
-            variant="outlined"
-          >
-            Add Row
-          </Button>
-        </DialogTitle>
-        <DialogContent dividers sx={{ p: 0 }}>
-          {newItems.map((item, index) => (
-            <Box
-              key={item.id}
-              sx={{
-                p: 3,
-                borderBottom: index < newItems.length - 1 ? 1 : 0,
-                borderColor: "divider",
-                position: "relative",
-              }}
-            >
-              {newItems.length > 1 && (
-                <IconButton
-                  size="small"
-                  onClick={() =>
-                    setNewItems(newItems.filter((i) => i.id !== item.id))
-                  }
-                  sx={{
-                    position: "absolute",
-                    top: 12,
-                    right: 12,
-                    color: "error.main",
-                  }}
-                >
-                  <Trash2 size={18} />
-                </IconButton>
-              )}
-              <Stack spacing={2} sx={{ mt: newItems.length > 1 ? 2 : 0 }}>
-                <Grid container spacing={2}>
-                  <Grid size={12}>
-                    <Autocomplete
-                      fullWidth
-                      freeSolo
-                      options={dictionary}
-                      value={item.label}
-                      onChange={(e, newValue) =>
-                        setNewItems(
-                          newItems.map((i) =>
-                            i.id === item.id
-                              ? { ...i, label: newValue || "" }
-                              : i,
-                          ),
-                        )
-                      }
-                      onInputChange={(e, newInputValue) =>
-                        setNewItems(
-                          newItems.map((i) =>
-                            i.id === item.id
-                              ? { ...i, label: newInputValue }
-                              : i,
-                          ),
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Payout Label"
-                          placeholder="e.g. Rent, Salary"
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <NumericFormatInput
-                      fullWidth
-                      label="Amount"
-                      value={item.amount as string}
-                      onChange={(e: any) =>
-                        setNewItems(
-                          newItems.map((i) =>
-                            i.id === item.id
-                              ? { ...i, amount: e.target.value }
-                              : i,
-                          ),
-                        )
-                      }
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            {currency.symbol}
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <DatePicker
-                      label="Date"
-                      value={item.date}
-                      onChange={(newValue) =>
-                        setNewItems(
-                          newItems.map((i) =>
-                            i.id === item.id
-                              ? { ...i, date: newValue || new Date() }
-                              : i,
-                          ),
-                        )
-                      }
-                      format="MMMM d, yyyy"
-                      slotProps={{ textField: { fullWidth: true } }}
-                    />
-                  </Grid>
-                </Grid>
-              </Stack>
-            </Box>
-          ))}
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setOpen(false)} color="inherit">
-            Cancel
-          </Button>
-          <Button
-            onClick={() => {
-              setOpen(false);
-              setNewItems([
-                {
-                  id: Date.now(),
-                  label: "Property Payout",
-                  amount: "",
-                  date: new Date(),
-                },
-              ]);
-            }}
-            variant="contained"
-          >
-            Save Payouts
-          </Button>
-        </DialogActions>
-      </Dialog>
+
     </DashboardLayout>
   );
 }
