@@ -10,7 +10,17 @@ const signUpSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-export async function signUp(prevState: any, formData: FormData) {
+export type SignUpState = {
+  errors?: {
+    name?: string[];
+    email?: string[];
+    password?: string[];
+    message?: string[];
+  };
+  success?: boolean;
+} | null;
+
+export async function signUp(prevState: SignUpState, formData: FormData): Promise<SignUpState> {
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;

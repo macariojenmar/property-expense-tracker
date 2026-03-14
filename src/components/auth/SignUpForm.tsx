@@ -11,13 +11,13 @@ import {
   Link,
   Container,
 } from "@mui/material";
-import { signUp } from "@/lib/actions/auth";
+import { signUp, type SignUpState } from "@/lib/actions/auth";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function SignUpForm() {
   const router = useRouter();
-  const [state, action, pending] = useActionState(signUp, null);
+  const [state, action, pending] = useActionState<SignUpState, FormData>(signUp, null);
 
   useEffect(() => {
     if (state?.success) {
@@ -35,7 +35,7 @@ export default function SignUpForm() {
           Join Airbnb Property Tracker
         </Typography>
 
-        {state?.errors && "message" in state.errors && (
+        {state?.errors?.message && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {state.errors.message[0]}
           </Alert>
