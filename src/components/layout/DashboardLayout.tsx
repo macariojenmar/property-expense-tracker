@@ -30,6 +30,7 @@ import {
   BookText,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 import PropertySwitcher from "@/components/layout/PropertySwitcher";
 import { ColorModeContext } from "@/components/ThemeRegistry";
 import { alpha } from "@mui/material/styles";
@@ -48,6 +49,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const colorMode = React.useContext(ColorModeContext);
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const { data: session } = useSession();
   const { selectedProperty, setSelectedProperty } = usePropertyStore();
 
   const menuItems = React.useMemo(() => {
@@ -235,7 +237,10 @@ export default function DashboardLayout({
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
-          <ListItemButton sx={{ borderRadius: 2, color: "error.main" }}>
+          <ListItemButton 
+            sx={{ borderRadius: 2, color: "error.main" }}
+            onClick={() => signOut({ callbackUrl: "/login" })}
+          >
             <ListItemIcon sx={{ minWidth: 40, color: "error.main" }}>
               <LogOut size={20} />
             </ListItemIcon>
@@ -303,7 +308,7 @@ export default function DashboardLayout({
                 ml: 1,
               }}
             >
-              JD
+              {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "U"}
             </Avatar>
           </Box>
         </Toolbar>
