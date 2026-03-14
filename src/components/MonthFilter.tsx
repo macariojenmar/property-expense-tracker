@@ -89,7 +89,7 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
 
   return (
     <Box ref={anchorRef} sx={{ position: "relative" }}>
-      <FormControl size="small" sx={{ width: 220 }}>
+      <FormControl size="small" sx={{ width: { xs: "100%", sm: 220 } }}>
         <Select
           value={value.type}
           onChange={handleSelectChange}

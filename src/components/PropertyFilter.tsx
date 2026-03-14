@@ -54,7 +54,7 @@ export default function PropertyFilter({
   };
 
   return (
-    <FormControl size="small" sx={{ width: 220 }}>
+    <FormControl size="small" sx={{ width: { xs: "100%", sm: 220 } }}>
       <Select
         value={value === null ? "all" : value.toString()}
         displayEmpty
