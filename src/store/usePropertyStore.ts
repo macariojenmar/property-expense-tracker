@@ -6,6 +6,15 @@ export interface RecurringExpense {
   day: number;
 }
 
+export interface Payout {
+  id: number;
+  amount: number;
+  date: string;
+  propertyId: number;
+  refundAmount?: number;
+  status?: "paid" | "refunded" | "partially-refunded";
+}
+
 export interface Property {
   id: number;
   name: string;
@@ -22,9 +31,21 @@ export interface Property {
 
 interface PropertyStore {
   properties: Property[];
+  payouts: Payout[];
   selectedProperty: Property | null;
   setSelectedProperty: (property: Property | null) => void;
+  refundPayout: (payoutId: number, amount: number) => void;
+  revertRefund: (payoutId: number) => void;
 }
+
+const mockPayouts: Payout[] = [
+  { id: 1, amount: 15250, date: "2026-03-08", propertyId: 1 },
+  { id: 2, amount: 12100, date: "2026-02-28", propertyId: 2 },
+  { id: 3, amount: 18400, date: "2026-03-20", propertyId: 1 },
+  { id: 4, amount: 14200, date: "2026-03-25", propertyId: 2 },
+  { id: 5, amount: 9800, date: "2026-03-28", propertyId: 1 },
+  { id: 6, amount: 16500, date: "2026-03-30", propertyId: 2 },
+];
 
 const mockProperties: Property[] = [
   {
@@ -64,6 +85,36 @@ const mockProperties: Property[] = [
 
 export const usePropertyStore = create<PropertyStore>((set) => ({
   properties: mockProperties,
+  payouts: mockPayouts,
   selectedProperty: null,
   setSelectedProperty: (property) => set({ selectedProperty: property }),
+  refundPayout: (payoutId, amount) =>
+    set((state) => ({
+      payouts: state.payouts.map((p) => {
+        if (p.id === payoutId) {
+          const totalRefunded = (p.refundAmount || 0) + amount;
+          const status =
+            totalRefunded >= p.amount ? "refunded" : "partially-refunded";
+          return {
+            ...p,
+            refundAmount: totalRefunded,
+            status,
+          };
+        }
+        return p;
+      }),
+    })),
+  revertRefund: (payoutId) =>
+    set((state) => ({
+      payouts: state.payouts.map((p) => {
+        if (p.id === payoutId) {
+          return {
+            ...p,
+            refundAmount: undefined,
+            status: undefined,
+          };
+        }
+        return p;
+      }),
+    })),
 }));

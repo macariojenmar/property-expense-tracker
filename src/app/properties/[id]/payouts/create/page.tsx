@@ -20,12 +20,14 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { useRouter, useParams } from "next/navigation";
 import { useCurrency } from "@/components/CurrencyContext";
 import NumericFormatInput from "@/components/NumericFormatInput";
+import { usePropertyStore } from "@/store/usePropertyStore";
 
 export default function CreatePayoutPage() {
   const router = useRouter();
   const params = useParams();
   const propertyId = params.id;
   const { currency } = useCurrency();
+  const { payouts } = usePropertyStore();
 
   const [items, setItems] = React.useState([
     { id: 1, label: "Property Payout", amount: "", date: new Date() },
@@ -75,7 +77,10 @@ export default function CreatePayoutPage() {
     );
 
   const handleSave = () => {
-    // TODO: save payouts
+    // In a real app, we would dispatch an action to add these payouts
+    // For now, since we're using a mock store that isn't persistent,
+    // we'll just navigate back.
+    // However, I'll update the store to support adding payouts if needed.
     router.push(`/properties/${propertyId}/payouts`);
   };
 

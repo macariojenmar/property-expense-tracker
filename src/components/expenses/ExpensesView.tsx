@@ -730,7 +730,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                           variant="body2"
                           fontWeight={600}
                           sx={{
-                            color: isAdded ? "text.secondary" : "text.primary",
+                            color: (isAdded || waivedSet.has(i)) ? "text.secondary" : "text.primary",
                           }}
                         >
                           {exp.name}
@@ -747,7 +747,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                         onChange={(e: any) =>
                           handleAmountChange(i, e.target.value)
                         }
-                        disabled={isAdded}
+                        disabled={isAdded || waivedSet.has(i)}
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">
