@@ -13,7 +13,14 @@ import {
   alpha,
   useTheme,
 } from "@mui/material";
-import { ArrowLeft, TrendingUp, Wallet, Receipt, MapPin, Settings } from "lucide-react";
+import {
+  ArrowLeft,
+  TrendingUp,
+  Wallet,
+  Receipt,
+  MapPin,
+  Settings,
+} from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { usePropertyStore } from "@/store/usePropertyStore";
@@ -89,9 +96,9 @@ const FinanceCard = ({
             <Typography
               variant="h3"
               fontWeight={700}
-              sx={{ 
+              sx={{
                 letterSpacing: "-0.02em",
-                color: currentValue < 0 ? "#f43f5e" : "text.primary"
+                color: currentValue < 0 ? "#f43f5e" : "text.primary",
               }}
             >
               {formatAmount(currentValue)}
@@ -129,12 +136,8 @@ const FinanceCard = ({
 export default function PropertyDetailsPage() {
   const router = useRouter();
   const params = useParams();
-  const {
-    properties,
-    setSelectedProperty,
-    selectedProperty,
-    setProperties,
-  } = usePropertyStore();
+  const { properties, setSelectedProperty, selectedProperty, setProperties } =
+    usePropertyStore();
   const { formatAmount } = useCurrency();
   const [loading, setLoading] = React.useState(true);
   const [filterRange, setFilterRange] = React.useState<DateRange>({
@@ -155,7 +158,7 @@ export default function PropertyDetailsPage() {
           setSelectedProperty(data as any);
           // Also update in properties list if it exists
           setProperties(
-            properties.map((p) => (p.id === propertyId ? (data as any) : p))
+            properties.map((p) => (p.id === propertyId ? (data as any) : p)),
           );
         }
       } catch (error) {
@@ -182,49 +185,62 @@ export default function PropertyDetailsPage() {
     }
 
     const { start, end } = filterRange;
-    
+
     // Filter transactions by date range
-    const rangeExpenses = (property.expenses as any[]).filter(e => {
+    const rangeExpenses = (property.expenses as any[]).filter((e) => {
       const d = new Date(e.date);
       return d >= start && d <= end;
     });
-    
-    const rangePayouts = (property.payouts as any[]).filter(p => {
+
+    const rangePayouts = (property.payouts as any[]).filter((p) => {
       const d = new Date(p.date);
       return d >= start && d <= end;
     });
 
     // Current Values for the range
     const currentExpenses = rangeExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const rangePayoutTotal = rangePayouts.reduce((sum, p) => sum + (p.amount - (p.refundAmount || 0)), 0);
+    const rangePayoutTotal = rangePayouts.reduce(
+      (sum, p) => sum + (p.amount - (p.refundAmount || 0)),
+      0,
+    );
     const currentProfit = rangePayoutTotal - currentExpenses;
 
     // Funds is cumulative up to the 'end' date
-    const allPriorExpenses = (property.expenses as any[]).filter(e => new Date(e.date) <= end);
-    const allPriorPayouts = (property.payouts as any[]).filter(p => new Date(p.date) <= end);
-    const cumulativeProfit = allPriorPayouts.reduce((sum, p) => sum + (p.amount - (p.refundAmount || 0)), 0) - 
-                             allPriorExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const allPriorExpenses = (property.expenses as any[]).filter(
+      (e) => new Date(e.date) <= end,
+    );
+    const allPriorPayouts = (property.payouts as any[]).filter(
+      (p) => new Date(p.date) <= end,
+    );
+    const cumulativeProfit =
+      allPriorPayouts.reduce(
+        (sum, p) => sum + (p.amount - (p.refundAmount || 0)),
+        0,
+      ) - allPriorExpenses.reduce((sum, e) => sum + e.amount, 0);
     const currentFunds = (property.initialFunds || 0) + cumulativeProfit;
 
     // Estimations
     // For simplicity, we estimate by adding pending recurring expenses if the range includes the current/future months
     const now = new Date();
     let estimatedAddon = 0;
-    
+
     // Only add recurring expenses if the filter end date is at least the end of this month
     if (end >= startOfMonth(now)) {
       const recurring = (property.recurringExpenses as any[]) || [];
       const waived = (property.waivedRecurringExpenses as any[]) || [];
-      
-      recurring.forEach(re => {
+
+      recurring.forEach((re) => {
         // Check if this recurring expense has already been recorded in THIS month
         // In a real app, we'd check if an expense with type 'RECURRING' and this name exists for this month
         // For now, let's assume if it's not waived and we are looking at this month, it's an estimated expense
-        const isWaived = waived.some(w => w.recurringExpenseId === re.id && 
-                                        new Date(w.date).getMonth() === now.getMonth() &&
-                                        new Date(w.date).getFullYear() === now.getFullYear());
-        
-        const alreadyRecorded = rangeExpenses.some(e => e.name === re.name); // Simple heuristic
+        const isWaived = waived.some(
+          (w) =>
+            w.recurringExpenseId === re.id &&
+            new Date(w.date).getMonth() === now.getMonth() &&
+            new Date(w.date).getFullYear() === now.getFullYear(),
+        );
+
+        const alreadyRecorded = rangeExpenses.some((e) => e.name === re.name); // Simple heuristic
 
         if (!isWaived && !alreadyRecorded) {
           estimatedAddon += re.amount;
@@ -391,7 +407,11 @@ export default function PropertyDetailsPage() {
                           alignItems="center"
                           sx={{ py: 1.5 }}
                         >
-                          <Stack direction="row" spacing={1.5} alignItems="center">
+                          <Stack
+                            direction="row"
+                            spacing={1.5}
+                            alignItems="center"
+                          >
                             <Box
                               sx={{
                                 p: 0.75,
@@ -409,11 +429,21 @@ export default function PropertyDetailsPage() {
                               <Typography variant="body2" fontWeight={600}>
                                 {exp.name}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 Due on day {exp.day}
                                 {exp.pendingTo && (
-                                  <Box component="span" sx={{ ml: 1, fontStyle: "italic", opacity: 0.8 }}>
-                                    • Pending to {exp.pendingTo.name}
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      ml: 1,
+                                      fontStyle: "italic",
+                                      opacity: 0.8,
+                                    }}
+                                  >
+                                    • {exp.pendingTo.name}
                                   </Box>
                                 )}
                               </Typography>
