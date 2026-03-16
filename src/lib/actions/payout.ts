@@ -18,7 +18,7 @@ export async function getPayouts(propertyId: string) {
       property: { userId: session.user.id },
       status: { not: "DELETED" },
     },
-    orderBy: { date: "desc" },
+    orderBy: { date: "desc", createdAt: "desc" },
   });
 }
 

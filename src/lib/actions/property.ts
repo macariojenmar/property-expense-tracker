@@ -16,10 +16,12 @@ export async function getProperties() {
     include: {
       expenses: {
         where: { status: { not: "DELETED" } },
-        include: { pendingTo: true }
+        include: { pendingTo: true },
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       },
       payouts: {
-        where: { status: { not: "DELETED" } }
+        where: { status: { not: "DELETED" } },
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       },
       recurringExpenses: { include: { pendingTo: true } },
       waivedRecurringExpenses: true,
@@ -68,12 +70,12 @@ export async function getProperty(id: string) {
     include: {
       expenses: {
         where: { status: { not: "DELETED" } },
-        orderBy: { date: "desc" },
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
         include: { pendingTo: true }
       },
       payouts: {
         where: { status: { not: "DELETED" } },
-        orderBy: { date: "desc" }
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }]
       },
       recurringExpenses: { include: { pendingTo: true } },
       waivedRecurringExpenses: true,

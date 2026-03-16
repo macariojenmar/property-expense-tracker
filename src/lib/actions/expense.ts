@@ -18,7 +18,7 @@ export async function getExpenses(propertyId: string) {
       status: { not: "DELETED" },
     },
     include: { pendingTo: true },
-    orderBy: { date: "desc" },
+    orderBy: { date: "desc", createdAt: "desc" },
   });
 }
 
