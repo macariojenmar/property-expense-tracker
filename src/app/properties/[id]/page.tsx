@@ -371,9 +371,9 @@ export default function PropertyDetailsPage() {
 
       {/* Recurring Expenses */}
       {property.recurringExpenses && property.recurringExpenses.length > 0 && (
-        <Box sx={{ mt: 4, mb: 10 }}>
-          <Grid container spacing={4}>
-            <Grid size={{ xs: 12, md: 6 }}>
+        <Box sx={{ mt: 4, mb: 2 }}>
+          <Grid container spacing={4} alignItems="stretch">
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", flexDirection: "column" }}>
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Recurring Expenses
               </Typography>
@@ -383,16 +383,12 @@ export default function PropertyDetailsPage() {
                   borderColor: alpha("#f43f5e", 0.15),
                   bgcolor: "transparent",
                   mb: { xs: 2, md: 0 },
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
                 }}
               >
                 <CardContent>
-                  <Typography
-                    variant="subtitle2"
-                    color="text.secondary"
-                    sx={{ mb: 2, fontWeight: 600 }}
-                  >
-                    Recurring List
-                  </Typography>
                   <Stack spacing={0}>
                     {property.recurringExpenses.map((exp, index) => (
                       <Box key={index}>
@@ -449,15 +445,17 @@ export default function PropertyDetailsPage() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", flexDirection: "column" }}>
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Financial Health
               </Typography>
-              <CompactFinancialStats
-                expenses={rangeData.expenses}
-                payouts={rangeData.payouts}
-                formatAmount={formatAmount}
-              />
+              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                <CompactFinancialStats
+                  expenses={rangeData.expenses}
+                  payouts={rangeData.payouts}
+                  formatAmount={formatAmount}
+                />
+              </Box>
             </Grid>
           </Grid>
         </Box>
