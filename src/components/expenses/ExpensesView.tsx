@@ -47,7 +47,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import NumericFormatInput from "@/components/NumericFormatInput";
-import { usePropertyStore, Expense, RecurringExpense, WaivedRecurringExpense } from "@/store/usePropertyStore";
+import { usePropertyStore, Property, Expense, RecurringExpense, WaivedRecurringExpense } from "@/store/usePropertyStore";
 import Loader from "@/components/Loader";
 import EmptyState from "@/components/EmptyState";
 
