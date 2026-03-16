@@ -78,7 +78,6 @@ interface RecurringExpense {
   pendingTo?: { name: string };
 }
 
-import { getProperty } from "@/lib/actions/property";
 import {
   createExpense,
   deleteExpense,
@@ -94,42 +93,22 @@ import { CheckCircle } from "lucide-react";
 
 export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const router = useRouter();
-  const { properties, setSelectedProperty, selectedProperty, setProperties } =
+  const { properties, setSelectedProperty, selectedProperty, isLoading, refresh, setIsSaving } =
     usePropertyStore();
   const { formatAmount, currency } = useCurrency();
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
   const [expenses, setExpenses] = React.useState<Expense[]>([]);
 
   // Initialize store if we're on a property-specific page but no property is selected
   React.useEffect(() => {
-    const fetchProperty = async () => {
-      if (!propertyId) return;
-
-      setLoading(true);
-      try {
-        const data = await getProperty(propertyId);
-        if (data) {
-          setSelectedProperty(data as any);
-          setExpenses(data.expenses as any);
-
-          // Use functional update to ensure we don't depend on stale closure
-          setProperties((prev: any[]) => {
-            if (prev.some((p: any) => p.id === propertyId)) {
-              return prev.map((p: any) =>
-                p.id === propertyId ? (data as any) : p,
-              );
-            }
-            return [...prev, data as any];
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch property for expenses:", error);
-      } finally {
-        setLoading(false);
+    if (propertyId && properties.length > 0) {
+      const found = properties.find((p) => p.id === propertyId);
+      if (found) {
+        setSelectedProperty(found);
+        setExpenses((found.expenses as any) || []);
       }
-    };
-    fetchProperty();
-  }, [propertyId, setSelectedProperty, setExpenses, setProperties]);
+    }
+  }, [propertyId, properties, setSelectedProperty]);
 
   const [filterRange, setFilterRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
@@ -146,12 +125,15 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const handleSettleIndividual = async (id: string) => {
     if (!propertyId) return;
     try {
+      setIsSaving(true);
       await settleExpenses([id], propertyId);
       setExpenses((prev) =>
         prev.map((exp) => (exp.id === id ? { ...exp, status: "SETTLED" } : exp)),
       );
     } catch (error) {
       console.error("Failed to settle expense:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -224,15 +206,19 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
 
   // ── Recurring expenses state ────────────────────────────────────────────────
   // Prioritize selectedProperty if it matches propertyId, then search in properties list
-  const property = (
-    selectedProperty?.id === propertyId
+  const property = React.useMemo(() => {
+    return selectedProperty?.id === propertyId
       ? selectedProperty
-      : properties.find((p: any) => p.id === propertyId)
-  ) as any;
-  const recurringExpenses = (property?.recurringExpenses ??
-    []) as RecurringExpense[];
-  const waivedRecurringExpenses = ((property as any)?.waivedRecurringExpenses ??
-    []) as any[];
+      : properties.find((p: any) => p.id === propertyId);
+  }, [selectedProperty, properties, propertyId]) as any;
+
+  const recurringExpenses = React.useMemo(() => {
+    return (property?.recurringExpenses ?? []) as RecurringExpense[];
+  }, [property]);
+
+  const waivedRecurringExpenses = React.useMemo(() => {
+    return ((property as any)?.waivedRecurringExpenses ?? []) as any[];
+  }, [property]);
 
   // Month key e.g. "2026-03"
   const monthKey = format(new Date(), "yyyy-MM");
@@ -278,7 +264,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       initial[exp.id] = String(exp.amount);
     });
     setEditedAmounts(initial);
-  }, [property]);
+  }, [recurringExpenses]);
 
   const allChecked =
     recurringExpenses.length > 0 &&
@@ -310,19 +296,24 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
 
     if (waivedSet.has(recurringExpId)) {
       try {
+        setIsSaving(true);
         await unwaiveRecurringExpense({
           recurringExpenseId: recurringExpId,
           monthKey,
           propertyId,
         });
         // State will refresh from getProperty in useEffect or we can update locally
-        const updated = await getProperty(propertyId);
-        if (updated) setSelectedProperty(updated as any);
+        await refresh();
+        const updated = usePropertyStore.getState().selectedProperty;
+        if (updated) setExpenses((updated as any).expenses || []);
       } catch (error) {
         console.error("Failed to unwaive:", error);
+      } finally {
+        setIsSaving(false);
       }
     } else {
       try {
+        setIsSaving(true);
         await waiveRecurringExpense({
           recurringExpenseId: recurringExpId,
           monthKey,
@@ -332,10 +323,13 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         nextChecked.delete(recurringExpId);
         setCheckedSet(nextChecked);
 
-        const updated = await getProperty(propertyId);
-        if (updated) setSelectedProperty(updated as any);
+        await refresh();
+        const updated = usePropertyStore.getState().selectedProperty;
+        if (updated) setExpenses((updated as any).expenses || []);
       } catch (error) {
         console.error("Failed to waive:", error);
+      } finally {
+        setIsSaving(false);
       }
     }
   };
@@ -367,6 +361,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     if (checkedAndAvailable.length === 0 || !propertyId) return;
 
     setLoading(true);
+    setIsSaving(true);
     try {
       const today = format(new Date(), "yyyy-MM-dd");
       for (const id of checkedAndAvailable) {
@@ -386,10 +381,10 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         });
       }
 
-      const updated = await getProperty(propertyId);
+      await refresh();
+      const updated = usePropertyStore.getState().selectedProperty;
       if (updated) {
-        setSelectedProperty(updated as any);
-        setExpenses(updated.expenses as any);
+        setExpenses((updated as any).expenses || []);
       }
 
       // Deselect the just-added ones
@@ -400,6 +395,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       console.error("Failed to add selected recurring:", error);
     } finally {
       setLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -410,6 +406,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     if (!recurring) return;
 
     try {
+      setIsSaving(true);
       await createExpense({
         name: recurring.name,
         amount: parseFloat(editedAmounts[id] || "0"),
@@ -422,13 +419,15 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         pendingToId: recurring.pendingToId,
       });
 
-      const updated = await getProperty(propertyId);
+      await refresh();
+      const updated = usePropertyStore.getState().selectedProperty;
       if (updated) {
-        setSelectedProperty(updated as any);
-        setExpenses(updated.expenses as any);
+        setExpenses((updated as any).expenses || []);
       }
     } catch (error) {
       console.error("Failed to add recurring expense:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -441,16 +440,15 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
 
     if (expenseToDelele) {
       try {
+        setIsSaving(true);
         const { deleteExpense } = await import("@/lib/actions/expense");
         await deleteExpense(expenseToDelele.id);
 
-        const updated = await getProperty(propertyId);
-        if (updated) {
-          setSelectedProperty(updated as any);
-          setExpenses(updated.expenses as any);
-        }
+        await refresh();
       } catch (error) {
         console.error("Failed to revert expense:", error);
+      } finally {
+        setIsSaving(false);
       }
     }
   };
@@ -459,6 +457,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     if (checkedAndAdded.length === 0 || !propertyId) return;
 
     setLoading(true);
+    setIsSaving(true);
     try {
       const { deleteExpense } = await import("@/lib/actions/expense");
       for (const id of checkedAndAdded) {
@@ -469,10 +468,10 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         }
       }
 
-      const updated = await getProperty(propertyId);
+      await refresh();
+      const updated = usePropertyStore.getState().selectedProperty;
       if (updated) {
-        setSelectedProperty(updated as any);
-        setExpenses(updated.expenses as any);
+        setExpenses((updated as any).expenses || []);
       }
 
       // Deselect
@@ -483,6 +482,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       console.error("Failed to revert selected:", error);
     } finally {
       setLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -490,6 +490,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     if (checkedToWaive.length === 0 || !propertyId) return;
 
     setLoading(true);
+    setIsSaving(true);
     try {
       for (const id of checkedToWaive) {
         await waiveRecurringExpense({
@@ -499,8 +500,9 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         });
       }
 
-      const updated = await getProperty(propertyId);
-      if (updated) setSelectedProperty(updated as any);
+      await refresh();
+      const updated = usePropertyStore.getState().selectedProperty;
+      if (updated) setExpenses((updated as any).expenses || []);
 
       // Deselect
       const nextChecked = new Set(checkedSet);
@@ -510,6 +512,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       console.error("Failed to waive selected:", error);
     } finally {
       setLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -517,6 +520,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     if (checkedToUnwaive.length === 0 || !propertyId) return;
 
     setLoading(true);
+    setIsSaving(true);
     try {
       for (const id of checkedToUnwaive) {
         await unwaiveRecurringExpense({
@@ -526,8 +530,9 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         });
       }
 
-      const updated = await getProperty(propertyId);
-      if (updated) setSelectedProperty(updated as any);
+      await refresh();
+      const updated = usePropertyStore.getState().selectedProperty;
+      if (updated) setExpenses((updated as any).expenses || []);
 
       // Deselect
       const nextChecked = new Set(checkedSet);
@@ -537,6 +542,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       console.error("Failed to unwaive selected:", error);
     } finally {
       setLoading(false);
+      setIsSaving(false);
     }
   };
 

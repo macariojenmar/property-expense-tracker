@@ -25,6 +25,7 @@ import NumericFormatInput from "@/components/NumericFormatInput";
 import { getProperty, updateProperty } from "@/lib/actions/property";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
 import Loader from "@/components/Loader";
+import { usePropertyStore } from "@/store/usePropertyStore";
 
 type PendingTo = {
   id: string;
@@ -36,6 +37,7 @@ export default function EditPropertyPage() {
   const params = useParams();
   const id = params.id as string;
   const { currency } = useCurrency();
+  const { refresh, setIsSaving } = usePropertyStore();
   
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
@@ -120,6 +122,7 @@ export default function EditPropertyPage() {
   const handleUpdate = async () => {
     if (!name || saving) return;
     setSaving(true);
+    setIsSaving(true);
     try {
       await updateProperty(id, {
         name,
@@ -135,11 +138,13 @@ export default function EditPropertyPage() {
             pendingToId: exp.pendingToId || undefined,
           })),
       });
+      await refresh();
       router.push(`/properties/${id}`);
     } catch (error) {
       console.error("Failed to update property:", error);
     } finally {
       setSaving(false);
+      setIsSaving(false);
     }
   };
 

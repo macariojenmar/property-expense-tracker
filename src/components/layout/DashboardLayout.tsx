@@ -16,6 +16,7 @@ import {
   IconButton,
   Avatar,
   useTheme,
+  LinearProgress,
 } from "@mui/material";
 import {
   Building2,
@@ -50,7 +51,7 @@ export default function DashboardLayout({
   const colorMode = React.useContext(ColorModeContext);
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const { data: session } = useSession();
-  const { selectedProperty, setSelectedProperty } = usePropertyStore();
+  const { selectedProperty, setSelectedProperty, isSaving, isLoading } = usePropertyStore();
 
   const menuItems = React.useMemo(() => {
     const baseItems: Array<{
@@ -312,6 +313,18 @@ export default function DashboardLayout({
             </Avatar>
           </Box>
         </Toolbar>
+        {(isSaving || isLoading) && (
+          <LinearProgress 
+            sx={{ 
+              position: "absolute", 
+              bottom: 0, 
+              left: 0, 
+              right: 0, 
+              height: 2,
+              zIndex: (theme) => theme.zIndex.appBar + 1,
+            }} 
+          />
+        )}
       </AppBar>
       <Box
         component="nav"

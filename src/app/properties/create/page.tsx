@@ -25,6 +25,7 @@ import { useCurrency } from "@/components/CurrencyContext";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import { createProperty } from "@/lib/actions/property";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
+import { usePropertyStore } from "@/store/usePropertyStore";
 
 type PendingTo = {
   id: string;
@@ -34,6 +35,7 @@ type PendingTo = {
 export default function CreatePropertyPage() {
   const router = useRouter();
   const { currency } = useCurrency();
+  const { setIsSaving } = usePropertyStore();
   const [name, setName] = React.useState("");
   const [location, setLocation] = React.useState("");
   const [initialFunds, setInitialFunds] = React.useState("");
@@ -114,6 +116,7 @@ export default function CreatePropertyPage() {
   const handleCreate = async () => {
     if (!name) return;
     setLoading(true);
+    setIsSaving(true);
     try {
       await createProperty({
         name,
@@ -128,11 +131,13 @@ export default function CreatePropertyPage() {
             pendingToId: exp.pendingToId || undefined,
           })),
       });
+      await usePropertyStore.getState().refresh();
       router.push("/properties");
     } catch (error) {
       console.error("Failed to create property:", error);
     } finally {
       setLoading(false);
+      setIsSaving(false);
     }
   };
 

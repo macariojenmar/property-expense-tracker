@@ -28,6 +28,7 @@ export default function CreatePayoutPage() {
   const params = useParams();
   const propertyId = params.id as string;
   const { currency } = useCurrency();
+  const { setIsSaving } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
 
   const [items, setItems] = React.useState([
@@ -80,6 +81,7 @@ export default function CreatePayoutPage() {
   const handleSave = async () => {
     if (loading) return;
     setLoading(true);
+    setIsSaving(true);
     try {
       for (const item of items) {
         if (!item.amount) continue;
@@ -94,6 +96,7 @@ export default function CreatePayoutPage() {
       console.error("Failed to save payouts:", error);
     } finally {
       setLoading(false);
+      setIsSaving(false);
     }
   };
 

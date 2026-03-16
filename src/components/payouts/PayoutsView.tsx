@@ -37,6 +37,7 @@ import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { usePropertyStore, Property } from "@/store/usePropertyStore";
+import { refundPayout as refundPayoutAction, revertRefund as revertRefundAction } from "@/lib/actions/payout";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import Loader from "@/components/Loader";
 import EmptyState from "@/components/EmptyState";
@@ -205,16 +206,15 @@ function RevertConfirmationDialog({
   );
 }
 
-import { getProperty } from "@/lib/actions/property";
-import { refundPayout as refundPayoutAction, revertRefund as revertRefundAction } from "@/lib/actions/payout";
-
 export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const router = useRouter();
   const {
     properties,
     setSelectedProperty,
     selectedProperty,
-    setProperties,
+    isLoading,
+    refresh,
+    setIsSaving
   } = usePropertyStore();
   const { formatAmount, currency } = useCurrency();
 
@@ -225,31 +225,18 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const [selectedPayout, setSelectedPayout] = React.useState<Payout | null>(
     null,
   );
-  const [loading, setLoading] = React.useState(!selectedProperty || selectedProperty.id !== propertyId);
+  const [loading, setLoading] = React.useState(false);
 
   // Initialize store if we're on a property-specific page but no property is selected
   React.useEffect(() => {
-    const fetchProperty = async () => {
-      if (!propertyId) return;
-
-      setLoading(true);
-      try {
-        const data = await getProperty(propertyId);
-        if (data) {
-          setSelectedProperty(data as any);
-          setPayouts(data.payouts as any);
-          setProperties(
-            properties.map((p) => (p.id === propertyId ? (data as any) : p))
-          );
-        }
-      } catch (error) {
-        console.error("Failed to fetch property for payouts:", error);
-      } finally {
-        setLoading(false);
+    if (propertyId && properties.length > 0) {
+      const found = properties.find((p) => p.id === propertyId);
+      if (found) {
+        setSelectedProperty(found);
+        setPayouts((found.payouts as any) || []);
       }
-    };
-    fetchProperty();
-  }, [propertyId, setSelectedProperty, setPayouts, setProperties]);
+    }
+  }, [propertyId, properties, setSelectedProperty]);
   const [filterRange, setFilterRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
     end: endOfMonth(new Date()),
@@ -300,12 +287,15 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const handleRefundConfirm = async (amount: number) => {
     if (selectedPayout) {
       try {
-        const updated = await refundPayoutAction(selectedPayout.id, amount);
-        setPayouts((prev) =>
-          prev.map((p) => (p.id === updated.id ? (updated as any) : p))
-        );
+        setIsSaving(true);
+        await refundPayoutAction(selectedPayout.id, amount);
+        await refresh();
+        const updated = usePropertyStore.getState().selectedProperty;
+        if (updated) setPayouts((updated as any).payouts || []);
       } catch (error) {
         console.error("Failed to refund payout:", error);
+      } finally {
+        setIsSaving(false);
       }
     }
   };
@@ -632,12 +622,15 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         onConfirm={async () => {
           if (selectedPayout) {
             try {
-              const updated = await revertRefundAction(selectedPayout.id);
-              setPayouts((prev) =>
-                prev.map((p) => (p.id === updated.id ? (updated as any) : p))
-              );
+              setIsSaving(true);
+              await revertRefundAction(selectedPayout.id);
+              await refresh();
+              const updated = usePropertyStore.getState().selectedProperty;
+              if (updated) setPayouts((updated as any).payouts || []);
             } catch (error) {
               console.error("Failed to revert refund:", error);
+            } finally {
+              setIsSaving(false);
             }
           }
           setRevertDialogOpen(false);

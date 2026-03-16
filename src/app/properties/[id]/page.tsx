@@ -11,7 +11,6 @@ import {
   Button,
   Divider,
   alpha,
-  useTheme,
 } from "@mui/material";
 import {
   ArrowLeft,
@@ -27,7 +26,6 @@ import { usePropertyStore } from "@/store/usePropertyStore";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import { startOfMonth, endOfMonth } from "date-fns";
-import { getProperty } from "@/lib/actions/property";
 import Loader from "@/components/Loader";
 
 const FinanceCard = ({
@@ -136,10 +134,9 @@ const FinanceCard = ({
 export default function PropertyDetailsPage() {
   const router = useRouter();
   const params = useParams();
-  const { properties, setSelectedProperty, selectedProperty, setProperties } =
+  const { properties, setSelectedProperty, selectedProperty, isLoading } =
     usePropertyStore();
   const { formatAmount } = useCurrency();
-  const [loading, setLoading] = React.useState(true);
   const [filterRange, setFilterRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
     end: endOfMonth(new Date()),
@@ -149,26 +146,13 @@ export default function PropertyDetailsPage() {
   const propertyId = typeof params.id === "string" ? params.id : null;
 
   React.useEffect(() => {
-    const fetchProperty = async () => {
-      if (!propertyId) return;
-      setLoading(true);
-      try {
-        const data = await getProperty(propertyId);
-        if (data) {
-          setSelectedProperty(data as any);
-          // Also update in properties list if it exists
-          setProperties(
-            properties.map((p) => (p.id === propertyId ? (data as any) : p)),
-          );
-        }
-      } catch (error) {
-        console.error("Failed to fetch property:", error);
-      } finally {
-        setLoading(false);
+    if (propertyId && properties.length > 0) {
+      const found = properties.find((p) => p.id === propertyId);
+      if (found) {
+        setSelectedProperty(found);
       }
-    };
-    fetchProperty();
-  }, [propertyId, setSelectedProperty, setProperties]);
+    }
+  }, [propertyId, properties, setSelectedProperty]);
 
   const property = selectedProperty;
 
@@ -258,7 +242,7 @@ export default function PropertyDetailsPage() {
     };
   }, [property, filterRange]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <Loader message="Loading property details..." />

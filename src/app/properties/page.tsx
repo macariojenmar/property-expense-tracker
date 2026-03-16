@@ -18,32 +18,15 @@ import { Plus, Home, MapPin, Wallet, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCurrency } from "@/components/CurrencyContext";
 import { usePropertyStore } from "@/store/usePropertyStore";
-import { getProperties } from "@/lib/actions/property";
 import Loader from "@/components/Loader";
 import EmptyState from "@/components/EmptyState";
 
 export default function PropertiesPage() {
   const router = useRouter();
   const { formatAmount } = useCurrency();
-  const { properties, setProperties } = usePropertyStore();
-  const [loading, setLoading] = React.useState(true);
+  const { properties, isLoading } = usePropertyStore();
 
-  React.useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const data = await getProperties();
-        setProperties(data as any);
-      } catch (error) {
-        console.error("Failed to fetch properties:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [setProperties]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <Loader message="Loading your properties..." />
