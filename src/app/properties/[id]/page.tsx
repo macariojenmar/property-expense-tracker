@@ -11,6 +11,7 @@ import {
   Button,
   Divider,
   alpha,
+  Tooltip,
 } from "@mui/material";
 import {
   ArrowLeft,
@@ -19,6 +20,7 @@ import {
   Receipt,
   MapPin,
   Settings,
+  Info,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -36,6 +38,7 @@ const FinanceCard = ({
   estimatedValue,
   color,
   formatAmount,
+  description,
   onAction,
 }: {
   title: string;
@@ -44,6 +47,7 @@ const FinanceCard = ({
   estimatedValue: number;
   color: string;
   formatAmount: (val: number) => string;
+  description: string;
   onAction?: () => void;
 }) => {
   return (
@@ -85,6 +89,11 @@ const FinanceCard = ({
             <Typography variant="h6" fontWeight={600} color="text.secondary">
               {title}
             </Typography>
+            <Tooltip title={description} placement="top">
+              <Box sx={{ color: "text.secondary", opacity: 0.6, cursor: "help", display: "flex", ml: 0.5 }}>
+                <Info size={16} />
+              </Box>
+            </Tooltip>
           </Stack>
         </Stack>
 
@@ -343,6 +352,7 @@ export default function PropertyDetailsPage() {
             estimatedValue={stats.estimatedFunds}
             color="#3b82f6"
             formatAmount={formatAmount}
+            description="Total cash available for the property, including initial funds and all net profits to date."
           />
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
@@ -353,6 +363,7 @@ export default function PropertyDetailsPage() {
             estimatedValue={stats.estimatedProfit}
             color="#10b981"
             formatAmount={formatAmount}
+            description="Net income for the selected period (Payouts minus Expenses)."
             onAction={() => router.push(`/properties/${property.id}/payouts`)}
           />
         </Grid>
@@ -364,6 +375,7 @@ export default function PropertyDetailsPage() {
             estimatedValue={stats.estimatedExpenses}
             color="#f43f5e"
             formatAmount={formatAmount}
+            description="Total costs incurred during the selected period."
             onAction={() => router.push(`/properties/${property.id}/expenses`)}
           />
         </Grid>
