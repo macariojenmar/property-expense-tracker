@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -51,6 +51,16 @@ const FinanceCard = ({
   description: string;
   onAction?: () => void;
 }) => {
+  const [open, setOpen] = useState(false);
+
+  const handleTooltipClose = () => {
+    setOpen(false);
+  };
+
+  const handleTooltipToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpen(!open);
+  };
   return (
     <Card
       onClick={onAction}
@@ -90,12 +100,14 @@ const FinanceCard = ({
             <Typography variant="h6" fontWeight={600} color="text.secondary">
               {title}
             </Typography>
-            <Tooltip title={description} placement="top">
-              <IconButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-              >
+            <Tooltip
+              title={description}
+              placement="top"
+              open={open}
+              onClose={handleTooltipClose}
+              disableHoverListener
+            >
+              <IconButton onClick={handleTooltipToggle}>
                 <Info size={16} color="grey" />
               </IconButton>
             </Tooltip>

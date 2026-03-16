@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Card,
@@ -37,6 +37,15 @@ const StatItem = ({
   isPercent?: boolean;
 }) => {
   const theme = useTheme();
+  const [open, setOpen] = useState(false);
+
+  const handleTooltipClose = () => {
+    setOpen(false);
+  };
+
+  const handleTooltipToggle = () => {
+    setOpen(!open);
+  };
   const displayColor = color || theme.palette.text.primary;
 
   return (
@@ -69,8 +78,14 @@ const StatItem = ({
         >
           {label}
         </Typography>
-        <Tooltip title={description} placement="top">
-          <IconButton>
+        <Tooltip
+          title={description}
+          placement="top"
+          open={open}
+          onClose={handleTooltipClose}
+          disableHoverListener
+        >
+          <IconButton onClick={handleTooltipToggle} size="small">
             <Info size={16} color="grey" />
           </IconButton>
         </Tooltip>
