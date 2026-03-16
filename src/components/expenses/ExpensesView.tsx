@@ -5,7 +5,6 @@ import {
   Box,
   Typography,
   Card,
-  CardContent,
   Button,
   Stack,
   IconButton,
@@ -53,7 +52,7 @@ import EmptyState from "@/components/EmptyState";
 
 // Local interfaces removed in favor of store interfaces
 
-const mockExpenses: Expense[] = [];
+// Local interfaces removed in favor of store interfaces
 
 interface ExpensesViewProps {
   propertyId: string | null;
@@ -63,16 +62,14 @@ interface ExpensesViewProps {
 
 import {
   createExpense,
-  deleteExpense,
   settleExpenses,
-  unsettleExpenses,
 } from "@/lib/actions/expense";
 import {
   waiveRecurringExpense,
   unwaiveRecurringExpense,
 } from "@/lib/actions/recurring-expense";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
-import { CheckCircle } from "lucide-react";
+// import { CheckCircle } from "lucide-react";
 
 export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const router = useRouter();
@@ -80,7 +77,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     properties,
     setSelectedProperty,
     selectedProperty,
-    isLoading,
     refresh,
     setIsSaving,
   } = usePropertyStore();
@@ -1369,6 +1365,11 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         {paginatedExpenses.map((expense) => (
           <Card
             key={expense.id}
+            onClick={() =>
+              router.push(
+                `/properties/${propertyId}/expenses/${expense.id}/edit`,
+              )
+            }
             sx={{
               p: { xs: 1.5, sm: 2 },
               transition: "all 0.2s",
@@ -1379,7 +1380,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
             }}
           >
             <Grid container spacing={2} alignItems="center">
-              {/* Column 1: Content (Icon + Name + Date) */}
+              {/* Column 1: Content (Icon + Name + Date + Status) */}
               <Grid size={{ xs: 12, md: 4 }}>
                 <Stack
                   direction="row"
@@ -1405,14 +1406,19 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                     <BanknoteArrowDown size={22} />
                   </Box>
 
-                  <Stack spacing={1}>
+                  <Stack spacing={0.5} sx={{ minWidth: 0 }}>
                     <Typography
                       variant="subtitle1"
                       sx={{
                         fontWeight: 600,
                         fontSize: { xs: "0.9rem", sm: "1rem" },
                         lineHeight: 1.2,
-                        mb: 0.5,
+                        mb: 0.25,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 1,
+                        WebkitBoxOrient: "vertical",
                       }}
                     >
                       {expense.name}
@@ -1422,7 +1428,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                       direction="row"
                       spacing={0.5}
                       alignItems="center"
-                      color={"text.secondary"}
+                      color="text.secondary"
                     >
                       <Calendar size={14} />
                       <Typography
@@ -1432,14 +1438,11 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                         {format(new Date(expense.date), "MMM d, yyyy")}
                       </Typography>
                     </Stack>
-                    <Stack direction={"row"} alignItems={"center"} gap={0.5}>
+
+                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.5 }}>
                       <Chip
-                        label={
-                          expense.status === "PENDING" ? "Pending" : "Settled"
-                        }
-                        size="small"
+                        label={expense.status === "PENDING" ? "Pending" : "Settled"}
                         sx={{
-                          width: "fit-content",
                           fontSize: "0.65rem",
                           fontWeight: 700,
                           bgcolor: (t) =>
@@ -1447,22 +1450,16 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                               ? alpha(t.palette.warning.main, 0.1)
                               : alpha(t.palette.success.main, 0.1),
                           color: (t) =>
-                            expense.status === "PENDING"
-                              ? "warning.main"
-                              : "success.main",
+                            expense.status === "PENDING" ? "warning.main" : "success.main",
                         }}
                       />
                       {expense.status === "PENDING" && expense.pendingTo && (
                         <Typography
                           variant="caption"
                           color="text.secondary"
-                          sx={{
-                            fontSize: "0.7rem",
-                            fontStyle: "italic",
-                            whiteSpace: "nowrap",
-                          }}
+                          sx={{ fontSize: "0.65rem" }}
                         >
-                          to {expense.pendingTo.name}
+                          To: {expense.pendingTo.name}
                         </Typography>
                       )}
                     </Stack>
@@ -1479,7 +1476,11 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                       <Typography
                         variant="body2"
                         color="text.secondary"
-                        noWrap
+                        sx={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
                       >
                         {expense.note}
                       </Typography>
