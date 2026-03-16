@@ -22,14 +22,23 @@ export async function getProperties() {
     orderBy: { createdAt: "desc" },
   });
 
+  interface PayoutQueryResult {
+    amount: number;
+    refundAmount: number | null;
+  }
+
+  interface ExpenseQueryResult {
+    amount: number;
+  }
+
   // Calculate fields that were mock in the frontend
-  return properties.map((property: any) => {
+  return properties.map((property) => {
     const totalPayouts = property.payouts.reduce(
-      (sum: number, p: any) => sum + (p.amount - (p.refundAmount || 0)),
+      (sum: number, p: PayoutQueryResult) => sum + (p.amount - (p.refundAmount || 0)),
       0
     );
     const totalExpenses = property.expenses.reduce(
-      (sum: number, e: any) => sum + e.amount,
+      (sum: number, e: ExpenseQueryResult) => sum + e.amount,
       0
     );
     const profit = totalPayouts - totalExpenses;
@@ -65,11 +74,12 @@ export async function getProperty(id: string) {
   if (!property) return null;
 
   const totalPayouts = property.payouts.reduce(
-    (sum: number, p: any) => sum + (p.amount - (p.refundAmount || 0)),
+    (sum: number, p: { amount: number; refundAmount: number | null }) => 
+      sum + (p.amount - (p.refundAmount || 0)),
     0
   );
   const totalExpenses = property.expenses.reduce(
-    (sum: number, e: any) => sum + e.amount,
+    (sum: number, e: { amount: number }) => sum + e.amount,
     0
   );
   const profit = totalPayouts - totalExpenses;

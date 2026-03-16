@@ -13,7 +13,6 @@ import {
   IconButton,
   InputAdornment,
   Popover,
-  Paper,
   ButtonBase,
   Autocomplete,
 } from "@mui/material";
@@ -186,7 +185,7 @@ export default function CreatePropertyPage() {
                     fullWidth
                     label="Current Funds"
                     value={initialFunds}
-                    onChange={(e: any) => setInitialFunds(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInitialFunds(e.target.value)}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -272,7 +271,7 @@ export default function CreatePropertyPage() {
                           size="small"
                           label="Amount"
                           value={exp.amount}
-                          onChange={(e: any) =>
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             handleExpenseChange(index, "amount", e.target.value)
                           }
                           InputProps={{
@@ -292,7 +291,7 @@ export default function CreatePropertyPage() {
                           value={exp.day}
                           onClick={(e) =>
                             handleDayClick(
-                              e as unknown as React.MouseEvent<HTMLDivElement>,
+                              e as React.MouseEvent<HTMLDivElement>,
                               index,
                             )
                           }

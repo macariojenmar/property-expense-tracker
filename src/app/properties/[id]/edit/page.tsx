@@ -32,6 +32,14 @@ type PendingTo = {
   name: string;
 };
 
+interface RecurringExpenseState {
+  id?: string;
+  name: string;
+  amount: string;
+  day: number;
+  pendingToId: string;
+}
+
 export default function EditPropertyPage() {
   const router = useRouter();
   const params = useParams();
@@ -44,7 +52,7 @@ export default function EditPropertyPage() {
   const [name, setName] = React.useState("");
   const [location, setLocation] = React.useState("");
   const [initialFunds, setInitialFunds] = React.useState("");
-  const [recurringExpenses, setRecurringExpenses] = React.useState<any[]>([]);
+  const [recurringExpenses, setRecurringExpenses] = React.useState<RecurringExpenseState[]>([]);
   const [entities, setEntities] = React.useState<PendingTo[]>([]);
   const [dictionaryWords, setDictionaryWords] = React.useState<string[]>([]);
   
@@ -64,7 +72,7 @@ export default function EditPropertyPage() {
           setName(propertyData.name);
           setLocation(propertyData.location || "");
           setInitialFunds(String(propertyData.initialFunds || 0));
-          setRecurringExpenses(propertyData.recurringExpenses.map(re => ({
+          setRecurringExpenses(propertyData.recurringExpenses.map((re: { id: string, name: string, amount: number, day: number, pendingToId?: string | null }) => ({
             id: re.id,
             name: re.name,
             amount: String(re.amount),
@@ -201,7 +209,7 @@ export default function EditPropertyPage() {
                     fullWidth
                     label="Current Funds"
                     value={initialFunds}
-                    onChange={(e: any) => setInitialFunds(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInitialFunds(e.target.value)}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -261,7 +269,7 @@ export default function EditPropertyPage() {
                           label="Day"
                           size="small"
                           value={exp.day}
-                          onClick={(e) => handleDayClick(e as any, index)}
+                          onClick={(e: React.MouseEvent<HTMLDivElement>) => handleDayClick(e, index)}
                           sx={{ cursor: "pointer", '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
                           InputProps={{ readOnly: true, sx: { cursor: "pointer" } }}
                         />
@@ -272,7 +280,7 @@ export default function EditPropertyPage() {
                           size="small"
                           label="Amount"
                           value={exp.amount}
-                          onChange={(e: any) => handleExpenseChange(index, "amount", e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleExpenseChange(index, "amount", e.target.value)}
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start">{currency.symbol}</InputAdornment>

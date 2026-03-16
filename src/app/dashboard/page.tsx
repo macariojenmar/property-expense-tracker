@@ -16,7 +16,6 @@ import {
   Calculator,
   TrendingDown,
 } from "lucide-react";
-import { useTheme } from "@mui/material/styles";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import { startOfMonth, endOfMonth } from "date-fns";
@@ -32,7 +31,7 @@ const StatCard = ({
 }: {
   title: string;
   amount: string;
-  icon: any;
+  icon: React.ElementType;
   trend?: string;
   color?: string;
 }) => (
@@ -77,8 +76,7 @@ const StatCard = ({
 
 export default function DashboardPage() {
   const { formatAmount } = useCurrency();
-  const { selectedProperty, properties } = usePropertyStore();
-  const selectedPropertyId = selectedProperty?.id || null;
+  const { selectedProperty } = usePropertyStore();
 
   const [dateRange, setDateRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
@@ -87,7 +85,7 @@ export default function DashboardPage() {
   });
 
   return (
-    <DashboardLayout title="Financial Dashboard">
+    <DashboardLayout>
       <Box sx={{ mb: 4 }}>
         <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} spacing={2}>
           <Box>
@@ -103,7 +101,7 @@ export default function DashboardPage() {
       </Box>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Total Revenue"
             amount={formatAmount(0)}
@@ -112,7 +110,7 @@ export default function DashboardPage() {
             color="success"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Total Expenses"
             amount={formatAmount(0)}
@@ -121,7 +119,7 @@ export default function DashboardPage() {
             color="error"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Net Profit"
             amount={formatAmount(0)}
@@ -130,7 +128,7 @@ export default function DashboardPage() {
             color="primary"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Profit Margin"
             amount="0%"

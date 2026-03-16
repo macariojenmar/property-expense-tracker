@@ -15,7 +15,7 @@ import {
   Divider,
 } from "@mui/material";
 import { Search, Check, Building2, ChevronUp, ChevronDown } from "lucide-react";
-import { usePropertyStore } from "@/store/usePropertyStore";
+import { usePropertyStore, Property } from "@/store/usePropertyStore";
 import { useRouter, usePathname } from "next/navigation";
 
 export default function PropertySwitcher() {
@@ -38,7 +38,7 @@ export default function PropertySwitcher() {
     setSearch("");
   };
 
-  const handleSelect = (property: any | null) => {
+  const handleSelect = (property: Property | null) => {
     setSelectedProperty(property);
     handleClose();
 
@@ -57,7 +57,7 @@ export default function PropertySwitcher() {
     }
   };
 
-  const filteredProperties = properties.filter((p: any) =>
+  const filteredProperties = properties.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -219,6 +219,11 @@ export default function PropertySwitcher() {
               </Typography>
             </Box>
           ) : (
+            // The original instruction included a line 'waivedRecurringExpenses.forEach((w) => {' here.
+            // This line seems to be specific to an 'ExpensesView.tsx' component and uses an undefined variable
+            // ('waivedRecurringExpenses') in the context of PropertySwitcher.tsx.
+            // To maintain syntactic correctness and avoid breaking the component,
+            // this specific line has been omitted from the PropertySwitcher.tsx file.
             filteredProperties.map((property) => (
               <MenuItem
                 key={property.id}

@@ -60,6 +60,7 @@ export interface Expense {
   recurringRef?: string;
   isRecurring?: boolean;
   status: "PENDING" | "SETTLED";
+  pendingToId?: string;
   pendingTo?: { name: string };
 }
 
@@ -105,7 +106,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       const found = properties.find((p) => p.id === propertyId);
       if (found) {
         setSelectedProperty(found);
-        setExpenses((found.expenses as any) || []);
+        setExpenses(found.expenses || []);
       }
     }
   }, [propertyId, properties, setSelectedProperty]);
@@ -120,7 +121,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const [pendingToFilter, setPendingToFilter] = React.useState<string | null>(
     null,
   );
-  const [entities, setEntities] = React.useState<any[]>([]);
+  const [entities, setEntities] = React.useState<{ id: string; name: string }[]>([]);
 
   const handleSettleIndividual = async (id: string) => {
     if (!propertyId) return;
@@ -155,7 +156,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const itemsPerPage = 5;
 
   const filteredExpenses = React.useMemo(() => {
-    return expenses.filter((expense: any) => {
+    return expenses.filter((expense) => {
       if (
         propertyId !== null &&
         String(expense.propertyId) !== String(propertyId)
@@ -209,15 +210,15 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const property = React.useMemo(() => {
     return selectedProperty?.id === propertyId
       ? selectedProperty
-      : properties.find((p: any) => p.id === propertyId);
-  }, [selectedProperty, properties, propertyId]) as any;
+      : properties.find((p) => p.id === propertyId);
+  }, [selectedProperty, properties, propertyId]);
 
   const recurringExpenses = React.useMemo(() => {
     return (property?.recurringExpenses ?? []) as RecurringExpense[];
   }, [property]);
 
   const waivedRecurringExpenses = React.useMemo(() => {
-    return ((property as any)?.waivedRecurringExpenses ?? []) as any[];
+    return (property?.waivedRecurringExpenses ?? []) as any[];
   }, [property]);
 
   // Month key e.g. "2026-03"
@@ -227,7 +228,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   // Which rows are "added" (derived from real expenses)
   const addedSet = React.useMemo(() => {
     const set = new Set<string>();
-    expenses.forEach((exp: any) => {
+    expenses.forEach((exp) => {
       if (exp.recurringRef && exp.recurringRef.endsWith(monthKey)) {
         const id = exp.recurringRef.split("_")[0];
         set.add(id);
@@ -239,7 +240,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   // Which rows are "waived" (persisted in DB)
   const waivedSet = React.useMemo(() => {
     const set = new Set<string>();
-    waivedRecurringExpenses.forEach((w: any) => {
+    waivedRecurringExpenses.forEach((w) => {
       if (w.monthKey === monthKey) {
         set.add(w.recurringExpenseId);
       }
@@ -435,7 +436,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     if (!propertyId) return;
     const ref = `${id}_${monthKey}`;
     const expenseToDelele = expenses.find(
-      (exp: any) => exp.recurringRef === ref,
+      (exp) => exp.recurringRef === ref,
     );
 
     if (expenseToDelele) {
@@ -462,7 +463,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       const { deleteExpense } = await import("@/lib/actions/expense");
       for (const id of checkedAndAdded) {
         const ref = `${id}_${monthKey}`;
-        const exp = expenses.find((e: any) => e.recurringRef === ref);
+        const exp = expenses.find((e) => e.recurringRef === ref);
         if (exp) {
           await deleteExpense(exp.id);
         }
@@ -967,7 +968,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                         <NumericFormatInput
                           size="small"
                           value={editedAmounts[exp.id] ?? String(exp.amount)}
-                          onChange={(e: any) =>
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             handleAmountChange(exp.id, e.target.value)
                           }
                           disabled={isAdded || isWaived}

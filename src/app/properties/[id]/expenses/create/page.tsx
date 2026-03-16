@@ -26,6 +26,16 @@ import { useCurrency } from "@/components/CurrencyContext";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import { usePropertyStore } from "@/store/usePropertyStore";
 
+interface ExpenseItem {
+  id: number;
+  name: string;
+  amount: string;
+  date: Date;
+  note: string;
+  status: "PENDING" | "SETTLED";
+  pendingToId: string;
+}
+
 export default function CreateExpensePage() {
   const router = useRouter();
   const params = useParams();
@@ -34,7 +44,7 @@ export default function CreateExpensePage() {
   const { setIsSaving } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
 
-  const [items, setItems] = React.useState<any[]>([
+  const [items, setItems] = React.useState<ExpenseItem[]>([
     {
       id: Date.now(),
       name: "",
@@ -45,7 +55,7 @@ export default function CreateExpensePage() {
       pendingToId: "",
     },
   ]);
-  const [entities, setEntities] = React.useState<any[]>([]);
+  const [entities, setEntities] = React.useState<{ id: string; name: string }[]>([]);
   const [dictionary, setDictionary] = React.useState<string[]>([]);
 
   React.useEffect(() => {
@@ -53,7 +63,7 @@ export default function CreateExpensePage() {
     if (saved) {
       try {
         setDictionary(JSON.parse(saved));
-      } catch (e) {}
+      } catch { /* ignored */ }
     } else {
       const defaults = [
         "Internet",
@@ -76,7 +86,7 @@ export default function CreateExpensePage() {
       try {
         const data = await getPendingToEntities();
         setEntities(data);
-      } catch (e) {}
+      } catch { /* ignored */ }
     };
     fetchEntities();
   }, []);
@@ -98,7 +108,7 @@ export default function CreateExpensePage() {
   const handleRemove = (id: number) =>
     setItems(items.filter((i) => i.id !== id));
 
-  const handleChange = (id: number, field: string, value: any) =>
+  const handleChange = (id: number, field: string, value: string) =>
     setItems(items.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
 
   const handleDateChange = (id: number, value: Date | null) =>
@@ -226,7 +236,7 @@ export default function CreateExpensePage() {
                           fullWidth
                           label="Amount"
                           value={item.amount}
-                          onChange={(e: any) =>
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             handleChange(item.id, "amount", e.target.value)
                           }
                           InputProps={{

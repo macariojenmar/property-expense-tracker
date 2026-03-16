@@ -41,7 +41,7 @@ export default function CreatePayoutPage() {
     if (saved) {
       try {
         setDictionary(JSON.parse(saved));
-      } catch (e) {}
+      } catch { /* ignored */ }
     } else {
       const defaults = [
         "Internet",
@@ -189,7 +189,7 @@ export default function CreatePayoutPage() {
                           fullWidth
                           label="Amount"
                           value={item.amount}
-                          onChange={(e: any) =>
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             handleChange(item.id, "amount", e.target.value)
                           }
                           InputProps={{

@@ -138,7 +138,7 @@ function RefundDialog({ open, onClose, payout, onRefund }: RefundDialogProps) {
               fullWidth
               label="Refund Amount"
               value={customAmount}
-              onChange={(e: any) => setCustomAmount(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomAmount(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -233,7 +233,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
       const found = properties.find((p) => p.id === propertyId);
       if (found) {
         setSelectedProperty(found);
-        setPayouts((found.payouts as any) || []);
+        setPayouts(found.payouts || []);
       }
     }
   }, [propertyId, properties, setSelectedProperty]);
@@ -248,7 +248,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const itemsPerPage = 5;
 
   const filteredPayouts = React.useMemo(() => {
-    return payouts.filter((payout: any) => {
+    return payouts.filter((payout: Payout) => {
       // Filter by propertyId if provided
       if (propertyId !== null && String(payout.propertyId) !== String(propertyId)) {
         return false;
@@ -426,7 +426,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         spacing={2}
         sx={{ flexGrow: 1, display: "flex", flexDirection: "column", mb: 4 }}
       >
-        {paginatedPayouts.map((payout: any) => {
+        {paginatedPayouts.map((payout: Payout) => {
           const isRefunded = payout.status === "REFUNDED";
           const isPartiallyRefunded = payout.status === "PARTIALLY_REFUNDED";
           const displayAmount = payout.amount - (payout.refundAmount || 0);
@@ -626,7 +626,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
               await revertRefundAction(selectedPayout.id);
               await refresh();
               const updated = usePropertyStore.getState().selectedProperty;
-              if (updated) setPayouts((updated as any).payouts || []);
+              if (updated) setPayouts(updated.payouts || []);
             } catch (error) {
               console.error("Failed to revert refund:", error);
             } finally {

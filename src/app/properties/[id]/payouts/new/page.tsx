@@ -41,7 +41,7 @@ export default function NewPayoutPage() {
     if (saved) {
       try {
         setDictionary(JSON.parse(saved));
-      } catch (e) {}
+      } catch { /* ignored */ }
     } else {
       const defaults = [
         "Internet",
@@ -196,7 +196,7 @@ export default function NewPayoutPage() {
                   fullWidth
                   label="Amount"
                   value={item.amount as string}
-                  onChange={(e: any) =>
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setItems(
                       items.map((i) =>
                         i.id === item.id ? { ...i, amount: e.target.value } : i,

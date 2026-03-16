@@ -25,7 +25,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { startOfMonth, endOfMonth, format } from "date-fns";
 import Loader from "@/components/Loader";
 
 const FinanceCard = ({
@@ -38,7 +38,7 @@ const FinanceCard = ({
   onAction,
 }: {
   title: string;
-  icon: any;
+  icon: React.ElementType;
   currentValue: number;
   estimatedValue: number;
   color: string;
@@ -54,9 +54,7 @@ const FinanceCard = ({
         overflow: "hidden",
         transition: "all 0.2s",
         cursor: onAction ? "pointer" : "default",
-        "&:hover": {
-          bgcolor: (theme) => alpha(color, 0.05),
-        },
+        "&:hover": { bgcolor: (t) => alpha(t.palette.primary.main, 0.08) },
         border: "1px solid",
         borderColor: alpha(color, 0.1),
         bgcolor: "transparent",
@@ -171,12 +169,12 @@ export default function PropertyDetailsPage() {
     const { start, end } = filterRange;
 
     // Filter transactions by date range
-    const rangeExpenses = (property.expenses as any[]).filter((e) => {
+    const rangeExpenses = (property.expenses || []).filter((e) => {
       const d = new Date(e.date);
       return d >= start && d <= end;
     });
 
-    const rangePayouts = (property.payouts as any[]).filter((p) => {
+    const rangePayouts = (property.payouts || []).filter((p) => {
       const d = new Date(p.date);
       return d >= start && d <= end;
     });
@@ -190,10 +188,10 @@ export default function PropertyDetailsPage() {
     const currentProfit = rangePayoutTotal - currentExpenses;
 
     // Funds is cumulative up to the 'end' date
-    const allPriorExpenses = (property.expenses as any[]).filter(
+    const allPriorExpenses = (property.expenses || []).filter(
       (e) => new Date(e.date) <= end,
     );
-    const allPriorPayouts = (property.payouts as any[]).filter(
+    const allPriorPayouts = (property.payouts || []).filter(
       (p) => new Date(p.date) <= end,
     );
     const cumulativeProfit =
@@ -210,8 +208,8 @@ export default function PropertyDetailsPage() {
 
     // Only add recurring expenses if the filter end date is at least the end of this month
     if (end >= startOfMonth(now)) {
-      const recurring = (property.recurringExpenses as any[]) || [];
-      const waived = (property.waivedRecurringExpenses as any[]) || [];
+      const recurring = property.recurringExpenses || [];
+      const waived = property.waivedRecurringExpenses || [];
 
       recurring.forEach((re) => {
         // Check if this recurring expense has already been recorded in THIS month
@@ -220,8 +218,7 @@ export default function PropertyDetailsPage() {
         const isWaived = waived.some(
           (w) =>
             w.recurringExpenseId === re.id &&
-            new Date(w.date).getMonth() === now.getMonth() &&
-            new Date(w.date).getFullYear() === now.getFullYear(),
+            w.monthKey === format(now, "yyyy-MM"),
         );
 
         const alreadyRecorded = rangeExpenses.some((e) => e.name === re.name); // Simple heuristic
