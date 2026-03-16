@@ -8,10 +8,6 @@ import {
   Card,
   CardContent,
   Stack,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -19,230 +15,141 @@ import {
   Wallet,
   Calculator,
   TrendingDown,
-  ChevronDown,
 } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
-import PropertyFilter from "@/components/PropertyFilter";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { usePropertyStore } from "@/store/usePropertyStore";
+import EmptyState from "@/components/EmptyState";
 
 const StatCard = ({
   title,
-  value,
-  icon,
-  color,
+  amount,
+  icon: Icon,
   trend,
-  isNegative,
+  color,
 }: {
   title: string;
-  value: string;
-  icon: React.ReactNode;
-  color?: string;
+  amount: string;
+  icon: any;
   trend?: string;
-  isNegative?: boolean;
-}) => {
-  const theme = useTheme();
-  const defaultColor = theme.palette.mode === "light" ? "#000000" : "#ffffff";
-  const activeColor = color || defaultColor;
-
-  return (
-    <Card>
-      <CardContent>
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="flex-start"
-          sx={{ mb: 2 }}
-        >
-          <Box
-            sx={{
-              p: 1,
-              bgcolor: `${activeColor}20`,
-              color: activeColor,
-              borderRadius: 2,
-              display: "flex",
-            }}
-          >
-            {icon}
-          </Box>
-          {trend && (
-            <Typography
-              variant="caption"
-              sx={{
-                color: trend.startsWith("+") ? "success.main" : "error.main",
-                fontWeight: 600,
-                bgcolor: trend.startsWith("+")
-                  ? "rgba(16, 185, 129, 0.1)"
-                  : "rgba(239, 68, 68, 0.1)",
-                px: 1,
-                py: 0.5,
-                borderRadius: 1,
-              }}
-            >
-              {trend}
-            </Typography>
-          )}
-        </Stack>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ fontWeight: 500, mb: 0.5 }}
-        >
-          {title}
-        </Typography>
-        <Typography
-          variant="h4"
-          sx={{ 
-            fontWeight: 700, 
-            letterSpacing: "-0.02em",
-            color: isNegative ? "error.main" : "text.primary"
+  color?: string;
+}) => (
+  <Card
+    sx={{
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+      position: "relative",
+      overflow: "hidden",
+      borderRadius: 4,
+    }}
+  >
+    <CardContent sx={{ p: 3, flexGrow: 1 }}>
+      <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+        <Box
+          sx={{
+            p: 1.5,
+            borderRadius: 3,
+            bgcolor: `${color || "primary"}.lighter`,
+            color: `${color || "primary"}.main`,
+            display: "flex",
           }}
         >
-          {value}
+          <Icon size={24} />
+        </Box>
+        <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
+          {title}
         </Typography>
-      </CardContent>
-    </Card>
-  );
-};
+      </Stack>
+      <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+        {amount}
+      </Typography>
+      {trend && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center" }}>
+          {trend}
+        </Typography>
+      )}
+    </CardContent>
+  </Card>
+);
 
 export default function DashboardPage() {
   const { formatAmount } = useCurrency();
   const { selectedProperty, properties } = usePropertyStore();
   const selectedPropertyId = selectedProperty?.id || null;
 
-  // Use property-specific funds if a property is selected, otherwise total
-  const totalFunds = selectedProperty
-    ? selectedProperty.funds
-    : properties.reduce((sum, p) => sum + p.funds, 0);
-
-  const totalProfit = selectedProperty
-    ? selectedProperty.profit
-    : properties.reduce((sum, p) => sum + p.profit, 0);
-
-  const totalExpense = selectedProperty
-    ? selectedProperty.currentExpense
-    : properties.reduce((sum, p) => sum + p.currentExpense, 0);
-
-  const [filterRange, setFilterRange] = React.useState<DateRange>({
+  const [dateRange, setDateRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
     end: endOfMonth(new Date()),
     type: "this-month",
   });
 
   return (
-    <DashboardLayout>
-      <Box sx={{ mb: 2 }}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            justifyContent: "space-between",
-            alignItems: { xs: "stretch", sm: "center" },
-            gap: 2,
-            mb: 2,
-          }}
-        >
+    <DashboardLayout title="Financial Dashboard">
+      <Box sx={{ mb: 4 }}>
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} spacing={2}>
           <Box>
-            <Typography variant="h4" sx={{ mb: 0.5, fontWeight: 700 }}>
+            <Typography variant="h4" fontWeight={900} sx={{ letterSpacing: "-0.02em" }}>
               Overview
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Welcome back! Here&apos;s how your properties are performing.
+            <Typography color="text.secondary">
+              Real-time summary of your property performance
             </Typography>
           </Box>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              gap: 1,
-              width: { xs: "100%", sm: "auto" },
-            }}
-          >
-            <Box sx={{ flex: 1 }}>
-              <PropertyFilter value={selectedPropertyId} />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <MonthFilter value={filterRange} onChange={setFilterRange} />
-            </Box>
-          </Box>
-        </Box>
+          <MonthFilter value={dateRange} onChange={setDateRange} />
+        </Stack>
       </Box>
 
-      <Grid container spacing={3}>
-        {/* Row 1: Profits */}
-        <Grid size={{ xs: 12, sm: 6, md: 6 }}>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Current Profit"
-            value={formatAmount(totalProfit)}
-            icon={<TrendingUp size={20} />}
-            color="#10b981"
-            isNegative={totalProfit < 0}
+            title="Total Revenue"
+            amount={formatAmount(0)}
+            icon={TrendingUp}
+            trend="+0% from last month"
+            color="success"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 6 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Estimated Profit"
-            value={formatAmount(selectedProperty?.estimatedProfit || 0)}
-            icon={<TrendingUp size={20} />}
-            color="#3b82f6"
-            isNegative={(selectedProperty?.estimatedProfit || 0) < 0}
+            title="Total Expenses"
+            amount={formatAmount(0)}
+            icon={TrendingDown}
+            trend="+0% from last month"
+            color="error"
           />
         </Grid>
-
-        {/* Row 2: Funds and Expenses */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Current Funds"
-            value={formatAmount(totalFunds)}
-            icon={<Wallet size={20} />}
-            isNegative={totalFunds < 0}
+            title="Net Profit"
+            amount={formatAmount(0)}
+            icon={Wallet}
+            trend="+0% from last month"
+            color="primary"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Estimated Funds"
-            value={formatAmount(selectedProperty?.estimatedFunds || 0)}
-            icon={<Calculator size={20} />}
-            isNegative={(selectedProperty?.estimatedFunds || 0) < 0}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Expenses"
-            value={formatAmount(totalExpense)}
-            icon={<TrendingDown size={20} />}
-            color="#ef4444"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Estimated Expenses"
-            value={formatAmount(selectedProperty?.estimatedExpense || 0)}
-            icon={<TrendingDown size={20} />}
-            color="#f97316"
+            title="Profit Margin"
+            amount="0%"
+            icon={Calculator}
+            trend="+0% from last month"
+            color="warning"
           />
         </Grid>
       </Grid>
 
-      {/* Recent Activity or Chart Placeholder */}
-      <Box sx={{ mt: 4 }}>
+      <Box sx={{ mb: 4 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
           Recent Expenses
         </Typography>
-        <Card
-          sx={{
-            p: 4,
-            textAlign: "center",
-            bgcolor: "transparent",
-            borderStyle: "dashed",
-          }}
-        >
-          <Typography color="text.secondary">
-            No recent expenses recorded. Start by adding one!
-          </Typography>
-        </Card>
+        <EmptyState
+          icon={TrendingDown}
+          title="No recent expenses"
+          description="Start tracking your property expenditures to see them here."
+        />
       </Box>
     </DashboardLayout>
   );

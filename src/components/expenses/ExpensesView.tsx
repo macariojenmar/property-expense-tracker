@@ -48,6 +48,7 @@ import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import Loader from "@/components/Loader";
+import EmptyState from "@/components/EmptyState";
 
 export interface Expense {
   id: string;
@@ -1527,26 +1528,11 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         ))}
 
         {paginatedExpenses.length === 0 && (
-          <Card
-            sx={{
-              flexGrow: 1,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              p: 8,
-              textAlign: "center",
-              bgcolor: "transparent",
-              borderStyle: "dashed",
-            }}
-          >
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-              No expenses found
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Try adjusting your filter or add a new expense.
-            </Typography>
-          </Card>
+          <EmptyState
+            icon={BanknoteArrowDown}
+            title="No expenses found"
+            description="Try adjusting your filter or add a new expense to get started."
+          />
         )}
       </Stack>
     </DashboardLayout>

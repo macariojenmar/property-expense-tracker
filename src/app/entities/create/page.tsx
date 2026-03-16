@@ -15,6 +15,7 @@ import {
   Select,
   MenuItem,
   Grid,
+  Container,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ArrowLeft, Save } from "lucide-react";
@@ -42,7 +43,7 @@ export default function CreateEntityPage() {
 
   return (
     <DashboardLayout>
-      <Box sx={{ maxWidth: 600, mx: "auto" }}>
+      <Container maxWidth="sm">
         <Box sx={{ mb: 4, display: "flex", alignItems: "center", gap: 2 }}>
           <IconButton onClick={() => router.back()} size="small">
             <ArrowLeft size={20} />
@@ -110,7 +111,7 @@ export default function CreateEntityPage() {
             </Stack>
           </CardContent>
         </Card>
-      </Box>
+      </Container>
     </DashboardLayout>
   );
 }

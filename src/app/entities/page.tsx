@@ -4,9 +4,7 @@ import * as React from "react";
 import {
   Box,
   Typography,
-  Card,
   Button,
-  Stack,
   IconButton,
   Table,
   TableBody,
@@ -15,16 +13,17 @@ import {
   TableHead,
   TableRow,
   Paper,
-  alpha,
+  Container,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowLeft, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   getPendingToEntities,
   deletePendingToEntity,
 } from "@/lib/actions/pending-to";
 import Loader from "@/components/Loader";
+import EmptyState from "@/components/EmptyState";
 
 export default function EntitiesPage() {
   const router = useRouter();
@@ -59,7 +58,7 @@ export default function EntitiesPage() {
 
   return (
     <DashboardLayout>
-      <Box sx={{ maxWidth: 800, mx: "auto" }}>
+      <Container maxWidth="md">
         <Box sx={{ mb: 4, display: "flex", alignItems: "center", gap: 2 }}>
           <IconButton onClick={() => router.back()} size="small">
             <ArrowLeft size={20} />
@@ -85,27 +84,11 @@ export default function EntitiesPage() {
         {loading ? (
           <Loader message="Loading entities..." />
         ) : entities.length === 0 ? (
-          <Card
-            sx={{
-              py: 8,
-              textAlign: "center",
-              bgcolor: "transparent",
-              border: "1px dashed",
-              borderColor: "divider",
-            }}
-          >
-            <Typography color="text.secondary" mb={2}>
-              No entities found.
-            </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<Plus size={18} />}
-              onClick={() => router.push("/entities/create")}
-              sx={{ borderRadius: 1.5, px: 3 }}
-            >
-              Add your first entity
-            </Button>
-          </Card>
+          <EmptyState
+            icon={Users}
+            title="No entities found"
+            description="Manage people or organizations you pay for expenses by adding your first entity."
+          />
         ) : (
           <TableContainer component={Paper} variant="outlined">
             <Table>
@@ -147,7 +130,7 @@ export default function EntitiesPage() {
             </Table>
           </TableContainer>
         )}
-      </Box>
+      </Container>
     </DashboardLayout>
   );
 }

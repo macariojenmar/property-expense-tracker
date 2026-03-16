@@ -40,11 +40,16 @@ export default function CreatePropertyPage() {
   const [loading, setLoading] = React.useState(false);
 
   const [initialExpenses, setInitialExpenses] = React.useState<
-    { name: string; amount: string | number; day: number; pendingToId: string }[]
+    {
+      name: string;
+      amount: string | number;
+      day: number;
+      pendingToId: string;
+    }[]
   >([{ name: "", amount: "", day: 1, pendingToId: "" }]);
   const [entities, setEntities] = React.useState<PendingTo[]>([]);
   const [dayAnchorEl, setDayAnchorEl] = React.useState<HTMLDivElement | null>(
-    null
+    null,
   );
   const [selectedExpenseIndex, setSelectedExpenseIndex] = React.useState<
     number | null
@@ -83,7 +88,7 @@ export default function CreatePropertyPage() {
   const handleExpenseChange = (
     index: number,
     field: "name" | "amount" | "day" | "pendingToId",
-    value: string | number
+    value: string | number,
   ) => {
     const newExpenses = [...initialExpenses];
     newExpenses[index] = { ...newExpenses[index], [field]: value };
@@ -92,7 +97,7 @@ export default function CreatePropertyPage() {
 
   const handleDayClick = (
     event: React.MouseEvent<HTMLDivElement>,
-    index: number
+    index: number,
   ) => {
     setDayAnchorEl(event.currentTarget);
     setSelectedExpenseIndex(index);
@@ -197,11 +202,12 @@ export default function CreatePropertyPage() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  mb: 2,
+                  mb: 1,
                 }}
               >
                 <Typography variant="h6">Recurring Expenses</Typography>
                 <Button
+                  variant="outlined"
                   startIcon={<Plus size={16} />}
                   onClick={handleAddInitialExpense}
                   size="small"
@@ -214,13 +220,26 @@ export default function CreatePropertyPage() {
               </Typography>
               <Stack spacing={2}>
                 {initialExpenses.map((exp, index) => (
-                  <Card 
-                    variant="outlined" 
-                    key={index} 
-                    sx={{ p: 2, bgcolor: (t) => alpha(t.palette.primary.main, 0.02) }}
+                  <Card
+                    variant="outlined"
+                    key={index}
+                    sx={{
+                      p: 2,
+                      bgcolor: (t) => alpha(t.palette.primary.main, 0.02),
+                    }}
                   >
+                    <Grid size={12} sx={{ textAlign: "right", mb: 1 }}>
+                      <IconButton
+                        color="error"
+                        onClick={() => handleRemoveInitialExpense(index)}
+                        size="small"
+                        disabled={initialExpenses.length === 1}
+                      >
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </Grid>
                     <Grid container spacing={2} alignItems="center">
-                      <Grid size={5}>
+                      <Grid size={6}>
                         <Autocomplete
                           freeSolo
                           options={dictionaryWords}
@@ -242,26 +261,7 @@ export default function CreatePropertyPage() {
                           )}
                         />
                       </Grid>
-                      <Grid size={2}>
-                        <TextField
-                          fullWidth
-                          label="Day"
-                          size="small"
-                          value={exp.day}
-                          onClick={(e) =>
-                            handleDayClick(
-                              e as unknown as React.MouseEvent<HTMLDivElement>,
-                              index
-                            )
-                          }
-                          sx={{ cursor: "pointer" }}
-                          InputProps={{
-                            readOnly: true,
-                            sx: { cursor: "pointer" },
-                          }}
-                        />
-                      </Grid>
-                      <Grid size={4}>
+                      <Grid size={6}>
                         <NumericFormatInput
                           fullWidth
                           size="small"
@@ -279,17 +279,27 @@ export default function CreatePropertyPage() {
                           }}
                         />
                       </Grid>
-                      <Grid size={1} sx={{ textAlign: 'center' }}>
-                        <IconButton
-                          color="error"
-                          onClick={() => handleRemoveInitialExpense(index)}
+                      <Grid size={3}>
+                        <TextField
+                          fullWidth
+                          label="Day"
                           size="small"
-                          disabled={initialExpenses.length === 1}
-                        >
-                          <Trash2 size={18} />
-                        </IconButton>
+                          value={exp.day}
+                          onClick={(e) =>
+                            handleDayClick(
+                              e as unknown as React.MouseEvent<HTMLDivElement>,
+                              index,
+                            )
+                          }
+                          sx={{ cursor: "pointer" }}
+                          InputProps={{
+                            readOnly: true,
+                            sx: { cursor: "pointer" },
+                          }}
+                        />
                       </Grid>
-                      <Grid size={12}>
+
+                      <Grid size={9}>
                         <Autocomplete
                           options={entities}
                           getOptionLabel={(option) => option.name}
@@ -301,7 +311,7 @@ export default function CreatePropertyPage() {
                             handleExpenseChange(
                               index,
                               "pendingToId",
-                              newValue?.id || ""
+                              newValue?.id || "",
                             )
                           }
                           renderInput={(params) => (

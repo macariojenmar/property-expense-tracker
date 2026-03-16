@@ -13,7 +13,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   RadioGroup,
   FormControlLabel,
   Radio,
@@ -40,6 +39,7 @@ import { ArrowLeft } from "lucide-react";
 import { usePropertyStore, Property } from "@/store/usePropertyStore";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import Loader from "@/components/Loader";
+import EmptyState from "@/components/EmptyState";
 
 export interface Payout {
   id: string;
@@ -610,26 +610,11 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         })}
 
         {paginatedPayouts.length === 0 && (
-          <Card
-            sx={{
-              flexGrow: 1,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              p: 8,
-              textAlign: "center",
-              bgcolor: "transparent",
-              borderStyle: "dashed",
-            }}
-          >
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-              No payouts found
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Try adjusting your filter or record a new payout.
-            </Typography>
-          </Card>
+          <EmptyState
+            icon={WalletCards}
+            title="No payouts found"
+            description="Try adjusting your filter or record a new payout to get started."
+          />
         )}
       </Stack>
 

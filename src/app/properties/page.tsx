@@ -20,6 +20,7 @@ import { useCurrency } from "@/components/CurrencyContext";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import { getProperties } from "@/lib/actions/property";
 import Loader from "@/components/Loader";
+import EmptyState from "@/components/EmptyState";
 
 export default function PropertiesPage() {
   const router = useRouter();
@@ -183,18 +184,12 @@ export default function PropertiesPage() {
         ))}
         {properties.length === 0 && (
           <Grid size={12}>
-            <Card
-              sx={{
-                p: 4,
-                textAlign: "center",
-                bgcolor: "transparent",
-                borderStyle: "dashed",
-              }}
-            >
-              <Typography color="text.secondary">
-                No properties found. Add your first property to get started!
-              </Typography>
-            </Card>
+            <EmptyState
+              icon={Home}
+              title="No properties found"
+              description="Start managing your Airbnb listings and their finances by adding your first property."
+              fullHeight
+            />
           </Grid>
         )}
       </Grid>
