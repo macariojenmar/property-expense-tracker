@@ -406,7 +406,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                   disabled={page === 1}
                   sx={{ color: "text.secondary" }}
                 >
-                  <ChevronLeft size={20} />
+                  <ChevronLeft size={22} />
                 </IconButton>
                 <IconButton
                   size="small"
@@ -414,7 +414,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                   disabled={page === totalPages}
                   sx={{ color: "text.secondary" }}
                 >
-                  <ChevronRight size={20} />
+                  <ChevronRight size={22} />
                 </IconButton>
               </Stack>
             </Stack>
@@ -570,7 +570,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                           },
                         }}
                       >
-                        <History size={18} />
+                        <History size={22} />
                       </IconButton>
                     </Tooltip>
                   )}
@@ -589,7 +589,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                           },
                         }}
                       >
-                        <Undo2 size={18} />
+                        <Undo2 size={22} />
                       </IconButton>
                     </Tooltip>
                   )}

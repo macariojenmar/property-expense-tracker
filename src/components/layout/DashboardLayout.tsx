@@ -295,9 +295,9 @@ export default function DashboardLayout({
               size="small"
             >
               {theme.palette.mode === "dark" ? (
-                <Sun size={20} />
+                <Sun size={22} />
               ) : (
-                <Moon size={20} />
+                <Moon size={22} />
               )}
             </IconButton>
             <Avatar

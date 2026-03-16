@@ -41,7 +41,7 @@ export default function CreateExpensePage() {
   const params = useParams();
   const propertyId = params.id as string;
   const { currency } = useCurrency();
-  const { setIsSaving } = usePropertyStore();
+  const { setIsSaving, refresh } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
 
   const [items, setItems] = React.useState<ExpenseItem[]>([
@@ -133,6 +133,7 @@ export default function CreateExpensePage() {
           pendingToId: item.status === "PENDING" ? item.pendingToId : undefined,
         });
       }
+      await refresh();
       router.push(`/properties/${propertyId}/expenses`);
     } catch (error) {
       console.error("Failed to save expenses:", error);

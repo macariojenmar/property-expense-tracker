@@ -22,6 +22,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Autocomplete,
+  Grid,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import {
@@ -94,8 +95,14 @@ import { CheckCircle } from "lucide-react";
 
 export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const router = useRouter();
-  const { properties, setSelectedProperty, selectedProperty, isLoading, refresh, setIsSaving } =
-    usePropertyStore();
+  const {
+    properties,
+    setSelectedProperty,
+    selectedProperty,
+    isLoading,
+    refresh,
+    setIsSaving,
+  } = usePropertyStore();
   const { formatAmount, currency } = useCurrency();
   const [loading, setLoading] = React.useState(false);
   const [expenses, setExpenses] = React.useState<Expense[]>([]);
@@ -121,7 +128,9 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const [pendingToFilter, setPendingToFilter] = React.useState<string | null>(
     null,
   );
-  const [entities, setEntities] = React.useState<{ id: string; name: string }[]>([]);
+  const [entities, setEntities] = React.useState<
+    { id: string; name: string }[]
+  >([]);
 
   const handleSettleIndividual = async (id: string) => {
     if (!propertyId) return;
@@ -129,7 +138,9 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       setIsSaving(true);
       await settleExpenses([id], propertyId);
       setExpenses((prev) =>
-        prev.map((exp) => (exp.id === id ? { ...exp, status: "SETTLED" } : exp)),
+        prev.map((exp) =>
+          exp.id === id ? { ...exp, status: "SETTLED" } : exp,
+        ),
       );
     } catch (error) {
       console.error("Failed to settle expense:", error);
@@ -137,7 +148,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       setIsSaving(false);
     }
   };
-
 
   React.useEffect(() => {
     const fetchEntities = async () => {
@@ -435,9 +445,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const handleRevert = async (id: string) => {
     if (!propertyId) return;
     const ref = `${id}_${monthKey}`;
-    const expenseToDelele = expenses.find(
-      (exp) => exp.recurringRef === ref,
-    );
+    const expenseToDelele = expenses.find((exp) => exp.recurringRef === ref);
 
     if (expenseToDelele) {
       try {
@@ -926,7 +934,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                               onClick={() => handleRevert(exp.id)}
                               sx={{ color: "text.secondary" }}
                             >
-                              <RefreshCw size={18} />
+                              <RefreshCw size={22} />
                             </IconButton>
                           ) : isWaived ? (
                             <IconButton
@@ -934,7 +942,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                               onClick={() => handleWaive(exp.id)}
                               sx={{ color: "primary.main" }}
                             >
-                              <Undo2 size={18} />
+                              <Undo2 size={22} />
                             </IconButton>
                           ) : (
                             <>
@@ -943,14 +951,14 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                                 onClick={() => handleAddOne(exp.id)}
                                 sx={{ color: "primary.main" }}
                               >
-                                <Plus size={18} />
+                                <Plus size={22} />
                               </IconButton>
                               <IconButton
                                 size="small"
                                 onClick={() => handleWaive(exp.id)}
                                 sx={{ color: "text.secondary" }}
                               >
-                                <Ban size={18} />
+                                <Ban size={22} />
                               </IconButton>
                             </>
                           )}
@@ -1122,7 +1130,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                                   },
                                 }}
                               >
-                                <RefreshCw size={16} />
+                                <RefreshCw size={22} />
                               </IconButton>
                             </Tooltip>
                           ) : isWaived ? (
@@ -1139,7 +1147,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                                   },
                                 }}
                               >
-                                <Undo2 size={18} />
+                                <Undo2 size={22} />
                               </IconButton>
                             </Tooltip>
                           ) : (
@@ -1157,7 +1165,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                                     },
                                   }}
                                 >
-                                  <Plus size={18} />
+                                  <Plus size={22} />
                                 </IconButton>
                               </Tooltip>
                               <Tooltip title="Waive">
@@ -1373,7 +1381,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         </Box>
       )}
 
-
       <Stack
         spacing={2}
         sx={{ flexGrow: 1, display: "flex", flexDirection: "column", mb: 4 }}
@@ -1383,9 +1390,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
             key={expense.id}
             sx={{
               p: { xs: 1.5, sm: 2 },
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
               transition: "all 0.2s",
               cursor: "pointer",
               "&:hover": {
@@ -1393,144 +1397,164 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
               },
             }}
           >
-            <Stack
-              direction="row"
-              spacing={{ xs: 2, sm: 3 }}
-              alignItems="center"
-              sx={{ flexGrow: 1, minWidth: 0 }}
-            >
-              <Box
-                sx={{
-                  p: { xs: 1, sm: 1.5 },
-                  bgcolor: (theme) =>
-                    theme.palette.mode === "light"
-                      ? alpha(theme.palette.error.main, 0.1)
-                      : alpha(theme.palette.error.main, 0.2),
-                  borderRadius: 2,
-                  color: "error.main",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <BanknoteArrowDown size={22} />
-              </Box>
+            <Grid container spacing={2} alignItems="center">
+              {/* Column 1: Content (Icon + Name + Date) */}
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Stack
+                  direction="row"
+                  spacing={{ xs: 2, sm: 3 }}
+                  alignItems="center"
+                  sx={{ flexGrow: 1, minWidth: 0 }}
+                >
+                  <Box
+                    sx={{
+                      p: { xs: 1, sm: 1.5 },
+                      bgcolor: (theme) =>
+                        theme.palette.mode === "light"
+                          ? alpha(theme.palette.error.main, 0.1)
+                          : alpha(theme.palette.error.main, 0.2),
+                      borderRadius: 2,
+                      color: "error.main",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <BanknoteArrowDown size={22} />
+                  </Box>
 
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography
-                  variant="subtitle1"
+                  <Stack spacing={1}>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: "0.9rem", sm: "1rem" },
+                        lineHeight: 1.2,
+                        mb: 0.5,
+                      }}
+                    >
+                      {expense.name}
+                    </Typography>
+
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      alignItems="center"
+                      color={"text.secondary"}
+                    >
+                      <Calendar size={14} />
+                      <Typography
+                        variant="caption"
+                        sx={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}
+                      >
+                        {format(new Date(expense.date), "MMM d, yyyy")}
+                      </Typography>
+                    </Stack>
+                    <Stack direction={"row"} alignItems={"center"} gap={0.5}>
+                      <Chip
+                        label={
+                          expense.status === "PENDING" ? "Pending" : "Settled"
+                        }
+                        size="small"
+                        sx={{
+                          width: "fit-content",
+                          fontSize: "0.65rem",
+                          fontWeight: 700,
+                          bgcolor: (t) =>
+                            expense.status === "PENDING"
+                              ? alpha(t.palette.warning.main, 0.1)
+                              : alpha(t.palette.success.main, 0.1),
+                          color: (t) =>
+                            expense.status === "PENDING"
+                              ? "warning.main"
+                              : "success.main",
+                        }}
+                      />
+                      {expense.status === "PENDING" && expense.pendingTo && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            fontSize: "0.7rem",
+                            fontStyle: "italic",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          to {expense.pendingTo.name}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Stack>
+                </Stack>
+              </Grid>
+
+              {/* Column 2: Note */}
+              <Grid size={{ xs: 12, md: 4 }}>
+                {expense.note && expense.note.trim() !== "" && (
+                  <Box sx={{ px: { xs: 5.5, sm: 0 } }}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <FileText size={14} color="gray" />
+                      <Typography variant="body2" color="text.secondary">
+                        {expense.note}
+                      </Typography>
+                    </Stack>
+                  </Box>
+                )}
+              </Grid>
+
+              {/* Column 3: Amount + Actions */}
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={{ xs: 1, sm: 2 }}
                   sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: "0.9rem", sm: "1rem" },
-                    lineHeight: 1.2,
-                    mb: 0.5,
+                    justifyContent: { xs: "space-between", sm: "flex-end" },
+                    pl: { xs: 5.5, sm: 0 },
                   }}
                 >
-                  {expense.name}
-                </Typography>
-                <Stack direction="row" spacing={2} sx={{ color: "text.secondary", flexWrap: "wrap", rowGap: 0.5 }}>
-                  <Stack direction="row" spacing={0.5} alignItems="center">
-                    <Calendar size={14} />
-                    <Typography variant="caption" sx={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                      {format(new Date(expense.date), "MMM d, yyyy")}
-                    </Typography>
-                  </Stack>
-                  <Chip
-                    label={expense.status === "PENDING" ? "Pending" : "Settled"}
-                    size="small"
-                    sx={{
-                      height: 20,
-                      fontSize: "0.65rem",
-                      fontWeight: 700,
-                      bgcolor: (t) =>
-                        expense.status === "PENDING"
-                          ? alpha(t.palette.warning.main, 0.1)
-                          : alpha(t.palette.success.main, 0.1),
-                      color: (t) =>
-                        expense.status === "PENDING"
-                          ? "warning.main"
-                          : "success.main",
-                    }}
-                  />
-                  {expense.status === "PENDING" && expense.pendingTo && (
+                  <Box sx={{ textAlign: "right" }}>
                     <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ fontSize: "0.7rem", fontStyle: "italic", whiteSpace: "nowrap" }}
+                      variant="h6"
+                      sx={{
+                        fontWeight: 700,
+                        color: "error.main",
+                        fontSize: {
+                          xs: "0.95rem",
+                          sm: "1.1rem",
+                          md: "1.25rem",
+                        },
+                        whiteSpace: "nowrap",
+                      }}
                     >
-                      to {expense.pendingTo.name}
+                      -{formatAmount(expense.amount)}
                     </Typography>
+                  </Box>
+
+                  {expense.status === "PENDING" && (
+                    <Tooltip title="Mark as Settled">
+                      <IconButton
+                        size="small"
+                        color="success"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSettleIndividual(expense.id);
+                        }}
+                        sx={{
+                          bgcolor: (t) => alpha(t.palette.success.main, 0.1),
+                          "&:hover": {
+                            bgcolor: (t) => alpha(t.palette.success.main, 0.2),
+                          },
+                        }}
+                      >
+                        <CheckCircle2 size={22} />
+                      </IconButton>
+                    </Tooltip>
                   )}
                 </Stack>
-              </Box>
-
-              <Box
-                sx={{
-                  flexGrow: 1,
-                  px: 2,
-                  display: { xs: "none", lg: "block" },
-                }}
-              >
-                <Stack direction="row" spacing={1} alignItems="flex-start">
-                  <FileText size={14} color="gray" style={{ marginTop: 4 }} />
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrientation: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {expense.note}
-                  </Typography>
-                </Stack>
-              </Box>
-
-              <Stack 
-                direction="row" 
-                alignItems="center" 
-                spacing={{ xs: 1, sm: 2 }} 
-                sx={{ ml: "auto", flexShrink: 0 }}
-              >
-                <Box sx={{ textAlign: "right" }}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 700,
-                      color: "error.main",
-                      fontSize: { xs: "0.95rem", sm: "1.1rem", md: "1.25rem" },
-                      whiteSpace: "nowrap"
-                    }}
-                  >
-                    -{formatAmount(expense.amount)}
-                  </Typography>
-                </Box>
-
-                {expense.status === "PENDING" && (
-                  <Tooltip title="Mark as Settled">
-                    <IconButton
-                      size="small"
-                      color="success"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSettleIndividual(expense.id);
-                      }}
-                      sx={{
-                        bgcolor: (t) => alpha(t.palette.success.main, 0.1),
-                        "&:hover": {
-                          bgcolor: (t) => alpha(t.palette.success.main, 0.2),
-                        },
-                      }}
-                    >
-                      <CheckCircle2 size={18} />
-                    </IconButton>
-                  </Tooltip>
-                )}
-              </Stack>
-            </Stack>
+              </Grid>
+            </Grid>
           </Card>
         ))}
 

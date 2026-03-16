@@ -28,7 +28,7 @@ export default function CreatePayoutPage() {
   const params = useParams();
   const propertyId = params.id as string;
   const { currency } = useCurrency();
-  const { setIsSaving } = usePropertyStore();
+  const { setIsSaving, refresh } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
 
   const [items, setItems] = React.useState([
@@ -91,6 +91,7 @@ export default function CreatePayoutPage() {
           propertyId,
         });
       }
+      await refresh();
       router.push(`/properties/${propertyId}/payouts`);
     } catch (error) {
       console.error("Failed to save payouts:", error);
