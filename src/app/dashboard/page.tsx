@@ -8,6 +8,7 @@ import {
   Card,
   CardContent,
   Stack,
+  Skeleton,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -20,7 +21,7 @@ import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { usePropertyStore } from "@/store/usePropertyStore";
-import EmptyState from "@/components/EmptyState";
+import { getDashboardStats } from "@/lib/actions/dashboard";
 
 const StatCard = ({
   title,
@@ -28,12 +29,14 @@ const StatCard = ({
   icon: Icon,
   trend,
   color,
+  loading,
 }: {
   title: string;
   amount: string;
   icon: React.ElementType;
   trend?: string;
   color?: string;
+  loading?: boolean;
 }) => (
   <Card
     sx={{
@@ -62,12 +65,25 @@ const StatCard = ({
           {title}
         </Typography>
       </Stack>
-      <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
-        {amount}
-      </Typography>
-      {trend && (
+      {loading ? (
+        <Skeleton variant="text" width="60%" height={40} sx={{ mb: 1 }} />
+      ) : (
+        <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+          {amount}
+        </Typography>
+      )}
+      {loading ? (
+        <Skeleton variant="text" width="40%" height={20} />
+      ) : trend && (
         <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center" }}>
-          {trend}
+          <Box component="span" sx={{ 
+            color: trend.startsWith("+") ? "success.main" : "error.main",
+            fontWeight: 700,
+            mr: 0.5 
+          }}>
+            {trend}
+          </Box>
+          from last period
         </Typography>
       )}
     </CardContent>
@@ -83,6 +99,33 @@ export default function DashboardPage() {
     end: endOfMonth(new Date()),
     type: "this-month",
   });
+
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [stats, setStats] = React.useState<{
+    totalRevenue: { value: number; trend: string };
+    totalExpenses: { value: number; trend: string };
+    netProfit: { value: number; trend: string };
+    profitMargin: { value: string; trend: string };
+  } | null>(null);
+
+  React.useEffect(() => {
+    async function fetchStats() {
+      setIsLoading(true);
+      try {
+        const data = await getDashboardStats({
+          propertyId: selectedProperty?.id,
+          startDate: dateRange.start || undefined,
+          endDate: dateRange.end || undefined,
+        });
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchStats();
+  }, [selectedProperty?.id, dateRange]);
 
   return (
     <DashboardLayout>
@@ -104,51 +147,44 @@ export default function DashboardPage() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Total Revenue"
-            amount={formatAmount(0)}
+            amount={formatAmount(stats?.totalRevenue.value || 0)}
             icon={TrendingUp}
-            trend="+0% from last month"
+            trend={stats?.totalRevenue.trend}
             color="success"
+            loading={isLoading}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Total Expenses"
-            amount={formatAmount(0)}
+            amount={formatAmount(stats?.totalExpenses.value || 0)}
             icon={TrendingDown}
-            trend="+0% from last month"
+            trend={stats?.totalExpenses.trend}
             color="error"
+            loading={isLoading}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Net Profit"
-            amount={formatAmount(0)}
+            amount={formatAmount(stats?.netProfit.value || 0)}
             icon={Wallet}
-            trend="+0% from last month"
+            trend={stats?.netProfit.trend}
             color="primary"
+            loading={isLoading}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Profit Margin"
-            amount="0%"
+            amount={stats?.profitMargin.value || "0%"}
             icon={Calculator}
-            trend="+0% from last month"
+            trend={stats?.profitMargin.trend}
             color="warning"
+            loading={isLoading}
           />
         </Grid>
       </Grid>
-
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Recent Expenses
-        </Typography>
-        <EmptyState
-          icon={TrendingDown}
-          title="No recent expenses"
-          description="Start tracking your property expenditures to see them here."
-        />
-      </Box>
     </DashboardLayout>
   );
 }
