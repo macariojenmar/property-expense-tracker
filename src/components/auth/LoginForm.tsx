@@ -53,8 +53,17 @@ function LoginFormContent() {
   };
 
   return (
-    <Container maxWidth="xs">
-      <Paper elevation={3} sx={{ p: 4, mt: 8, borderRadius: 2 }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "background.default",
+      }}
+    >
+      <Container maxWidth="xs">
+        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
         <Typography component="h1" variant="h5" align="center" gutterBottom>
           Sign In
         </Typography>
@@ -104,14 +113,10 @@ function LoginFormContent() {
           >
             {loading ? "Signing In..." : "Sign In"}
           </Button>
-          <Box sx={{ textAlign: "center" }}>
-            <Link component={NextLink} href="/signup" variant="body2">
-              {"Don't have an account? Sign Up"}
-            </Link>
-          </Box>
         </Box>
       </Paper>
     </Container>
+    </Box>
   );
 }
 

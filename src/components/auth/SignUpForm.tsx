@@ -26,8 +26,17 @@ export default function SignUpForm() {
   }, [state, router]);
 
   return (
-    <Container maxWidth="xs">
-      <Paper elevation={3} sx={{ p: 4, mt: 8, borderRadius: 2 }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "background.default",
+      }}
+    >
+      <Container maxWidth="xs">
+        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
         <Typography component="h1" variant="h5" align="center" gutterBottom>
           Create Account
         </Typography>
@@ -94,5 +103,6 @@ export default function SignUpForm() {
         </Box>
       </Paper>
     </Container>
+    </Box>
   );
 }
