@@ -15,7 +15,7 @@ export default function PropertyInitializer() {
       const fetchData = async () => {
         setIsLoading(true);
         try {
-          const data = await getProperties() as Property[];
+          const data = await getProperties() as unknown as Property[];
           setProperties(data);
           setIsInitialized(true);
         } catch (error) {

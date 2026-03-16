@@ -36,20 +36,12 @@ import MonthFilter, { DateRange } from "@/components/MonthFilter";
 
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { usePropertyStore, Property } from "@/store/usePropertyStore";
+import { usePropertyStore, Property, Payout } from "@/store/usePropertyStore";
 import { refundPayout as refundPayoutAction, revertRefund as revertRefundAction } from "@/lib/actions/payout";
 import NumericFormatInput from "@/components/NumericFormatInput";
-import Loader from "@/components/Loader";
 import EmptyState from "@/components/EmptyState";
 
-export interface Payout {
-  id: string;
-  amount: number;
-  date: string;
-  propertyId: string;
-  refundAmount?: number;
-  status?: "PAID" | "REFUNDED" | "PARTIALLY_REFUNDED";
-}
+// Local interfaces removed in favor of store interfaces
 
 interface PayoutsViewProps {
   propertyId: string | null;
@@ -211,12 +203,10 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const {
     properties,
     setSelectedProperty,
-    selectedProperty,
-    isLoading,
     refresh,
     setIsSaving
   } = usePropertyStore();
-  const { formatAmount, currency } = useCurrency();
+  const { formatAmount } = useCurrency();
 
   const [payouts, setPayouts] = React.useState<Payout[]>([]);
 
@@ -225,7 +215,6 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const [selectedPayout, setSelectedPayout] = React.useState<Payout | null>(
     null,
   );
-  const [loading, setLoading] = React.useState(false);
 
   // Initialize store if we're on a property-specific page but no property is selected
   React.useEffect(() => {
@@ -257,8 +246,8 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
       const payoutDate = new Date(payout.date);
       if (filterRange.start && filterRange.end) {
         return (
-          payoutDate >= startOfMonth(filterRange.start) &&
-          payoutDate <= endOfDay(filterRange.end)
+          payoutDate >= startOfMonth(new Date(filterRange.start)) &&
+          payoutDate <= endOfDay(new Date(filterRange.end))
         );
       }
       return true;
@@ -300,14 +289,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
     }
   };
 
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <Loader message="Loading payouts..." />
-      </DashboardLayout>
-    );
-  }
-
+  // Render logic...
   return (
     <DashboardLayout>
       <Box
@@ -323,7 +305,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         <Box sx={{ width: "100%" }}>
           <Button
             startIcon={<ArrowLeft size={18} />}
-            onClick={() => router.push(`/properties/${propertyId}`)}
+            onClick={() => router.push(`/properties/${propertyId as string}`)}
             sx={{
               mb: 1,
               color: "text.secondary",
@@ -359,7 +341,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
               variant="contained"
               startIcon={<Plus size={18} />}
               onClick={() =>
-                router.push(`/properties/${propertyId}/payouts/create`)
+                router.push(`/properties/${propertyId as string}/payouts/create`)
               }
               fullWidth
               sx={{ height: 44, whiteSpace: "nowrap" }}
@@ -626,7 +608,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
               await revertRefundAction(selectedPayout.id);
               await refresh();
               const updated = usePropertyStore.getState().selectedProperty;
-              if (updated) setPayouts(updated.payouts || []);
+              if (updated) setPayouts((updated as unknown as Property).payouts || []);
             } catch (error) {
               console.error("Failed to revert refund:", error);
             } finally {

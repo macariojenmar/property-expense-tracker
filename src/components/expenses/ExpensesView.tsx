@@ -47,23 +47,11 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import NumericFormatInput from "@/components/NumericFormatInput";
-import { usePropertyStore } from "@/store/usePropertyStore";
+import { usePropertyStore, Expense, RecurringExpense, WaivedRecurringExpense } from "@/store/usePropertyStore";
 import Loader from "@/components/Loader";
 import EmptyState from "@/components/EmptyState";
 
-export interface Expense {
-  id: string;
-  name: string;
-  amount: number;
-  date: string;
-  propertyId: string;
-  note?: string;
-  recurringRef?: string;
-  isRecurring?: boolean;
-  status: "PENDING" | "SETTLED";
-  pendingToId?: string;
-  pendingTo?: { name: string };
-}
+// Local interfaces removed in favor of store interfaces
 
 const mockExpenses: Expense[] = [];
 
@@ -71,14 +59,7 @@ interface ExpensesViewProps {
   propertyId: string | null;
 }
 
-interface RecurringExpense {
-  id: string;
-  name: string;
-  amount: number;
-  day: number;
-  pendingToId?: string;
-  pendingTo?: { name: string };
-}
+// Local interfaces removed in favor of store interfaces
 
 import {
   createExpense,
@@ -136,7 +117,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     if (!propertyId) return;
     try {
       setIsSaving(true);
-      await settleExpenses([id], propertyId);
+      await settleExpenses([id], propertyId as string);
       setExpenses((prev) =>
         prev.map((exp) =>
           exp.id === id ? { ...exp, status: "SETTLED" } : exp,
@@ -176,8 +157,8 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       const expenseDate = new Date(expense.date);
       if (filterRange.start && filterRange.end) {
         if (
-          expenseDate < startOfMonth(filterRange.start) ||
-          expenseDate > endOfDay(filterRange.end)
+          expenseDate < startOfMonth(new Date(filterRange.start)) ||
+          expenseDate > endOfDay(new Date(filterRange.end))
         ) {
           return false;
         }
@@ -228,7 +209,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   }, [property]);
 
   const waivedRecurringExpenses = React.useMemo(() => {
-    return (property?.waivedRecurringExpenses ?? []) as any[];
+    return (property?.waivedRecurringExpenses ?? []) as WaivedRecurringExpense[];
   }, [property]);
 
   // Month key e.g. "2026-03"
@@ -369,7 +350,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     .map((exp) => exp.id);
 
   const handleAddSelected = async () => {
-    if (checkedAndAvailable.length === 0 || !propertyId) return;
+    if (checkedAndAvailable.length === 0 || propertyId === null) return;
 
     setLoading(true);
     setIsSaving(true);
@@ -379,17 +360,17 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         const recurring = recurringExpenses.find((exp) => exp.id === id);
         if (!recurring) continue;
 
-        await createExpense({
-          name: recurring.name,
-          amount: parseFloat(editedAmounts[id] || "0"),
-          note: `Recurring expense for ${format(new Date(), "MMMM yyyy")}`,
-          date: today,
-          propertyId,
-          recurringRef: `${id}_${monthKey}`,
-          isRecurring: true,
-          status: recurring.pendingToId ? "PENDING" : "SETTLED",
-          pendingToId: recurring.pendingToId,
-        });
+          await createExpense({
+            name: recurring.name,
+            amount: parseFloat(editedAmounts[id] || "0"),
+            note: `Recurring expense for ${format(new Date(), "MMMM yyyy")}`,
+            date: today,
+            propertyId: propertyId as string,
+            recurringRef: `${id}_${monthKey}`,
+            isRecurring: true,
+            status: recurring.pendingToId ? "PENDING" : "SETTLED",
+            pendingToId: recurring.pendingToId || undefined,
+          });
       }
 
       await refresh();
@@ -423,17 +404,17 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         amount: parseFloat(editedAmounts[id] || "0"),
         note: `Recurring expense for ${format(new Date(), "MMMM yyyy")}`,
         date: today,
-        propertyId,
+        propertyId: propertyId as string,
         recurringRef: `${id}_${monthKey}`,
         isRecurring: true,
         status: recurring.pendingToId ? "PENDING" : "SETTLED",
-        pendingToId: recurring.pendingToId,
+        pendingToId: recurring.pendingToId || undefined,
       });
 
       await refresh();
       const updated = usePropertyStore.getState().selectedProperty;
       if (updated) {
-        setExpenses((updated as any).expenses || []);
+        setExpenses((updated as unknown as Property).expenses || []);
       }
     } catch (error) {
       console.error("Failed to add recurring expense:", error);
@@ -578,7 +559,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         <Box sx={{ flex: 1 }}>
           <Button
             startIcon={<ArrowLeft size={18} />}
-            onClick={() => router.push(`/properties/${propertyId}`)}
+            onClick={() => router.push(`/properties/${propertyId as string}`)}
             sx={{
               mb: 1.5,
               color: "text.secondary",
@@ -1308,7 +1289,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
             variant="contained"
             startIcon={<Plus size={18} />}
             onClick={() =>
-              router.push(`/properties/${propertyId}/expenses/create`)
+              router.push(`/properties/${propertyId as string}/expenses/create`)
             }
             fullWidth
             sx={{
@@ -1495,7 +1476,11 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                   <Box sx={{ px: { xs: 5.5, sm: 0 } }}>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <FileText size={14} color="gray" />
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        noWrap
+                      >
                         {expense.note}
                       </Typography>
                     </Stack>

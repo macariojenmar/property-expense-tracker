@@ -1,59 +1,82 @@
 import { create } from "zustand";
 
 export interface RecurringExpense {
-  id?: string;
+  id: string;
   name: string;
   amount: number;
   day: number;
-  pendingToId?: string;
-  pendingTo?: { name: string };
+  propertyId: string;
+  pendingToId?: string | null;
+  pendingTo?: {
+    id: string;
+    name: string;
+    type?: string | null;
+    userId: string;
+    createdAt: Date | string;
+    updatedAt: Date | string;
+  } | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 export interface Expense {
   id: string;
   name: string;
   amount: number;
-  date: string;
+  note?: string | null;
+  date: Date | string;
   propertyId: string;
-  note?: string;
-  recurringRef?: string;
-  isRecurring?: boolean;
+  isRecurring: boolean;
+  recurringRef?: string | null;
   status: "PENDING" | "SETTLED";
-  pendingTo?: { name: string };
+  pendingToId?: string | null;
+  pendingTo?: {
+    id: string;
+    name: string;
+    type?: string | null;
+    userId: string;
+    createdAt: Date | string;
+    updatedAt: Date | string;
+  } | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 export interface Payout {
   id: string;
   amount: number;
-  date: string;
+  date: Date | string;
   propertyId: string;
-  refundAmount?: number;
-  status?: "PAID" | "REFUNDED" | "PARTIALLY_REFUNDED";
+  refundAmount?: number | null;
+  status: "PAID" | "REFUNDED" | "PARTIALLY_REFUNDED";
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 export interface WaivedRecurringExpense {
   id: string;
-  recurringExpenseId: string;
   monthKey: string;
+  recurringExpenseId: string;
   propertyId: string;
+  createdAt: Date | string;
 }
 
 export interface Property {
   id: string;
   name: string;
-  location: string;
-  price?: number;
+  location?: string | null;
+  price?: number | null;
   initialFunds: number;
-  funds: number;
+  userId: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
   profit: number;
+  funds: number;
   currentExpense: number;
-  estimatedExpense?: number;
-  estimatedFunds?: number;
-  estimatedProfit?: number;
   recurringExpenses: RecurringExpense[];
-  expenses?: Expense[];
-  payouts?: Payout[];
-  waivedRecurringExpenses?: WaivedRecurringExpense[];
+  expenses: Expense[];
+  payouts: Payout[];
+  waivedRecurringExpenses: WaivedRecurringExpense[];
 }
 
 interface PropertyStore {
@@ -81,9 +104,10 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
       properties: typeof properties === "function" ? properties(state.properties) : properties,
     })),
   setSelectedProperty: (property: Property | null | ((prev: Property | null) => Property | null)) =>
-    set((state) => ({
-      selectedProperty: typeof property === "function" ? property(state.selectedProperty) : property,
-    })),
+    set((state) => {
+      const nextProperty = typeof property === "function" ? property(state.selectedProperty) : property;
+      return { selectedProperty: nextProperty };
+    }),
   setIsLoading: (isLoading: boolean) => set({ isLoading }),
   setIsSaving: (isSaving: boolean) => set({ isSaving }),
   setIsInitialized: (isInitialized: boolean) => set({ isInitialized }),
@@ -91,7 +115,7 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
     const { getProperties } = await import("@/lib/actions/property");
     set({ isLoading: true });
     try {
-      const data = await getProperties() as Property[];
+      const data = await getProperties() as unknown as Property[];
       const currentSelectedId = get().selectedProperty?.id;
       set({ properties: data });
       if (currentSelectedId) {
