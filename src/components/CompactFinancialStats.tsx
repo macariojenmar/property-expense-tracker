@@ -10,6 +10,7 @@ import {
   alpha,
   useTheme,
   Tooltip,
+  IconButton,
 } from "@mui/material";
 import { TrendingUp, Clock, Percent, PieChart, Info } from "lucide-react";
 import { Expense, Payout } from "@/store/usePropertyStore";
@@ -69,9 +70,9 @@ const StatItem = ({
           {label}
         </Typography>
         <Tooltip title={description} placement="top">
-          <Box sx={{ color: "text.secondary", opacity: 0.6, cursor: "help", display: "flex" }}>
-            <Info size={14} />
-          </Box>
+          <IconButton>
+            <Info size={16} color="grey" />
+          </IconButton>
         </Tooltip>
       </Stack>
       <Typography

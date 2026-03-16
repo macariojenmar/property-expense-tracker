@@ -12,6 +12,7 @@ import {
   Divider,
   alpha,
   Tooltip,
+  IconButton,
 } from "@mui/material";
 import {
   ArrowLeft,
@@ -90,9 +91,13 @@ const FinanceCard = ({
               {title}
             </Typography>
             <Tooltip title={description} placement="top">
-              <Box sx={{ color: "text.secondary", opacity: 0.6, cursor: "help", display: "flex", ml: 0.5 }}>
-                <Info size={16} />
-              </Box>
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <Info size={16} color="grey" />
+              </IconButton>
             </Tooltip>
           </Stack>
         </Stack>
@@ -166,7 +171,12 @@ export default function PropertyDetailsPage() {
 
   const rangeData = React.useMemo(() => {
     if (!property || !filterRange.start || !filterRange.end) {
-      return { expenses: [], payouts: [], currentExpenses: 0, currentProfit: 0 };
+      return {
+        expenses: [],
+        payouts: [],
+        currentExpenses: 0,
+        currentProfit: 0,
+      };
     }
 
     const { start, end } = filterRange;
@@ -187,8 +197,10 @@ export default function PropertyDetailsPage() {
       payouts: rangePayouts,
       currentExpenses: rangeExpenses.reduce((sum, e) => sum + e.amount, 0),
       currentProfit:
-        rangePayouts.reduce((sum, p) => sum + (p.amount - (p.refundAmount || 0)), 0) -
-        rangeExpenses.reduce((sum, e) => sum + e.amount, 0),
+        rangePayouts.reduce(
+          (sum, p) => sum + (p.amount - (p.refundAmount || 0)),
+          0,
+        ) - rangeExpenses.reduce((sum, e) => sum + e.amount, 0),
     };
   }, [property, filterRange]);
 
@@ -205,7 +217,11 @@ export default function PropertyDetailsPage() {
     }
 
     const { end } = filterRange;
-    const { expenses: rangeExpenses, currentExpenses, currentProfit } = rangeData;
+    const {
+      expenses: rangeExpenses,
+      currentExpenses,
+      currentProfit,
+    } = rangeData;
 
     // Funds is cumulative up to the 'end' date
     const allPriorExpenses = (property.expenses || []).filter(
@@ -385,7 +401,10 @@ export default function PropertyDetailsPage() {
       {property.recurringExpenses && property.recurringExpenses.length > 0 && (
         <Box sx={{ mt: 4, mb: 2 }}>
           <Grid container spacing={4} alignItems="stretch">
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", flexDirection: "column" }}>
+            <Grid
+              size={{ xs: 12, md: 6 }}
+              sx={{ display: "flex", flexDirection: "column" }}
+            >
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Recurring Expenses
               </Typography>
@@ -449,7 +468,9 @@ export default function PropertyDetailsPage() {
                           </Typography>
                         </Stack>
                         {index < property.recurringExpenses.length - 1 && (
-                          <Divider sx={{ borderStyle: "dashed", opacity: 0.5 }} />
+                          <Divider
+                            sx={{ borderStyle: "dashed", opacity: 0.5 }}
+                          />
                         )}
                       </Box>
                     ))}
@@ -457,7 +478,10 @@ export default function PropertyDetailsPage() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", flexDirection: "column" }}>
+            <Grid
+              size={{ xs: 12, md: 6 }}
+              sx={{ display: "flex", flexDirection: "column" }}
+            >
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Financial Health
               </Typography>
