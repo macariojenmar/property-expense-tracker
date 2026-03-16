@@ -14,6 +14,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import { updateExpense, softDeleteExpense } from "@/lib/actions/expense";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
+import { getDictionaryWords } from "@/lib/actions/dictionary";
 import { useRouter, useParams } from "next/navigation";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import ExpenseForm, {
@@ -21,6 +22,11 @@ import ExpenseForm, {
 } from "@/components/expenses/ExpenseForm";
 import Loader from "@/components/Loader";
 import ConfirmDialog from "@/components/ConfirmDialog";
+
+interface Word {
+  id: string;
+  word: string;
+}
 
 export default function EditExpensePage() {
   const router = useRouter();
@@ -39,24 +45,19 @@ export default function EditExpensePage() {
   const [dictionary, setDictionary] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    const saved = localStorage.getItem("propertyTracker_dictionary");
-    if (saved) {
+    const fetchData = async () => {
       try {
-        setDictionary(JSON.parse(saved));
-      } catch {
-        /* ignored */
-      }
-    }
-
-    const fetchEntities = async () => {
-      try {
-        const data = await getPendingToEntities();
-        setEntities(data);
-      } catch {
-        /* ignored */
+        const [dictionaryData, entitiesData] = await Promise.all([
+          getDictionaryWords(),
+          getPendingToEntities()
+        ]);
+        setDictionary(dictionaryData.map((w: Word) => w.word));
+        setEntities(entitiesData);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
       }
     };
-    fetchEntities();
+    fetchData();
   }, []);
 
   React.useEffect(() => {

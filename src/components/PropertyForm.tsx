@@ -22,7 +22,13 @@ import { useRouter } from "next/navigation";
 import { useCurrency } from "@/components/CurrencyContext";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
+import { getDictionaryWords } from "@/lib/actions/dictionary";
 import { usePropertyStore } from "@/store/usePropertyStore";
+
+interface Word {
+  id: string;
+  word: string;
+}
 
 type PendingTo = {
   id: string;
@@ -89,24 +95,19 @@ export default function PropertyForm({
   const loading = externalLoading || internalLoading;
 
   React.useEffect(() => {
-    const saved = localStorage.getItem("propertyTracker_dictionary");
-    if (saved) {
+    const fetchData = async () => {
       try {
-        setDictionaryWords(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse dictionary", e);
-      }
-    }
-
-    const fetchEntities = async () => {
-      try {
-        const data = await getPendingToEntities();
-        setEntities(data);
+        const [dictionaryData, entitiesData] = await Promise.all([
+          getDictionaryWords(),
+          getPendingToEntities()
+        ]);
+        setDictionaryWords(dictionaryData.map((w: Word) => w.word));
+        setEntities(entitiesData);
       } catch (error) {
-        console.error("Failed to fetch entities:", error);
+        console.error("Failed to fetch data:", error);
       }
     };
-    fetchEntities();
+    fetchData();
   }, []);
 
   const handleAddExpense = () =>

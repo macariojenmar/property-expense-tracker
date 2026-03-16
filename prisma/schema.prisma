@@ -19,6 +19,7 @@ model User {
   image         String?
   properties    Property[]
   pendingToEs   PendingTo[]
+  dictionaryWords DictionaryWord[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -118,4 +119,15 @@ model RecurringExpenseWaive {
   createdAt          DateTime         @default(now())
 
   @@unique([monthKey, recurringExpenseId, propertyId])
+}
+
+model DictionaryWord {
+  id        String   @id @default(cuid())
+  word      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([word, userId])
 }

@@ -18,6 +18,12 @@ import { Plus, Trash2, Save } from "lucide-react";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { useCurrency } from "@/components/CurrencyContext";
 import NumericFormatInput from "@/components/NumericFormatInput";
+import { getDictionaryWords } from "@/lib/actions/dictionary";
+
+interface Word {
+  id: string;
+  word: string;
+}
 
 export interface PayoutItem {
   id: number | string;
@@ -52,30 +58,15 @@ export default function PayoutForm({
   const [dictionary, setDictionary] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    const saved = localStorage.getItem("propertyTracker_dictionary");
-    if (saved) {
+    const fetchDictionary = async () => {
       try {
-        setDictionary(JSON.parse(saved));
-      } catch {
-        /* ignored */
+        const data = await getDictionaryWords();
+        setDictionary(data.map((w: Word) => w.word));
+      } catch (error) {
+        console.error("Failed to fetch dictionary:", error);
       }
-    } else {
-      const defaults = [
-        "Internet",
-        "Rent",
-        "Transportation",
-        "Water Bill",
-        "Electricity Bill",
-        "Cleaning Fee",
-        "Maintenance",
-        "Property Tax",
-      ];
-      setDictionary(defaults);
-      localStorage.setItem(
-        "propertyTracker_dictionary",
-        JSON.stringify(defaults),
-      );
-    }
+    };
+    fetchDictionary();
   }, []);
 
   const handleAddRow = () =>

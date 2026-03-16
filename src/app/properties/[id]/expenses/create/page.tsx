@@ -14,11 +14,17 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, ArrowLeft, Save } from "lucide-react";
 import { createExpense } from "@/lib/actions/expense";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
+import { getDictionaryWords } from "@/lib/actions/dictionary";
 import { useRouter, useParams } from "next/navigation";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import ExpenseForm, {
   ExpenseFormData,
 } from "@/components/expenses/ExpenseForm";
+
+interface Word {
+  id: string;
+  word: string;
+}
 
 export default function CreateExpensePage() {
   const router = useRouter();
@@ -44,40 +50,19 @@ export default function CreateExpensePage() {
   const [dictionary, setDictionary] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    const saved = localStorage.getItem("propertyTracker_dictionary");
-    if (saved) {
+    const fetchData = async () => {
       try {
-        setDictionary(JSON.parse(saved));
-      } catch {
-        /* ignored */
-      }
-    } else {
-      const defaults = [
-        "Internet",
-        "Rent",
-        "Transportation",
-        "Water Bill",
-        "Electricity Bill",
-        "Cleaning Fee",
-        "Maintenance",
-        "Property Tax",
-      ];
-      setDictionary(defaults);
-      localStorage.setItem(
-        "propertyTracker_dictionary",
-        JSON.stringify(defaults),
-      );
-    }
-
-    const fetchEntities = async () => {
-      try {
-        const data = await getPendingToEntities();
-        setEntities(data);
-      } catch {
-        /* ignored */
+        const [dictionaryData, entitiesData] = await Promise.all([
+          getDictionaryWords(),
+          getPendingToEntities()
+        ]);
+        setDictionary(dictionaryData.map((w: Word) => w.word));
+        setEntities(entitiesData);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
       }
     };
-    fetchEntities();
+    fetchData();
   }, []);
 
   const handleAddRow = () =>
