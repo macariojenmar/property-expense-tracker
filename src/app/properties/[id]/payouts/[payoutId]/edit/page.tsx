@@ -10,8 +10,9 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ArrowLeft } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { usePropertyStore } from "@/store/usePropertyStore";
-import { updatePayout } from "@/lib/actions/payout";
+import { updatePayout, softDeletePayout } from "@/lib/actions/payout";
 import PayoutForm, { PayoutItem } from "@/components/payouts/PayoutForm";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function EditPayoutPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function EditPayoutPage() {
   const { properties, setIsSaving, refresh } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
   const [initialItems, setInitialItems] = React.useState<PayoutItem[] | null>(null);
+  const [showConfirm, setShowConfirm] = React.useState(false);
 
   React.useEffect(() => {
     const property = properties.find((p) => p.id === propertyId);
@@ -66,6 +68,25 @@ export default function EditPayoutPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (loading) return;
+    setShowConfirm(false);
+
+    setLoading(true);
+    setIsSaving(true);
+    try {
+      await softDeletePayout(payoutId);
+      await refresh();
+      router.push(`/properties/${propertyId}/payouts`);
+    } catch (error: any) {
+      console.error("Failed to delete payout:", error);
+      alert(error.message || "Failed to delete payout.");
+    } finally {
+      setLoading(false);
+      setIsSaving(false);
+    }
+  };
+
   const handleCancel = () => {
     router.push(`/properties/${propertyId}/payouts`);
   };
@@ -94,12 +115,23 @@ export default function EditPayoutPage() {
           initialItems={initialItems}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
+          onDelete={() => setShowConfirm(true)}
           isEditing={true}
           loading={loading}
           title="Edit Payout Details"
           submitLabel="Update Payout"
         />
       </Box>
+
+      <ConfirmDialog
+        open={showConfirm}
+        title="Delete Payout"
+        message="Are you sure you want to delete this payout? This action cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setShowConfirm(false)}
+        loading={loading}
+      />
     </DashboardLayout>
   );
 }

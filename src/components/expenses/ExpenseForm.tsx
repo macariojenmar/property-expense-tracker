@@ -23,7 +23,7 @@ export interface ExpenseFormData {
   amount: string;
   date: Date;
   note: string;
-  status: "PENDING" | "SETTLED";
+  status: "PENDING" | "SETTLED" | "DELETED";
   pendingToId: string;
 }
 
@@ -35,7 +35,7 @@ interface ExpenseFormProps {
   onChange: (
     id: string | number,
     field: keyof ExpenseFormData,
-    value: string | Date | "PENDING" | "SETTLED",
+    value: string | Date | "PENDING" | "SETTLED" | "DELETED",
   ) => void;
   entities: { id: string; name: string }[];
   dictionary: string[];
@@ -60,7 +60,7 @@ export default function ExpenseForm({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            mb: 1,
+            mb: 2,
           }}
         >
           {showIndex && (
@@ -75,7 +75,7 @@ export default function ExpenseForm({
               size="small"
               sx={{ ml: "auto" }}
             >
-              <Trash2 size={18} />
+              <Trash2 size={22} />
             </IconButton>
           )}
         </Box>
@@ -157,9 +157,7 @@ export default function ExpenseForm({
             fullWidth
             value={item.status}
             exclusive
-            onChange={(_, v) =>
-              v && onChange(item.id, "status", v)
-            }
+            onChange={(_, v) => v && onChange(item.id, "status", v)}
             size="small"
             sx={{
               p: 0.5,
@@ -206,16 +204,9 @@ export default function ExpenseForm({
               fullWidth
               options={entities}
               getOptionLabel={(option) => option.name}
-              value={
-                entities.find((e) => e.id === item.pendingToId) ||
-                null
-              }
+              value={entities.find((e) => e.id === item.pendingToId) || null}
               onChange={(_, newValue) =>
-                onChange(
-                  item.id,
-                  "pendingToId",
-                  newValue?.id || "",
-                )
+                onChange(item.id, "pendingToId", newValue?.id || "")
               }
               renderInput={(params) => (
                 <TextField
@@ -240,9 +231,7 @@ export default function ExpenseForm({
             rows={2}
             placeholder="Add any additional details..."
             value={item.note}
-            onChange={(e) =>
-              onChange(item.id, "note", e.target.value)
-            }
+            onChange={(e) => onChange(item.id, "note", e.target.value)}
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: 1.5,

@@ -11,13 +11,16 @@ import {
   IconButton,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { ArrowLeft, Save } from "lucide-react";
-import { updateExpense } from "@/lib/actions/expense";
+import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { updateExpense, softDeleteExpense } from "@/lib/actions/expense";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
 import { useRouter, useParams } from "next/navigation";
 import { usePropertyStore } from "@/store/usePropertyStore";
-import ExpenseForm, { ExpenseFormData } from "@/components/expenses/ExpenseForm";
+import ExpenseForm, {
+  ExpenseFormData,
+} from "@/components/expenses/ExpenseForm";
 import Loader from "@/components/Loader";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function EditExpensePage() {
   const router = useRouter();
@@ -27,9 +30,12 @@ export default function EditExpensePage() {
   const { properties, setIsSaving, refresh, isLoading } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
   const [initialized, setInitialized] = React.useState(false);
+  const [showConfirm, setShowConfirm] = React.useState(false);
 
   const [item, setItem] = React.useState<ExpenseFormData | null>(null);
-  const [entities, setEntities] = React.useState<{ id: string; name: string }[]>([]);
+  const [entities, setEntities] = React.useState<
+    { id: string; name: string }[]
+  >([]);
   const [dictionary, setDictionary] = React.useState<string[]>([]);
 
   React.useEffect(() => {
@@ -37,14 +43,18 @@ export default function EditExpensePage() {
     if (saved) {
       try {
         setDictionary(JSON.parse(saved));
-      } catch { /* ignored */ }
+      } catch {
+        /* ignored */
+      }
     }
 
     const fetchEntities = async () => {
       try {
         const data = await getPendingToEntities();
         setEntities(data);
-      } catch { /* ignored */ }
+      } catch {
+        /* ignored */
+      }
     };
     fetchEntities();
   }, []);
@@ -104,6 +114,24 @@ export default function EditExpensePage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (loading || !item) return;
+    setShowConfirm(false);
+
+    setLoading(true);
+    setIsSaving(true);
+    try {
+      await softDeleteExpense(expenseId);
+      await refresh();
+      router.push(`/properties/${propertyId}/expenses`);
+    } catch (error) {
+      console.error("Failed to delete expense:", error);
+    } finally {
+      setLoading(false);
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading || !item) {
     return (
       <DashboardLayout>
@@ -133,7 +161,9 @@ export default function EditExpensePage() {
         <Stack spacing={4}>
           <Card>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 3 }}>Expense Details</Typography>
+              <Typography variant="h6" sx={{ mb: 3 }}>
+                Expense Details
+              </Typography>
               <ExpenseForm
                 item={item}
                 onChange={handleChange}
@@ -143,34 +173,60 @@ export default function EditExpensePage() {
             </CardContent>
           </Card>
 
-          <Box
-            sx={{ display: "flex", justifyContent: "flex-end", gap: 2, pb: 4 }}
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent={"space-between"}
+            gap={2}
           >
             <Button
               variant="outlined"
-              onClick={() => router.push(`/properties/${propertyId}/expenses`)}
+              color="error"
+              startIcon={<Trash2 size={18} />}
+              onClick={() => setShowConfirm(true)}
+              disabled={loading}
               sx={{ borderRadius: 1.5, px: 3 }}
             >
-              Cancel
+              Delete Expense
             </Button>
-            <Button
-              variant="contained"
-              startIcon={loading ? null : <Save size={18} />}
-              onClick={handleSave}
-              disabled={loading}
-              sx={{
-                borderRadius: 1.5,
-                px: 3,
-                bgcolor: "text.primary",
-                color: "background.paper",
-                "&:hover": { bgcolor: "primary.main", opacity: 0.9 },
-              }}
-            >
-              {loading ? "Saving..." : "Update Expense"}
-            </Button>
-          </Box>
+            <Stack direction={{ xs: "column", sm: "row" }} gap={2}>
+              <Button
+                variant="outlined"
+                onClick={() =>
+                  router.push(`/properties/${propertyId}/expenses`)
+                }
+                sx={{ borderRadius: 1.5, px: 3 }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={loading ? null : <Save size={18} />}
+                onClick={handleSave}
+                disabled={loading}
+                sx={{
+                  borderRadius: 1.5,
+                  px: 3,
+                  bgcolor: "text.primary",
+                  color: "background.paper",
+                  "&:hover": { bgcolor: "primary.main", opacity: 0.9 },
+                }}
+              >
+                {loading ? "Saving..." : "Update Expense"}
+              </Button>
+            </Stack>
+          </Stack>
         </Stack>
       </Box>
+
+      <ConfirmDialog
+        open={showConfirm}
+        title="Delete Expense"
+        message="Are you sure you want to delete this expense? This action cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setShowConfirm(false)}
+        loading={loading}
+      />
     </DashboardLayout>
   );
 }

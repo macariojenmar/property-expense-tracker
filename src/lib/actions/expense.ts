@@ -15,6 +15,7 @@ export async function getExpenses(propertyId: string) {
     where: {
       propertyId,
       property: { userId: session.user.id },
+      status: { not: "DELETED" },
     },
     include: { pendingTo: true },
     orderBy: { date: "desc" },
@@ -62,7 +63,7 @@ export async function updateExpense(
     amount?: number;
     note?: string;
     date?: string;
-    status?: "PENDING" | "SETTLED";
+    status?: "PENDING" | "SETTLED" | "DELETED";
     pendingToId?: string | null;
   }
 ) {
@@ -79,7 +80,7 @@ export async function updateExpense(
     data: {
       ...data,
       date: data.date ? new Date(data.date) : undefined,
-      pendingToId: data.pendingToId === null ? null : data.pendingToId,
+      ...(data.pendingToId !== undefined && { pendingToId: data.pendingToId }),
     },
   });
 
@@ -97,6 +98,26 @@ export async function deleteExpense(id: string) {
     where: {
       id,
       property: { userId: session.user.id },
+    },
+  });
+
+  revalidatePath(`/properties/${expense.propertyId}`);
+  return expense;
+}
+
+export async function softDeleteExpense(id: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const expense = await prisma.expense.update({
+    where: {
+      id,
+      property: { userId: session.user.id },
+    },
+    data: {
+      status: "DELETED",
     },
   });
 

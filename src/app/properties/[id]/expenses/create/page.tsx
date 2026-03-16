@@ -16,13 +16,15 @@ import { createExpense } from "@/lib/actions/expense";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
 import { useRouter, useParams } from "next/navigation";
 import { usePropertyStore } from "@/store/usePropertyStore";
-import ExpenseForm, { ExpenseFormData } from "@/components/expenses/ExpenseForm";
+import ExpenseForm, {
+  ExpenseFormData,
+} from "@/components/expenses/ExpenseForm";
 
 export default function CreateExpensePage() {
   const router = useRouter();
   const params = useParams();
   const propertyId = params.id as string;
-const { setIsSaving, refresh } = usePropertyStore();
+  const { setIsSaving, refresh } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
 
   const [items, setItems] = React.useState<ExpenseFormData[]>([
@@ -36,7 +38,9 @@ const { setIsSaving, refresh } = usePropertyStore();
       pendingToId: "",
     },
   ]);
-  const [entities, setEntities] = React.useState<{ id: string; name: string }[]>([]);
+  const [entities, setEntities] = React.useState<
+    { id: string; name: string }[]
+  >([]);
   const [dictionary, setDictionary] = React.useState<string[]>([]);
 
   React.useEffect(() => {
@@ -44,7 +48,9 @@ const { setIsSaving, refresh } = usePropertyStore();
     if (saved) {
       try {
         setDictionary(JSON.parse(saved));
-      } catch { /* ignored */ }
+      } catch {
+        /* ignored */
+      }
     } else {
       const defaults = [
         "Internet",
@@ -67,7 +73,9 @@ const { setIsSaving, refresh } = usePropertyStore();
       try {
         const data = await getPendingToEntities();
         setEntities(data);
-      } catch { /* ignored */ }
+      } catch {
+        /* ignored */
+      }
     };
     fetchEntities();
   }, []);
@@ -92,9 +100,8 @@ const { setIsSaving, refresh } = usePropertyStore();
   const handleChange = (
     id: string | number,
     field: keyof ExpenseFormData,
-    value: string | Date | "PENDING" | "SETTLED",
-  ) =>
-    setItems(items.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
+    value: string | Date | "PENDING" | "SETTLED" | "DELETED",
+  ) => setItems(items.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
 
   const handleSave = async () => {
     if (loading) return;
@@ -109,7 +116,7 @@ const { setIsSaving, refresh } = usePropertyStore();
           date: item.date.toISOString(),
           note: item.note,
           propertyId,
-          status: item.status,
+          status: item.status === "DELETED" ? "SETTLED" : item.status, // Fallback for safety, should never be DELETED on create
           pendingToId: item.status === "PENDING" ? item.pendingToId : undefined,
         });
       }
@@ -144,23 +151,9 @@ const { setIsSaving, refresh } = usePropertyStore();
         <Stack spacing={4}>
           <Card>
             <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography variant="h6">Expense Details</Typography>
-                <Button
-                  startIcon={<Plus size={16} />}
-                  onClick={handleAddRow}
-                  size="small"
-                >
-                  Add Row
-                </Button>
-              </Box>
+              <Typography variant="h6" mb={2}>
+                Expense Details
+              </Typography>
               <Stack spacing={3}>
                 {items.map((item, index) => (
                   <ExpenseForm
@@ -174,12 +167,23 @@ const { setIsSaving, refresh } = usePropertyStore();
                     dictionary={dictionary}
                   />
                 ))}
+                <Button
+                  variant="outlined"
+                  startIcon={<Plus size={16} />}
+                  onClick={handleAddRow}
+                  size="small"
+                  sx={{ width: "fit-content" }}
+                >
+                  Add Row
+                </Button>
               </Stack>
             </CardContent>
           </Card>
 
-          <Box
-            sx={{ display: "flex", justifyContent: "flex-end", gap: 2, pb: 4 }}
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            justifyContent="flex-end"
+            gap={2}
           >
             <Button
               variant="outlined"
@@ -203,7 +207,7 @@ const { setIsSaving, refresh } = usePropertyStore();
             >
               {loading ? "Saving..." : "Save Expenses"}
             </Button>
-          </Box>
+          </Stack>
         </Stack>
       </Box>
     </DashboardLayout>

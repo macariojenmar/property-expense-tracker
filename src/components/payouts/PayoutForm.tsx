@@ -30,6 +30,7 @@ export interface PayoutFormProps {
   initialItems: PayoutItem[];
   onSubmit: (items: PayoutItem[]) => Promise<void>;
   onCancel: () => void;
+  onDelete?: () => void | Promise<void>;
   isEditing?: boolean;
   loading?: boolean;
   submitLabel?: string;
@@ -40,6 +41,7 @@ export default function PayoutForm({
   initialItems,
   onSubmit,
   onCancel,
+  onDelete,
   isEditing = false,
   loading = false,
   submitLabel = "Save Payouts",
@@ -54,7 +56,9 @@ export default function PayoutForm({
     if (saved) {
       try {
         setDictionary(JSON.parse(saved));
-      } catch { /* ignored */ }
+      } catch {
+        /* ignored */
+      }
     } else {
       const defaults = [
         "Internet",
@@ -77,14 +81,22 @@ export default function PayoutForm({
   const handleAddRow = () =>
     setItems([
       ...items,
-      { id: Date.now(), label: "Property Payout", amount: "", date: new Date() },
+      {
+        id: Date.now(),
+        label: "Property Payout",
+        amount: "",
+        date: new Date(),
+      },
     ]);
 
   const handleRemove = (id: number | string) =>
     setItems(items.filter((i) => i.id !== id));
 
-  const handleChange = (id: number | string, field: "label" | "amount", value: string) =>
-    setItems(items.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
+  const handleChange = (
+    id: number | string,
+    field: "label" | "amount",
+    value: string,
+  ) => setItems(items.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
 
   const handleDateChange = (id: number | string, value: Date | null) =>
     setItems(
@@ -99,25 +111,9 @@ export default function PayoutForm({
     <Stack spacing={4}>
       <Card>
         <CardContent>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
-            }}
-          >
-            <Typography variant="h6">{title}</Typography>
-            {!isEditing && (
-              <Button
-                startIcon={<Plus size={16} />}
-                onClick={handleAddRow}
-                size="small"
-              >
-                Add Row
-              </Button>
-            )}
-          </Box>
+          <Typography variant="h6" mb={2}>
+            {title}
+          </Typography>
           <Stack spacing={3}>
             {items.map((item, index) => (
               <Box key={item.id}>
@@ -138,7 +134,7 @@ export default function PayoutForm({
                       onClick={() => handleRemove(item.id)}
                       size="small"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={22} />
                     </IconButton>
                   </Box>
                 )}
@@ -193,23 +189,52 @@ export default function PayoutForm({
                 </Grid>
               </Box>
             ))}
+            {!isEditing && (
+              <Button
+                sx={{ width: "fit-content" }}
+                variant="outlined"
+                startIcon={<Plus size={16} />}
+                onClick={handleAddRow}
+              >
+                Add Row
+              </Button>
+            )}
           </Stack>
         </CardContent>
       </Card>
 
-      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, pb: 4 }}>
-        <Button variant="outlined" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={loading ? null : <Save size={18} />}
-          onClick={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? "Saving..." : submitLabel}
-        </Button>
-      </Box>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent={"space-between"}
+        gap={2}
+      >
+        {isEditing && onDelete ? (
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<Trash2 size={18} />}
+            onClick={onDelete}
+            disabled={loading}
+          >
+            Delete Payout
+          </Button>
+        ) : (
+          <Box /> // Spacer
+        )}
+        <Stack direction={{ xs: "column", sm: "row" }} gap={2}>
+          <Button variant="outlined" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={loading ? null : <Save size={18} />}
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? "Saving..." : submitLabel}
+          </Button>
+        </Stack>
+      </Stack>
     </Stack>
   );
 }

@@ -16,6 +16,7 @@ export async function getPayouts(propertyId: string) {
     where: {
       propertyId,
       property: { userId: session.user.id },
+      status: { not: "DELETED" },
     },
     orderBy: { date: "desc" },
   });
@@ -128,6 +129,26 @@ export async function revertRefund(id: string) {
     data: {
       refundAmount: 0,
       status: "PAID",
+    },
+  });
+
+  revalidatePath(`/properties/${payout.propertyId}`);
+  return payout;
+}
+
+export async function softDeletePayout(id: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const payout = await prisma.payout.update({
+    where: {
+      id,
+      property: { userId: session.user.id },
+    },
+    data: {
+      status: "DELETED",
     },
   });
 

@@ -59,6 +59,7 @@ model Expense {
 enum ExpenseStatus {
   PENDING
   SETTLED
+  DELETED
 }
 
 model PendingTo {
@@ -90,6 +91,7 @@ enum PayoutStatus {
   PAID
   REFUNDED
   PARTIALLY_REFUNDED
+  DELETED
 }
 
 model RecurringExpense {

@@ -14,8 +14,13 @@ export async function getProperties() {
   const properties = await prisma.property.findMany({
     where: { userId: session.user.id },
     include: {
-      expenses: { include: { pendingTo: true } },
-      payouts: true,
+      expenses: {
+        where: { status: { not: "DELETED" } },
+        include: { pendingTo: true }
+      },
+      payouts: {
+        where: { status: { not: "DELETED" } }
+      },
       recurringExpenses: { include: { pendingTo: true } },
       waivedRecurringExpenses: true,
     },
@@ -61,11 +66,15 @@ export async function getProperty(id: string) {
   const property = await prisma.property.findFirst({
     where: { id, userId: session.user.id },
     include: {
-      expenses: { 
+      expenses: {
+        where: { status: { not: "DELETED" } },
         orderBy: { date: "desc" },
         include: { pendingTo: true }
       },
-      payouts: { orderBy: { date: "desc" } },
+      payouts: {
+        where: { status: { not: "DELETED" } },
+        orderBy: { date: "desc" }
+      },
       recurringExpenses: { include: { pendingTo: true } },
       waivedRecurringExpenses: true,
     },

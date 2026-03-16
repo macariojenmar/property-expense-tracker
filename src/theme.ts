@@ -49,14 +49,6 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
             backgroundColor: mode === "light" ? "#333" : "#ccc",
           },
         },
-        outlined: {
-          borderColor: mode === "light" ? "#eaeaea" : "#333333",
-          color: mode === "light" ? "#000" : "#fff",
-          "&:hover": {
-            backgroundColor: mode === "light" ? "#f5f5f5" : "#111",
-            borderColor: mode === "light" ? "#ddd" : "#444",
-          },
-        },
       },
     },
     MuiCard: {
@@ -100,9 +92,7 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
           backdrop: {
             sx: {
               backgroundColor:
-                mode === "light"
-                  ? "rgba(0, 0, 0, 0.7)"
-                  : "rgba(0, 0, 0, 0.8)",
+                mode === "light" ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.8)",
             },
           },
         },
