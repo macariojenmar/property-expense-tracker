@@ -59,9 +59,15 @@ function RefundDialog({ open, onClose, payout, onRefund }: RefundDialogProps) {
   const [refundType, setRefundType] = React.useState<"full" | "custom">("full");
   const [customAmount, setCustomAmount] = React.useState("");
 
-  if (!payout) return null;
+  const remainingAmount = payout ? payout.amount - (payout.refundAmount || 0) : 0;
 
-  const remainingAmount = payout.amount - (payout.refundAmount || 0);
+  const previewRemaining = React.useMemo(() => {
+    if (!payout) return 0;
+    const amount = refundType === "full" ? remainingAmount : (parseFloat(customAmount) || 0);
+    return Math.max(0, remainingAmount - amount);
+  }, [payout, refundType, remainingAmount, customAmount]);
+
+  if (!payout) return null;
 
   const handleConfirm = () => {
     const amount =
@@ -101,12 +107,19 @@ function RefundDialog({ open, onClose, payout, onRefund }: RefundDialogProps) {
               </Typography>
             ) : null}
             <Typography variant="body2" sx={{ mt: 0.5 }}>
-              Remaining Amount:{" "}
+              Current Balance:{" "}
               <strong>
                 {currency.symbol}
                 {remainingAmount.toLocaleString()}
               </strong>
             </Typography>
+            {(refundType === "full" || customAmount) && (
+              <Typography variant="body2" sx={{ mt: 0.5, color: "success.main", fontWeight: 600 }}>
+                Remaining After Refund:{" "}
+                {currency.symbol}
+                {previewRemaining.toLocaleString()}
+              </Typography>
+            )}
           </Box>
 
           <RadioGroup
@@ -131,6 +144,8 @@ function RefundDialog({ open, onClose, payout, onRefund }: RefundDialogProps) {
               label="Refund Amount"
               value={customAmount}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomAmount(e.target.value)}
+              error={customAmount ? parseFloat(customAmount) > remainingAmount : false}
+              helperText={customAmount && parseFloat(customAmount) > remainingAmount ? "Amount exceeds remaining balance" : ""}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -150,11 +165,15 @@ function RefundDialog({ open, onClose, payout, onRefund }: RefundDialogProps) {
         <Button
           onClick={handleConfirm}
           variant="contained"
-          disabled={refundType === "custom" && !customAmount}
+          disabled={
+            (refundType === "custom" && !customAmount) || 
+            (refundType === "custom" && parseFloat(customAmount) > remainingAmount)
+          }
         >
           Confirm Refund
         </Button>
       </DialogActions>
+
     </Dialog>
   );
 }
@@ -416,6 +435,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
           return (
             <Card
               key={payout.id}
+              onClick={() => router.push(`/properties/${propertyId}/payouts/${payout.id}/edit`)}
               sx={{
                 p: { xs: 1.5, sm: 2 },
                 display: "flex",
@@ -423,6 +443,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                 justifyContent: "space-between",
                 transition: "all 0.2s",
                 position: "relative",
+                cursor: "pointer",
                 bgcolor: isRefunded
                   ? (theme) =>
                       alpha(theme.palette.action.disabledBackground, 0.05)
@@ -473,7 +494,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                         lineHeight: 1.2
                       }}
                     >
-                      Property Payout
+                      {payout.name || "Property Payout"}
                     </Typography>
                     <Box sx={{ display: "flex", gap: 0.5 }}>
                       {isRefunded && (
@@ -558,22 +579,25 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                   )}
 
                   {(!isRefunded && !isPartiallyRefunded) && (
-                    <Tooltip title="Refund Payout" arrow>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleRefundClick(e, payout)}
-                        sx={{
-                          color: "text.secondary",
-                          "&:hover": {
-                            color: "error.main",
-                            bgcolor: (theme) =>
-                              alpha(theme.palette.error.main, 0.08),
-                          },
-                        }}
-                      >
-                        <Undo2 size={22} />
-                      </IconButton>
-                    </Tooltip>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Tooltip title="Refund Payout" arrow>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleRefundClick(e, payout)}
+                          sx={{
+                            color: "text.secondary",
+                            ml: 0.5,
+                            "&:hover": {
+                              color: "error.main",
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.error.main, 0.08),
+                            },
+                          }}
+                        >
+                          <Undo2 size={22} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   )}
                 </Box>
               </Stack>

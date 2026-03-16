@@ -1,0 +1,215 @@
+"use client";
+
+import * as React from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Button,
+  TextField,
+  Grid,
+  Stack,
+  IconButton,
+  InputAdornment,
+  Autocomplete,
+  Typography,
+} from "@mui/material";
+import { Plus, Trash2, Save } from "lucide-react";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { useCurrency } from "@/components/CurrencyContext";
+import NumericFormatInput from "@/components/NumericFormatInput";
+
+export interface PayoutItem {
+  id: number | string;
+  label: string;
+  amount: string;
+  date: Date;
+}
+
+export interface PayoutFormProps {
+  initialItems: PayoutItem[];
+  onSubmit: (items: PayoutItem[]) => Promise<void>;
+  onCancel: () => void;
+  isEditing?: boolean;
+  loading?: boolean;
+  submitLabel?: string;
+  title?: string;
+}
+
+export default function PayoutForm({
+  initialItems,
+  onSubmit,
+  onCancel,
+  isEditing = false,
+  loading = false,
+  submitLabel = "Save Payouts",
+  title = "Payout Details",
+}: PayoutFormProps) {
+  const { currency } = useCurrency();
+  const [items, setItems] = React.useState<PayoutItem[]>(initialItems);
+  const [dictionary, setDictionary] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem("propertyTracker_dictionary");
+    if (saved) {
+      try {
+        setDictionary(JSON.parse(saved));
+      } catch { /* ignored */ }
+    } else {
+      const defaults = [
+        "Internet",
+        "Rent",
+        "Transportation",
+        "Water Bill",
+        "Electricity Bill",
+        "Cleaning Fee",
+        "Maintenance",
+        "Property Tax",
+      ];
+      setDictionary(defaults);
+      localStorage.setItem(
+        "propertyTracker_dictionary",
+        JSON.stringify(defaults),
+      );
+    }
+  }, []);
+
+  const handleAddRow = () =>
+    setItems([
+      ...items,
+      { id: Date.now(), label: "Property Payout", amount: "", date: new Date() },
+    ]);
+
+  const handleRemove = (id: number | string) =>
+    setItems(items.filter((i) => i.id !== id));
+
+  const handleChange = (id: number | string, field: "label" | "amount", value: string) =>
+    setItems(items.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
+
+  const handleDateChange = (id: number | string, value: Date | null) =>
+    setItems(
+      items.map((i) => (i.id === id ? { ...i, date: value || new Date() } : i)),
+    );
+
+  const handleSubmit = async () => {
+    await onSubmit(items);
+  };
+
+  return (
+    <Stack spacing={4}>
+      <Card>
+        <CardContent>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+            }}
+          >
+            <Typography variant="h6">{title}</Typography>
+            {!isEditing && (
+              <Button
+                startIcon={<Plus size={16} />}
+                onClick={handleAddRow}
+                size="small"
+              >
+                Add Row
+              </Button>
+            )}
+          </Box>
+          <Stack spacing={3}>
+            {items.map((item, index) => (
+              <Box key={item.id}>
+                {items.length > 1 && !isEditing && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Payout {index + 1}
+                    </Typography>
+                    <IconButton
+                      color="error"
+                      onClick={() => handleRemove(item.id)}
+                      size="small"
+                    >
+                      <Trash2 size={18} />
+                    </IconButton>
+                  </Box>
+                )}
+                <Grid container spacing={2}>
+                  <Grid size={12}>
+                    <Autocomplete
+                      fullWidth
+                      freeSolo
+                      options={dictionary}
+                      value={item.label}
+                      onChange={(_, newValue) =>
+                        handleChange(item.id, "label", newValue || "")
+                      }
+                      onInputChange={(_, newInputValue) =>
+                        handleChange(item.id, "label", newInputValue)
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Payout Label"
+                          placeholder="e.g. Rent, Salary"
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: isEditing ? 6 : 6 }}>
+                    <NumericFormatInput
+                      fullWidth
+                      label="Amount"
+                      value={item.amount}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        handleChange(item.id, "amount", e.target.value)
+                      }
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            {currency.symbol}
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: isEditing ? 6 : 6 }}>
+                    <DatePicker
+                      label="Date"
+                      value={item.date}
+                      onChange={(v) => handleDateChange(item.id, v)}
+                      format="MMMM d, yyyy"
+                      slotProps={{ textField: { fullWidth: true } }}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            ))}
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, pb: 4 }}>
+        <Button variant="outlined" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={loading ? null : <Save size={18} />}
+          onClick={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? "Saving..." : submitLabel}
+        </Button>
+      </Box>
+    </Stack>
+  );
+}

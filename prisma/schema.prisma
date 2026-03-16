@@ -75,6 +75,7 @@ model PendingTo {
 
 model Payout {
   id           String       @id @default(cuid())
+  name         String?
   amount       Float
   date         DateTime
   propertyId   String

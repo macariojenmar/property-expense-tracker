@@ -44,6 +44,7 @@ export interface Expense {
 
 export interface Payout {
   id: string;
+  name?: string | null;
   amount: number;
   date: Date | string;
   propertyId: string;

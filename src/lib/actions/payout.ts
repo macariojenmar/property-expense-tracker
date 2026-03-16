@@ -25,6 +25,7 @@ export async function createPayout(data: {
   amount: number;
   date: string;
   propertyId: string;
+  name?: string;
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -36,11 +37,51 @@ export async function createPayout(data: {
       amount: data.amount,
       date: new Date(data.date),
       propertyId: data.propertyId,
+      name: data.name,
     },
   });
 
   revalidatePath(`/properties/${data.propertyId}`);
   return payout;
+}
+
+export async function updatePayout(id: string, data: {
+  amount: number;
+  date: string;
+  name?: string;
+}) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const existing = await prisma.payout.findUnique({
+    where: { id, property: { userId: session.user.id } },
+  });
+
+  if (!existing) {
+    throw new Error("Payout not found");
+  }
+
+  // Ensure the new amount is not less than the currently refunded amount
+  if (data.amount < (existing.refundAmount || 0)) {
+    throw new Error("Payout amount cannot be less than the refunded amount.");
+  }
+
+  const updatedPayout = await prisma.payout.update({
+    where: { id },
+    data: {
+      amount: data.amount,
+      date: new Date(data.date),
+      name: data.name,
+      status: (existing.refundAmount || 0) >= data.amount 
+        ? "REFUNDED" 
+        : ((existing.refundAmount || 0) > 0 ? "PARTIALLY_REFUNDED" : "PAID"),
+    },
+  });
+
+  revalidatePath(`/properties/${updatedPayout.propertyId}`);
+  return updatedPayout;
 }
 
 export async function refundPayout(id: string, amount: number) {
