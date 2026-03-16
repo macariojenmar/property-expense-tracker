@@ -27,6 +27,7 @@ import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import Loader from "@/components/Loader";
+import CompactFinancialStats from "@/components/CompactFinancialStats";
 
 const FinanceCard = ({
   title,
@@ -154,16 +155,9 @@ export default function PropertyDetailsPage() {
 
   const property = selectedProperty;
 
-  const stats = React.useMemo(() => {
+  const rangeData = React.useMemo(() => {
     if (!property || !filterRange.start || !filterRange.end) {
-      return {
-        currentProfit: 0,
-        estimatedProfit: 0,
-        currentFunds: 0,
-        estimatedFunds: 0,
-        currentExpenses: 0,
-        estimatedExpenses: 0,
-      };
+      return { expenses: [], payouts: [], currentExpenses: 0, currentProfit: 0 };
     }
 
     const { start, end } = filterRange;
@@ -179,13 +173,30 @@ export default function PropertyDetailsPage() {
       return d >= start && d <= end;
     });
 
-    // Current Values for the range
-    const currentExpenses = rangeExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const rangePayoutTotal = rangePayouts.reduce(
-      (sum, p) => sum + (p.amount - (p.refundAmount || 0)),
-      0,
-    );
-    const currentProfit = rangePayoutTotal - currentExpenses;
+    return {
+      expenses: rangeExpenses,
+      payouts: rangePayouts,
+      currentExpenses: rangeExpenses.reduce((sum, e) => sum + e.amount, 0),
+      currentProfit:
+        rangePayouts.reduce((sum, p) => sum + (p.amount - (p.refundAmount || 0)), 0) -
+        rangeExpenses.reduce((sum, e) => sum + e.amount, 0),
+    };
+  }, [property, filterRange]);
+
+  const stats = React.useMemo(() => {
+    if (!property || !filterRange.start || !filterRange.end) {
+      return {
+        currentProfit: 0,
+        estimatedProfit: 0,
+        currentFunds: 0,
+        estimatedFunds: 0,
+        currentExpenses: 0,
+        estimatedExpenses: 0,
+      };
+    }
+
+    const { end } = filterRange;
+    const { expenses: rangeExpenses, currentExpenses, currentProfit } = rangeData;
 
     // Funds is cumulative up to the 'end' date
     const allPriorExpenses = (property.expenses || []).filter(
@@ -202,26 +213,21 @@ export default function PropertyDetailsPage() {
     const currentFunds = (property.initialFunds || 0) + cumulativeProfit;
 
     // Estimations
-    // For simplicity, we estimate by adding pending recurring expenses if the range includes the current/future months
     const now = new Date();
     let estimatedAddon = 0;
 
-    // Only add recurring expenses if the filter end date is at least the end of this month
     if (end >= startOfMonth(now)) {
       const recurring = property.recurringExpenses || [];
       const waived = property.waivedRecurringExpenses || [];
 
       recurring.forEach((re) => {
-        // Check if this recurring expense has already been recorded in THIS month
-        // In a real app, we'd check if an expense with type 'RECURRING' and this name exists for this month
-        // For now, let's assume if it's not waived and we are looking at this month, it's an estimated expense
         const isWaived = waived.some(
           (w) =>
             w.recurringExpenseId === re.id &&
             w.monthKey === format(now, "yyyy-MM"),
         );
 
-        const alreadyRecorded = rangeExpenses.some((e) => e.name === re.name); // Simple heuristic
+        const alreadyRecorded = rangeExpenses.some((e) => e.name === re.name);
 
         if (!isWaived && !alreadyRecorded) {
           estimatedAddon += re.amount;
@@ -231,13 +237,13 @@ export default function PropertyDetailsPage() {
 
     return {
       currentProfit,
-      estimatedProfit: currentProfit - estimatedAddon, // Profit decreases with more expenses
+      estimatedProfit: currentProfit - estimatedAddon,
       currentFunds,
       estimatedFunds: currentFunds - estimatedAddon,
       currentExpenses,
       estimatedExpenses: currentExpenses + estimatedAddon,
     };
-  }, [property, filterRange]);
+  }, [property, filterRange, rangeData]);
 
   if (isLoading) {
     return (
@@ -365,20 +371,28 @@ export default function PropertyDetailsPage() {
 
       {/* Recurring Expenses */}
       {property.recurringExpenses && property.recurringExpenses.length > 0 && (
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Recurring Expenses
-          </Typography>
-          <Grid container spacing={2}>
+        <Box sx={{ mt: 4, mb: 10 }}>
+          <Grid container spacing={4}>
             <Grid size={{ xs: 12, md: 6 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Recurring Expenses
+              </Typography>
               <Card
                 sx={{
                   border: "1px solid",
                   borderColor: alpha("#f43f5e", 0.15),
                   bgcolor: "transparent",
+                  mb: { xs: 2, md: 0 },
                 }}
               >
                 <CardContent>
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    sx={{ mb: 2, fontWeight: 600 }}
+                  >
+                    Recurring List
+                  </Typography>
                   <Stack spacing={0}>
                     {property.recurringExpenses.map((exp, index) => (
                       <Box key={index}>
@@ -386,7 +400,7 @@ export default function PropertyDetailsPage() {
                           direction="row"
                           justifyContent="space-between"
                           alignItems="center"
-                          sx={{ py: 1.5 }}
+                          sx={{ py: 1 }}
                         >
                           <Stack
                             direction="row"
@@ -395,8 +409,8 @@ export default function PropertyDetailsPage() {
                           >
                             <Box
                               sx={{
-                                p: 0.75,
-                                borderRadius: 1.5,
+                                p: 0.5,
+                                borderRadius: 1.25,
                                 bgcolor: alpha("#f43f5e", 0.1),
                                 color: "#f43f5e",
                                 display: "flex",
@@ -404,7 +418,7 @@ export default function PropertyDetailsPage() {
                                 justifyContent: "center",
                               }}
                             >
-                              <Receipt size={16} />
+                              <Receipt size={14} />
                             </Box>
                             <Box>
                               <Typography variant="body2" fontWeight={600}>
@@ -414,39 +428,36 @@ export default function PropertyDetailsPage() {
                                 variant="caption"
                                 color="text.secondary"
                               >
-                                Due on day {exp.day}
-                                {exp.pendingTo && (
-                                  <Box
-                                    component="span"
-                                    sx={{
-                                      ml: 1,
-                                      fontStyle: "italic",
-                                      opacity: 0.8,
-                                    }}
-                                  >
-                                    • {exp.pendingTo.name}
-                                  </Box>
-                                )}
+                                Day {exp.day}
                               </Typography>
                             </Box>
                           </Stack>
                           <Typography
-                            variant="body1"
+                            variant="body2"
                             fontWeight={700}
                             color="#f43f5e"
-                            sx={{ opacity: 0.9 }}
                           >
                             {formatAmount(exp.amount)}
                           </Typography>
                         </Stack>
                         {index < property.recurringExpenses.length - 1 && (
-                          <Divider sx={{ borderStyle: "dashed" }} />
+                          <Divider sx={{ borderStyle: "dashed", opacity: 0.5 }} />
                         )}
                       </Box>
                     ))}
                   </Stack>
                 </CardContent>
               </Card>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Financial Health
+              </Typography>
+              <CompactFinancialStats
+                expenses={rangeData.expenses}
+                payouts={rangeData.payouts}
+                formatAmount={formatAmount}
+              />
             </Grid>
           </Grid>
         </Box>
