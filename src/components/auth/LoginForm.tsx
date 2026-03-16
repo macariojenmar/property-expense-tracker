@@ -68,7 +68,7 @@ function LoginFormContent() {
           Sign In
         </Typography>
         <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-          Airbnb Property Tracker
+          Property Tracker
         </Typography>
 
         {signupSuccess && (

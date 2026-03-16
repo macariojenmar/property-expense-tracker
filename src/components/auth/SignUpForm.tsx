@@ -41,7 +41,7 @@ export default function SignUpForm() {
           Create Account
         </Typography>
         <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-          Join Airbnb Property Tracker
+          Join Property Tracker
         </Typography>
 
         {state?.errors?.message && (

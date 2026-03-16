@@ -5,7 +5,7 @@ import { authOptions } from "../api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Sign In | Airbnb Property Tracker",
+  title: "Sign In | Property Tracker",
 };
 
 export default async function LoginPage() {

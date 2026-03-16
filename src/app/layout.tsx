@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Airbnb Property Tracker",
-  description: "Expense and Payout tracker for Airbnb properties",
+  title: "Property Tracker",
+  description: "Expense and Payout tracker for properties",
 };
 
 export default function RootLayout({

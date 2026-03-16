@@ -32,7 +32,7 @@ export default function CreatePropertyPage() {
         loading={loading}
         submitLabel="Create Property"
         title="Create New Property"
-        subtitle="Add details for your Airbnb listing."
+        subtitle="Add details for your property listing."
       />
     </DashboardLayout>
   );

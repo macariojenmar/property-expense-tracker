@@ -51,7 +51,7 @@ export default function PropertiesPage() {
             Properties
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Manage your Airbnb listings and their finances.
+            Manage your property listings and their finances.
           </Typography>
         </Box>
         <Button
@@ -170,7 +170,7 @@ export default function PropertiesPage() {
             <EmptyState
               icon={Home}
               title="No properties found"
-              description="Start managing your Airbnb listings and their finances by adding your first property."
+              description="Start managing your property listings and their finances by adding your first property."
               fullHeight
             />
           </Grid>
