@@ -26,9 +26,21 @@ export const CurrencyContext = React.createContext<CurrencyContextType | undefin
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const [currency, setCurrencyState] = React.useState<Currency>(currencies[0]);
 
+  // Load from localStorage on mount
+  React.useEffect(() => {
+    const saved = localStorage.getItem('app-currency');
+    if (saved) {
+      const found = currencies.find(c => c.code === saved);
+      if (found) setCurrencyState(found);
+    }
+  }, []);
+
   const setCurrency = (code: string) => {
     const found = currencies.find(c => c.code === code);
-    if (found) setCurrencyState(found);
+    if (found) {
+      setCurrencyState(found);
+      localStorage.setItem('app-currency', code);
+    }
   };
 
   const formatAmount = (amount: number | string) => {
