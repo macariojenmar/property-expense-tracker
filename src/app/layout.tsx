@@ -29,6 +29,8 @@ export const metadata: Metadata = {
   },
 };
 
+import PWARegistration from "@/components/PWARegistration";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -40,6 +42,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeRegistry>
+          <PWARegistration />
           <Providers>
             {children}
           </Providers>
