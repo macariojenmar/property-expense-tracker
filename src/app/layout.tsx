@@ -17,6 +17,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Ntorra",
   description: "Ntorra - Smart property inventory and expense management",
+  manifest: "/manifest.json",
+  themeColor: "#1976d2",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Ntorra",
+  },
   icons: {
     icon: "/favicon.ico",
   },
