@@ -37,7 +37,7 @@ export default function NewPayoutPage() {
   const [dictionary, setDictionary] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    const saved = localStorage.getItem("propertyTracker_dictionary");
+    const saved = localStorage.getItem("ntorra_dictionary");
     if (saved) {
       try {
         setDictionary(JSON.parse(saved));
@@ -55,7 +55,7 @@ export default function NewPayoutPage() {
       ];
       setDictionary(defaults);
       localStorage.setItem(
-        "propertyTracker_dictionary",
+        "ntorra_dictionary",
         JSON.stringify(defaults),
       );
     }

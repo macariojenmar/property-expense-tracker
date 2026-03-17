@@ -35,8 +35,10 @@ import { signOut, useSession } from "next-auth/react";
 import PropertySwitcher from "@/components/layout/PropertySwitcher";
 import { ColorModeContext } from "@/components/ThemeRegistry";
 import { alpha } from "@mui/material/styles";
+import Image from "next/image";
 
 import { usePropertyStore } from "@/store/usePropertyStore";
+import Footer from "./Footer";
 
 const drawerWidth = 240;
 
@@ -122,15 +124,14 @@ export default function DashboardLayout({
             gap: 1,
           }}
         >
-          <Box
-            sx={{
-              width: 24,
-              height: 24,
-              bgcolor: "primary.main",
-              borderRadius: 0.5,
-            }}
+          <Image
+            src="/ntorra.svg"
+            alt="Ntorra Logo"
+            width={28}
+            height={28}
+            style={{ borderRadius: "4px" }}
           />
-          PropertyTracker
+          Ntorra
         </Typography>
       </Toolbar>
       <Divider />
@@ -378,6 +379,7 @@ export default function DashboardLayout({
         }}
       >
         {children}
+        <Footer />
       </Box>
     </Box>
   );

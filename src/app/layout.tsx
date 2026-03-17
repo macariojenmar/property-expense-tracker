@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Property Tracker",
-  description: "Expense and Payout tracker for properties",
+  title: "Ntorra",
+  description: "Ntorra - Smart property inventory and expense management",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
