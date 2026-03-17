@@ -14,11 +14,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import type { Viewport } from "next";
+
+export const viewport: Viewport = {
+  themeColor: "#1976d2",
+};
+
 export const metadata: Metadata = {
   title: "Ntorra",
   description: "Ntorra - Smart property inventory and expense management",
   manifest: "/manifest.json",
-  themeColor: "#1976d2",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -26,6 +31,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/favicon.ico",
+    apple: "/icons/icon-512x512.png",
   },
 };
 
