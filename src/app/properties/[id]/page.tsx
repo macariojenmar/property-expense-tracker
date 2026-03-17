@@ -418,6 +418,21 @@ export default function PropertyDetailsPage() {
               sx={{ display: "flex", flexDirection: "column" }}
             >
               <Typography variant="h6" sx={{ mb: 2 }}>
+                Financial Health
+              </Typography>
+              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                <CompactFinancialStats
+                  expenses={rangeData.expenses}
+                  payouts={rangeData.payouts}
+                  formatAmount={formatAmount}
+                />
+              </Box>
+            </Grid>
+            <Grid
+              size={{ xs: 12, md: 6 }}
+              sx={{ display: "flex", flexDirection: "column" }}
+            >
+              <Typography variant="h6" sx={{ mb: 2 }}>
                 Recurring Expenses
               </Typography>
               <Card
@@ -489,21 +504,6 @@ export default function PropertyDetailsPage() {
                   </Stack>
                 </CardContent>
               </Card>
-            </Grid>
-            <Grid
-              size={{ xs: 12, md: 6 }}
-              sx={{ display: "flex", flexDirection: "column" }}
-            >
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Financial Health
-              </Typography>
-              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                <CompactFinancialStats
-                  expenses={rangeData.expenses}
-                  payouts={rangeData.payouts}
-                  formatAmount={formatAmount}
-                />
-              </Box>
             </Grid>
           </Grid>
         </Box>
