@@ -34,9 +34,20 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
     borderRadius: 8,
   },
   components: {
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          "& .MuiOutlinedInput-root": {
+            borderRadius: 12,
+          },
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
+          height: 46,
+          padding: "0 30px",
           boxShadow: "none",
           "&:hover": {
             boxShadow: "none",

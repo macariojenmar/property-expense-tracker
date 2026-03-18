@@ -46,7 +46,13 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import NumericFormatInput from "@/components/NumericFormatInput";
-import { usePropertyStore, Property, Expense, RecurringExpense, WaivedRecurringExpense } from "@/store/usePropertyStore";
+import {
+  usePropertyStore,
+  Property,
+  Expense,
+  RecurringExpense,
+  WaivedRecurringExpense,
+} from "@/store/usePropertyStore";
 import Loader from "@/components/Loader";
 import EmptyState from "@/components/EmptyState";
 
@@ -60,10 +66,7 @@ interface ExpensesViewProps {
 
 // Local interfaces removed in favor of store interfaces
 
-import {
-  createExpense,
-  settleExpenses,
-} from "@/lib/actions/expense";
+import { createExpense, settleExpenses } from "@/lib/actions/expense";
 import {
   waiveRecurringExpense,
   unwaiveRecurringExpense,
@@ -205,7 +208,8 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   }, [property]);
 
   const waivedRecurringExpenses = React.useMemo(() => {
-    return (property?.waivedRecurringExpenses ?? []) as WaivedRecurringExpense[];
+    return (property?.waivedRecurringExpenses ??
+      []) as WaivedRecurringExpense[];
   }, [property]);
 
   // Month key e.g. "2026-03"
@@ -356,17 +360,17 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         const recurring = recurringExpenses.find((exp) => exp.id === id);
         if (!recurring) continue;
 
-          await createExpense({
-            name: recurring.name,
-            amount: parseFloat(editedAmounts[id] || "0"),
-            note: `Recurring expense for ${format(new Date(), "MMMM yyyy")}`,
-            date: today,
-            propertyId: propertyId as string,
-            recurringRef: `${id}_${monthKey}`,
-            isRecurring: true,
-            status: recurring.pendingToId ? "PENDING" : "SETTLED",
-            pendingToId: recurring.pendingToId || undefined,
-          });
+        await createExpense({
+          name: recurring.name,
+          amount: parseFloat(editedAmounts[id] || "0"),
+          note: `Recurring expense for ${format(new Date(), "MMMM yyyy")}`,
+          date: today,
+          propertyId: propertyId as string,
+          recurringRef: `${id}_${monthKey}`,
+          isRecurring: true,
+          status: recurring.pendingToId ? "PENDING" : "SETTLED",
+          pendingToId: recurring.pendingToId || undefined,
+        });
       }
 
       await refresh();
@@ -546,7 +550,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         sx={{
           mb: 4,
           display: "flex",
-          flexDirection: "row",
+          flexDirection: { xs: "column", md: "row" },
           justifyContent: "space-between",
           alignItems: "flex-end",
           gap: 3,
@@ -582,20 +586,31 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
             </Typography>
           </Box>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<Settings size={18} />}
-          onClick={() => router.push("/entities")}
-          sx={{
-            height: 48,
-            borderRadius: 1.5,
-            minWidth: { sm: 160 },
-          }}
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          gap={2}
+          sx={{ width: { xs: "100%", md: "auto" } }}
         >
-          <Box sx={{ display: { xs: "block", sm: "none", md: "block" } }}>
+          <Button
+            variant="outlined"
+            startIcon={<Settings size={18} />}
+            onClick={() => router.push("/entities")}
+            sx={{
+              width: { xs: "100%", md: "fit-content" },
+            }}
+          >
             Entities
-          </Box>
-        </Button>
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<Plus size={18} />}
+            onClick={() =>
+              router.push(`/properties/${propertyId as string}/expenses/create`)
+            }
+          >
+            Add Expense
+          </Button>
+        </Stack>
       </Box>
 
       {/* ── Recurring Expenses Quick-Add ───────────────────────────────────── */}
@@ -732,7 +747,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                     sx={{
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
-                      width: 200,
+                      width: 300,
                       mr: 2,
                       display: { xs: "none", sm: "block" },
                     }}
@@ -746,7 +761,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                     sx={{
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
-                      width: 120,
+                      width: 150,
                       mr: 2,
                       display: { xs: "none", sm: "block" },
                     }}
@@ -756,9 +771,10 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
 
                   <Box
                     sx={{
-                      width: { xs: "100%", sm: 280 },
+                      width: { xs: "100%", sm: 500 },
                       display: "flex",
                       justifyContent: "flex-end",
+                      flexDirection: { xs: "column", sm: "row" },
                       gap: 1,
                     }}
                   >
@@ -768,12 +784,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                         size="small"
                         color="primary"
                         onClick={handleRevertSelected}
-                        sx={{
-                          height: 32,
-                          whiteSpace: "nowrap",
-                          minWidth: 0,
-                          px: 1.5,
-                        }}
                       >
                         Revert ({checkedAndAdded.length})
                       </Button>
@@ -784,12 +794,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                         size="small"
                         color="primary"
                         onClick={handleUnwaiveSelected}
-                        sx={{
-                          height: 32,
-                          whiteSpace: "nowrap",
-                          minWidth: 0,
-                          px: 1.5,
-                        }}
                       >
                         Unwaive ({checkedToUnwaive.length})
                       </Button>
@@ -801,12 +805,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                           size="small"
                           color="primary"
                           onClick={handleWaiveSelected}
-                          sx={{
-                            height: 32,
-                            whiteSpace: "nowrap",
-                            minWidth: 0,
-                            px: 1.5,
-                          }}
                         >
                           Waive ({checkedAndAvailable.length})
                         </Button>
@@ -815,12 +813,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                           size="small"
                           color="primary"
                           onClick={handleAddSelected}
-                          sx={{
-                            height: 32,
-                            whiteSpace: "nowrap",
-                            minWidth: 0,
-                            px: 1.5,
-                          }}
                         >
                           Add ({checkedAndAvailable.length})
                         </Button>
@@ -970,7 +962,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                             ),
                           }}
                           sx={{
-                            width: { xs: 120, sm: 200 },
+                            width: { xs: 120, sm: 300 },
                             mr: { xs: 0, sm: 2 },
                             "& .MuiInputBase-input": {
                               fontWeight: 700,
@@ -986,7 +978,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                         {/* Status badge */}
                         <Box
                           sx={{
-                            width: { xs: "auto", sm: 120 },
+                            width: { xs: "auto", sm: 370 },
                             display: "flex",
                             mr: { xs: 0, sm: 2 },
                           }}
@@ -1259,11 +1251,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                   {...params}
                   label="Filter by Entity"
                   placeholder="Select name..."
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 1.5,
-                    },
-                  }}
                 />
               )}
             />
@@ -1281,23 +1268,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
           <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
             <MonthFilter value={filterRange} onChange={setFilterRange} />
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<Plus size={18} />}
-            onClick={() =>
-              router.push(`/properties/${propertyId as string}/expenses/create`)
-            }
-            fullWidth
-            sx={{
-              height: 48,
-              px: 3,
-              borderRadius: 1.5,
-              whiteSpace: "nowrap",
-              minWidth: { sm: 160 },
-            }}
-          >
-            Add Expense
-          </Button>
         </Stack>
       </Box>
 
@@ -1439,9 +1409,16 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                       </Typography>
                     </Stack>
 
-                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.5 }}>
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      spacing={1}
+                      sx={{ mt: 0.5 }}
+                    >
                       <Chip
-                        label={expense.status === "PENDING" ? "Pending" : "Settled"}
+                        label={
+                          expense.status === "PENDING" ? "Pending" : "Settled"
+                        }
                         sx={{
                           fontSize: "0.65rem",
                           fontWeight: 700,
@@ -1450,7 +1427,9 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                               ? alpha(t.palette.warning.main, 0.1)
                               : alpha(t.palette.success.main, 0.1),
                           color: (t) =>
-                            expense.status === "PENDING" ? "warning.main" : "success.main",
+                            expense.status === "PENDING"
+                              ? "warning.main"
+                              : "success.main",
                         }}
                       />
                       {expense.status === "PENDING" && expense.pendingTo && (
@@ -1468,7 +1447,16 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
               </Grid>
 
               {/* Column 2: Note */}
-              <Grid size={{ xs: 12, md: 4 }}>
+              <Grid
+                size={{ xs: 12, md: 4 }}
+                display={{
+                  xs:
+                    expense.note && expense.note.trim() !== ""
+                      ? "block"
+                      : "none",
+                  md: "block",
+                }}
+              >
                 {expense.note && expense.note.trim() !== "" && (
                   <Box sx={{ px: { xs: 5.5, sm: 0 } }}>
                     <Stack direction="row" spacing={1} alignItems="center">

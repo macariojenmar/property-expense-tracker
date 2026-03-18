@@ -99,7 +99,7 @@ export default function PropertyForm({
       try {
         const [dictionaryData, entitiesData] = await Promise.all([
           getDictionaryWords(),
-          getPendingToEntities()
+          getPendingToEntities(),
         ]);
         setDictionaryWords(dictionaryData.map((w: Word) => w.word));
         setEntities(entitiesData);
@@ -217,7 +217,6 @@ export default function PropertyForm({
                   placeholder="e.g. Cozy Beachfront Villa"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
                 />
               </Grid>
               <Grid size={12}>
@@ -227,7 +226,6 @@ export default function PropertyForm({
                   placeholder="Siargao, Philippines"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
                 />
               </Grid>
               <Grid size={12}>
@@ -245,7 +243,6 @@ export default function PropertyForm({
                       </InputAdornment>
                     ),
                   }}
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
                 />
               </Grid>
             </Grid>
@@ -270,33 +267,33 @@ export default function PropertyForm({
             </Typography>
             <Stack spacing={2}>
               {recurringExpenses.map((exp, index) => (
-                <Card
-                  variant="outlined"
-                  key={index}
-                  sx={{
-                    p: 3,
-                    bgcolor: (t) => alpha(t.palette.primary.main, 0.02),
-                    borderRadius: 2.5,
-                    border: "1px solid",
-                    borderColor: (t) => alpha(t.palette.primary.main, 0.1),
-                  }}
-                >
+                <React.Fragment key={index}>
                   <Grid container spacing={2.5} alignItems="center">
                     <Grid size={12} display={"flex"} justifyContent={"end"}>
-                      <IconButton
-                        color="error"
-                        onClick={() => handleRemoveExpense(index)}
-                        size="small"
-                        disabled={recurringExpenses.length === 1}
-                        sx={{
-                          bgcolor: (t) => alpha(t.palette.error.main, 0.05),
-                          "&:hover": {
-                            bgcolor: (t) => alpha(t.palette.error.main, 0.1),
-                          },
-                        }}
+                      <Stack
+                        direction={"row"}
+                        justifyContent={"space-between"}
+                        alignItems={"center"}
+                        width={"100%"}
                       >
-                        <Trash2 size={22} />
-                      </IconButton>
+                        <Typography variant="body2" color="text.secondary">
+                          Expense {index + 1}
+                        </Typography>
+                        <IconButton
+                          color="error"
+                          onClick={() => handleRemoveExpense(index)}
+                          size="small"
+                          disabled={recurringExpenses.length === 1}
+                          sx={{
+                            bgcolor: (t) => alpha(t.palette.error.main, 0.05),
+                            "&:hover": {
+                              bgcolor: (t) => alpha(t.palette.error.main, 0.1),
+                            },
+                          }}
+                        >
+                          <Trash2 size={20} />
+                        </IconButton>
+                      </Stack>
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <Autocomplete
@@ -315,10 +312,6 @@ export default function PropertyForm({
                             fullWidth
                             label="Expense Name"
                             placeholder="e.g. Rent"
-                            size="small"
-                            sx={{
-                              "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
-                            }}
                           />
                         )}
                       />
@@ -326,21 +319,19 @@ export default function PropertyForm({
                     <Grid size={{ xs: 12, md: 6 }}>
                       <NumericFormatInput
                         fullWidth
-                        size="small"
                         label="Amount"
                         value={exp.amount}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           handleExpenseChange(index, "amount", e.target.value)
                         }
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              {currency.symbol}
-                            </InputAdornment>
-                          ),
-                        }}
-                        sx={{
-                          "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
+                        slotProps={{
+                          input: {
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                {currency.symbol}
+                              </InputAdornment>
+                            ),
+                          },
                         }}
                       />
                     </Grid>
@@ -348,7 +339,6 @@ export default function PropertyForm({
                       <TextField
                         fullWidth
                         label="Day of Month"
-                        size="small"
                         value={exp.day}
                         onClick={(e) =>
                           handleDayClick(
@@ -358,11 +348,12 @@ export default function PropertyForm({
                         }
                         sx={{
                           cursor: "pointer",
-                          "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
                         }}
-                        InputProps={{
-                          readOnly: true,
-                          sx: { cursor: "pointer" },
+                        slotProps={{
+                          input: {
+                            readOnly: true,
+                            sx: { cursor: "pointer" },
+                          },
                         }}
                       />
                     </Grid>
@@ -386,17 +377,13 @@ export default function PropertyForm({
                             {...params}
                             fullWidth
                             label="Pending To (Optional)"
-                            size="small"
                             placeholder="Select person or organization"
-                            sx={{
-                              "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
-                            }}
                           />
                         )}
                       />
                     </Grid>
                   </Grid>
-                </Card>
+                </React.Fragment>
               ))}
             </Stack>
             <Button
@@ -404,15 +391,23 @@ export default function PropertyForm({
               startIcon={<Plus size={16} />}
               onClick={handleAddExpense}
               size="small"
-              sx={{ mt: 2 }}
+              sx={{
+                mt: 2,
+                height: 40,
+                px: 2,
+                width: { xs: "100%", md: "auto" },
+              }}
             >
               Add Expense
             </Button>
           </CardContent>
         </Card>
 
-        <Box
-          sx={{ display: "flex", justifyContent: "flex-end", gap: 1, pb: 4 }}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          gap={2}
+          display={"flex"}
+          justifyContent={"flex-end"}
         >
           <Button
             variant="outlined"
@@ -438,7 +433,7 @@ export default function PropertyForm({
           >
             {loading ? "Processing..." : submitLabel}
           </Button>
-        </Box>
+        </Stack>
       </Stack>
 
       <Popover

@@ -352,10 +352,7 @@ export default function PropertyDetailsPage() {
             size="small"
             startIcon={<Settings size={18} />}
             onClick={() => router.push(`/properties/${property.id}/edit`)}
-            sx={{
-              alignSelf: { xs: "stretch", sm: "center" },
-              px: 3,
-            }}
+            sx={{ height: 46, px: 3 }}
           >
             Edit Property
           </Button>
