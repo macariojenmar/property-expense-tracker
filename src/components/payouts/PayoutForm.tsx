@@ -182,7 +182,7 @@ export default function PayoutForm({
             ))}
             {!isEditing && (
               <Button
-                sx={{ width: "fit-content" }}
+                sx={{ width: { xs: "100%", sm: "fit-content" } }}
                 variant="outlined"
                 startIcon={<Plus size={16} />}
                 onClick={handleAddRow}

@@ -54,7 +54,7 @@ export default function CreateExpensePage() {
       try {
         const [dictionaryData, entitiesData] = await Promise.all([
           getDictionaryWords(),
-          getPendingToEntities()
+          getPendingToEntities(),
         ]);
         setDictionary(dictionaryData.map((w: Word) => w.word));
         setEntities(entitiesData);
@@ -126,7 +126,7 @@ export default function CreateExpensePage() {
             <ArrowLeft size={20} />
           </IconButton>
           <Box>
-            <Typography variant="h4">Add New Expenses</Typography>
+            <Typography variant="h4">New Expenses</Typography>
             <Typography variant="body2" color="text.secondary">
               Record one or more expenses for this property.
             </Typography>
@@ -157,7 +157,7 @@ export default function CreateExpensePage() {
                   startIcon={<Plus size={16} />}
                   onClick={handleAddRow}
                   size="small"
-                  sx={{ width: "fit-content" }}
+                  sx={{ width: { xs: "100%", sm: "fit-content" } }}
                 >
                   Add Row
                 </Button>
