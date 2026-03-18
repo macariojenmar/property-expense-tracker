@@ -17,12 +17,15 @@ import {
   Avatar,
   useTheme,
   LinearProgress,
+  Menu,
+  MenuItem,
+  Tooltip,
 } from "@mui/material";
 import {
   Building2,
   WalletCards,
   Settings,
-  Menu,
+  Menu as MenuIcon,
   LogOut,
   Sun,
   Moon,
@@ -34,9 +37,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import PropertySwitcher from "@/components/layout/PropertySwitcher";
 import { ColorModeContext } from "@/components/ThemeRegistry";
-import { alpha } from "@mui/material/styles";
 import Image from "next/image";
-
 import { usePropertyStore } from "@/store/usePropertyStore";
 import Footer from "./Footer";
 
@@ -55,6 +56,16 @@ export default function DashboardLayout({
   const { data: session } = useSession();
   const { selectedProperty, setSelectedProperty, isSaving, isLoading } =
     usePropertyStore();
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleProfileClose = () => {
+    setAnchorEl(null);
+  };
 
   const menuItems = React.useMemo(() => {
     const baseItems: Array<{
@@ -285,7 +296,7 @@ export default function DashboardLayout({
             onClick={handleDrawerToggle}
             sx={{ mr: 2, display: { sm: "none" } }}
           >
-            <Menu />
+            <MenuIcon />
           </IconButton>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <PropertySwitcher />
@@ -302,19 +313,90 @@ export default function DashboardLayout({
                 <Moon size={22} />
               )}
             </IconButton>
-            <Avatar
-              sx={{
-                width: 32,
-                height: 32,
-                fontSize: 14,
-                bgcolor: "primary.main",
-                ml: 1,
+            <Tooltip title="Account settings">
+              <IconButton
+                onClick={handleProfileClick}
+                size="small"
+                sx={{ ml: 1, p: 0.5 }}
+                aria-controls={open ? "account-menu" : undefined}
+                aria-haspopup="true"
+                aria-expanded={open ? "true" : undefined}
+              >
+                <Avatar
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    fontSize: 14,
+                    bgcolor: "primary.main",
+                  }}
+                >
+                  {session?.user?.name
+                    ? session.user.name.charAt(0).toUpperCase()
+                    : "U"}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
+            <Menu
+              anchorEl={anchorEl}
+              id="account-menu"
+              open={open}
+              onClose={handleProfileClose}
+              onClick={handleProfileClose}
+              transformOrigin={{ horizontal: "right", vertical: "top" }}
+              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+              PaperProps={{
+                elevation: 0,
+                sx: {
+                  overflow: "visible",
+                  filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.12))",
+                  mt: 1.5,
+                  minWidth: 200,
+                  "& .MuiAvatar-root": {
+                    width: 32,
+                    height: 32,
+                    ml: -0.5,
+                    mr: 1,
+                  },
+                  "&::before": {
+                    content: '""',
+                    display: "block",
+                    position: "absolute",
+                    top: 0,
+                    right: 14,
+                    width: 10,
+                    height: 10,
+                    bgcolor: "background.paper",
+                    transform: "translateY(-50%) rotate(45deg)",
+                    zIndex: 0,
+                  },
+                },
               }}
             >
-              {session?.user?.name
-                ? session.user.name.charAt(0).toUpperCase()
-                : "U"}
-            </Avatar>
+              <Box sx={{ px: 2, py: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  {session?.user?.name || "User"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  {session?.user?.email}
+                </Typography>
+              </Box>
+              <Divider />
+              <MenuItem onClick={() => router.push("/settings")} sx={{ py: 1.2 }}>
+                <ListItemIcon>
+                  <Settings size={18} />
+                </ListItemIcon>
+                <Typography variant="body2">Settings</Typography>
+              </MenuItem>
+              <MenuItem 
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                sx={{ py: 1.2, color: "error.main" }}
+              >
+                <ListItemIcon sx={{ color: "error.main" }}>
+                  <LogOut size={18} />
+                </ListItemIcon>
+                <Typography variant="body2">Logout</Typography>
+              </MenuItem>
+            </Menu>
           </Box>
         </Toolbar>
         {(isSaving || isLoading) && (
