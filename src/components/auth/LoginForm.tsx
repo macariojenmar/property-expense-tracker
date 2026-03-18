@@ -10,18 +10,24 @@ import {
   Alert,
   Link,
   Container,
+  InputAdornment,
+  IconButton,
+  Stack,
+  CircularProgress,
 } from "@mui/material";
 import { signIn } from "next-auth/react";
 import NextLink from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Footer from "@/components/layout/Footer";
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const signupSuccess = searchParams.get("signup") === "success";
 
@@ -73,24 +79,40 @@ function LoginFormContent() {
       >
         <Container maxWidth="xs">
           <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-            <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-              <Image
-                src="/ntorra.svg"
-                alt="Ntorra Logo"
-                width={50}
-                height={50}
-              />
-            </Box>
-            <Typography
-              component="h1"
-              variant="h5"
-              align="center"
-              gutterBottom
-              fontWeight={700}
-            >
-              Sign In to Ntorra
+            <Stack spacing={2} direction={"row"} alignItems={"center"}>
+              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+                <Image
+                  src="/ntorra.svg"
+                  alt="Ntorra Logo"
+                  width={50}
+                  height={50}
+                />
+              </Box>
+              <Typography
+                component="h1"
+                variant="h2"
+                align="center"
+                gutterBottom
+                fontWeight={700}
+              >
+                Sign in
+              </Typography>
+            </Stack>
+            <Typography variant="body2" mt={2} mb={1}>
+              New User?{" "}
+              <Link
+                href="/auth/signup"
+                component={NextLink}
+                rel="noopener noreferrer"
+                sx={{
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  "&:hover": { textDecoration: "underline" },
+                }}
+              >
+                Create an account
+              </Link>
             </Typography>
-
             {signupSuccess && (
               <Alert severity="success" sx={{ mb: 1, mt: 3 }}>
                 Account created successfully! Please sign in.
@@ -109,29 +131,75 @@ function LoginFormContent() {
                 required
                 fullWidth
                 id="email"
-                label="Email Address"
                 name="email"
                 autoComplete="email"
+                placeholder="Email Address"
                 autoFocus
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Mail size={18} />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
               />
               <TextField
                 margin="normal"
                 required
                 fullWidth
                 name="password"
-                label="Password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 id="password"
+                placeholder="Password"
                 autoComplete="current-password"
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Lock size={18} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                          {showPassword ? (
+                            <EyeOff size={20} />
+                          ) : (
+                            <Eye size={20} />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
               />
+              <Typography variant="body2" textAlign="end">
+                <Link
+                  href="/"
+                  component={NextLink}
+                  rel="noopener noreferrer"
+                  sx={{
+                    fontWeight: 700,
+                    textDecoration: "none",
+                    "&:hover": { textDecoration: "underline" },
+                  }}
+                >
+                  Forgot Password?
+                </Link>
+              </Typography>
               <Button
                 type="submit"
                 fullWidth
                 variant="contained"
                 disabled={loading}
                 sx={{ mt: 3, mb: 2, py: 1.5 }}
+                endIcon={loading ? <CircularProgress size={18} color="inherit"/> : <ArrowRight size={18} />}
               >
-                {loading ? "Signing In..." : "Sign In"}
+                {loading ? "Signing In" : "Sign In"}
               </Button>
             </Box>
           </Paper>
