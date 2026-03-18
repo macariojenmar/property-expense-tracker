@@ -46,7 +46,6 @@ const StatCard = ({
       flexDirection: "column",
       position: "relative",
       overflow: "hidden",
-      borderRadius: 4,
     }}
   >
     <CardContent sx={{ p: 3, flexGrow: 1 }}>

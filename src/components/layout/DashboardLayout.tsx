@@ -20,6 +20,7 @@ import {
   Menu,
   MenuItem,
   Tooltip,
+  Container,
 } from "@mui/material";
 import {
   Building2,
@@ -47,8 +48,10 @@ const drawerWidth = 240;
 
 export default function DashboardLayout({
   children,
+  width = "lg",
 }: {
   children: React.ReactNode;
+  width?: "sm" | "md" | "lg" | "xl";
 }) {
   const router = useRouter();
   const theme = useTheme();
@@ -101,7 +104,7 @@ export default function DashboardLayout({
           icon: <WalletCards size={20} />,
           path: `/properties/${selectedProperty.id}/payouts`,
           indent: true,
-        }
+        },
       );
     }
 
@@ -129,7 +132,7 @@ export default function DashboardLayout({
           text: "Roles & Permissions",
           icon: <ShieldCheck size={20} />,
           path: "/platform/roles",
-        }
+        },
       );
     }
 
@@ -465,7 +468,10 @@ export default function DashboardLayout({
               }}
             >
               <Box sx={{ px: 2, py: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 600, mb: 0.5 }}
+                >
                   {session?.user?.name || "User"}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" noWrap>
@@ -473,13 +479,16 @@ export default function DashboardLayout({
                 </Typography>
               </Box>
               <Divider />
-              <MenuItem onClick={() => router.push("/settings")} sx={{ py: 1.2 }}>
+              <MenuItem
+                onClick={() => router.push("/settings")}
+                sx={{ py: 1.2 }}
+              >
                 <ListItemIcon>
                   <Settings size={18} />
                 </ListItemIcon>
                 <Typography variant="body2">Settings</Typography>
               </MenuItem>
-              <MenuItem 
+              <MenuItem
                 onClick={() => signOut({ callbackUrl: "/login" })}
                 sx={{ py: 1.2, color: "error.main" }}
               >
@@ -555,7 +564,7 @@ export default function DashboardLayout({
           overflow: "auto",
         }}
       >
-        {children}
+        <Container maxWidth={width}>{children}</Container>
         <Footer />
       </Box>
     </Box>

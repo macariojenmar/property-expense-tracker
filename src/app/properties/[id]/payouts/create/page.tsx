@@ -1,9 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Box,
-} from "@mui/material";
+import { Box } from "@mui/material";
 import PageHeader from "@/components/layout/PageHeader";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useRouter, useParams } from "next/navigation";
@@ -51,21 +49,19 @@ export default function CreatePayoutPage() {
   };
 
   return (
-    <DashboardLayout>
-      <Box sx={{ maxWidth: 800, mx: "auto" }}>
-        <PageHeader
-          title="Record Payouts"
-          subtitle="Record one or more payouts for this property."
-          onBack={handleCancel}
-        />
+    <DashboardLayout width="md">
+      <PageHeader
+        title="Record Payouts"
+        subtitle="Record one or more payouts for this property."
+        onBack={handleCancel}
+      />
 
-        <PayoutForm
-          initialItems={initialItems}
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-          loading={loading}
-        />
-      </Box>
+      <PayoutForm
+        initialItems={initialItems}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+        loading={loading}
+      />
     </DashboardLayout>
   );
 }

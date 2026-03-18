@@ -93,7 +93,7 @@ export default function EntitiesPage() {
   );
 
   return (
-    <DashboardLayout>
+    <DashboardLayout width="md">
       <PageHeader
         title="Entities"
         subtitle="Manage people or organizations for pending expenses."
@@ -193,7 +193,7 @@ export default function EntitiesPage() {
       ) : (
         <Grid container spacing={2}>
           {paginatedEntities.map((entity) => (
-            <Grid key={entity.id} size={{ xs: 12, sm: 3 }}>
+            <Grid key={entity.id} size={{ xs: 12, sm: 4 }}>
               <Card
                 sx={{
                   p: 2,

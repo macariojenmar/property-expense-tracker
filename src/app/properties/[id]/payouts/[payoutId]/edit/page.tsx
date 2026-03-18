@@ -1,11 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Box,
-  Typography,
-  IconButton,
-} from "@mui/material";
+import { Box, Typography, IconButton } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ArrowLeft } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
@@ -13,6 +9,7 @@ import { usePropertyStore } from "@/store/usePropertyStore";
 import { updatePayout, softDeletePayout } from "@/lib/actions/payout";
 import PayoutForm, { PayoutItem } from "@/components/payouts/PayoutForm";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import PageHeader from "@/components/layout/PageHeader";
 
 export default function EditPayoutPage() {
   const router = useRouter();
@@ -21,7 +18,9 @@ export default function EditPayoutPage() {
   const payoutId = params.payoutId as string;
   const { properties, setIsSaving, refresh } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
-  const [initialItems, setInitialItems] = React.useState<PayoutItem[] | null>(null);
+  const [initialItems, setInitialItems] = React.useState<PayoutItem[] | null>(
+    null,
+  );
   const [showConfirm, setShowConfirm] = React.useState(false);
 
   React.useEffect(() => {
@@ -94,34 +93,23 @@ export default function EditPayoutPage() {
   if (!initialItems) return null; // Or a loading spinner
 
   return (
-    <DashboardLayout>
-      <Box sx={{ maxWidth: 800, mx: "auto" }}>
-        <Box sx={{ mb: 4, display: "flex", alignItems: "center", gap: 2 }}>
-          <IconButton
-            onClick={handleCancel}
-            size="small"
-          >
-            <ArrowLeft size={20} />
-          </IconButton>
-          <Box>
-            <Typography variant="h4">Edit Payout</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Update details for this payout.
-            </Typography>
-          </Box>
-        </Box>
+    <DashboardLayout width="md">
+      <PageHeader
+        title="Edit Payout"
+        subtitle="Update details for this payout."
+        onBack={handleCancel}
+      />
 
-        <PayoutForm
-          initialItems={initialItems}
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-          onDelete={() => setShowConfirm(true)}
-          isEditing={true}
-          loading={loading}
-          title="Edit Payout Details"
-          submitLabel="Update Payout"
-        />
-      </Box>
+      <PayoutForm
+        initialItems={initialItems}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+        onDelete={() => setShowConfirm(true)}
+        isEditing={true}
+        loading={loading}
+        title="Edit Payout Details"
+        submitLabel="Update Payout"
+      />
 
       <ConfirmDialog
         open={showConfirm}

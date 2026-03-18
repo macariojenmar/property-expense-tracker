@@ -68,168 +68,153 @@ export default function CreateUserPage() {
   };
 
   return (
-    <DashboardLayout>
-      <Box
+    <DashboardLayout width="md">
+      <PageHeader
+        title="Create New User"
+        subtitle="Fill in the details to manually create a new system user."
+        onBack={() => router.push("/platform/users")}
+      />
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Paper
+        elevation={0}
+        component="form"
+        onSubmit={handleCreateUser}
         sx={{
-          maxWidth: 800,
-          mx: "auto",
-          width: "100%",
-          height: "100%",
+          p: 4,
+          borderRadius: 4,
+          border: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.paper",
           display: "flex",
           flexDirection: "column",
+          gap: 4,
         }}
       >
-        <PageHeader
-          title="Create New User"
-          subtitle="Fill in the details to manually create a new system user."
-          onBack={() => router.push("/platform/users")}
-        />
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <TextField
+            fullWidth
+            label="Full Name"
+            placeholder="e.g. John Doe"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            error={!!fieldErrors.name}
+            helperText={fieldErrors.name?.[0]}
+            required
+          />
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>
-            {error}
-          </Alert>
-        )}
+          <TextField
+            fullWidth
+            label="Email Address"
+            type="email"
+            placeholder="e.g. john@example.com"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            error={!!fieldErrors.email}
+            helperText={fieldErrors.email?.[0]}
+            required
+          />
 
-        <Paper
-          elevation={0}
-          component="form"
-          onSubmit={handleCreateUser}
-          sx={{
-            p: 4,
-            borderRadius: 4,
-            border: "1px solid",
-            borderColor: "divider",
-            bgcolor: "background.paper",
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-          }}
+          <TextField
+            fullWidth
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            error={!!fieldErrors.password}
+            helperText={fieldErrors.password?.[0]}
+            required
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <FormControl fullWidth>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={form.role}
+                label="Role"
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+              >
+                <MenuItem value="USER">User (Standard Access)</MenuItem>
+                <MenuItem value="DEVELOPER">
+                  Developer (Platform Management Access)
+                </MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={form.status}
+                label="Status"
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+              >
+                <MenuItem value="ACTIVE">Active</MenuItem>
+                <MenuItem value="INACTIVE">Inactive</MenuItem>
+                <MenuItem value="PENDING">Pending</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Account Type</InputLabel>
+              <Select
+                value={form.accountType}
+                label="Account Type"
+                onChange={(e) =>
+                  setForm({ ...form, accountType: e.target.value })
+                }
+              >
+                <MenuItem value="TRIAL">Trial</MenuItem>
+                <MenuItem value="STANDARD">Standard</MenuItem>
+                <MenuItem value="PRO">Pro</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+        </Box>
+
+        <Box
+          sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}
         >
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <TextField
-              fullWidth
-              label="Full Name"
-              placeholder="e.g. John Doe"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              error={!!fieldErrors.name}
-              helperText={fieldErrors.name?.[0]}
-              required
-            />
-
-            <TextField
-              fullWidth
-              label="Email Address"
-              type="email"
-              placeholder="e.g. john@example.com"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              error={!!fieldErrors.email}
-              helperText={fieldErrors.email?.[0]}
-              required
-            />
-
-            <TextField
-              fullWidth
-              label="Password"
-              type={showPassword ? "text" : "password"}
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              error={!!fieldErrors.password}
-              helperText={fieldErrors.password?.[0]}
-              required
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <FormControl fullWidth>
-                <InputLabel>Role</InputLabel>
-                <Select
-                  value={form.role}
-                  label="Role"
-                  onChange={(e) =>
-                    setForm({ ...form, role: e.target.value })
-                  }
-                >
-                  <MenuItem value="USER">User (Standard Access)</MenuItem>
-                  <MenuItem value="DEVELOPER">
-                    Developer (Platform Management Access)
-                  </MenuItem>
-                </Select>
-              </FormControl>
-
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={form.status}
-                  label="Status"
-                  onChange={(e) =>
-                    setForm({ ...form, status: e.target.value })
-                  }
-                >
-                  <MenuItem value="ACTIVE">Active</MenuItem>
-                  <MenuItem value="INACTIVE">Inactive</MenuItem>
-                  <MenuItem value="PENDING">Pending</MenuItem>
-                </Select>
-              </FormControl>
-
-              <FormControl fullWidth>
-                <InputLabel>Account Type</InputLabel>
-                <Select
-                  value={form.accountType}
-                  label="Account Type"
-                  onChange={(e) =>
-                    setForm({ ...form, accountType: e.target.value })
-                  }
-                >
-                  <MenuItem value="TRIAL">Trial</MenuItem>
-                  <MenuItem value="STANDARD">Standard</MenuItem>
-                  <MenuItem value="PRO">Pro</MenuItem>
-                </Select>
-              </FormControl>
-            </Stack>
-          </Box>
-
-          <Box
-            sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={() => router.push("/platform/users")}
+            disabled={loading}
           >
-            <Button
-              variant="outlined"
-              color="inherit"
-              onClick={() => router.push("/platform/users")}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={loading}
-              startIcon={
-                loading ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : (
-                  <UserPlus size={18} />
-                )
-              }
-            >
-              {loading ? "Creating..." : "Create User"}
-            </Button>
-          </Box>
-        </Paper>
-      </Box>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={loading}
+            startIcon={
+              loading ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <UserPlus size={18} />
+              )
+            }
+          >
+            {loading ? "Creating..." : "Create User"}
+          </Button>
+        </Box>
+      </Paper>
     </DashboardLayout>
   );
 }

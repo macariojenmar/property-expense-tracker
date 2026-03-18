@@ -68,7 +68,7 @@ export default function EditPropertyPage() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout width="md">
       <PropertyForm
         initialData={propertyData}
         onSubmit={handleUpdate}

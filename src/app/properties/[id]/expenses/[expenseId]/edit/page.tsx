@@ -8,10 +8,10 @@ import {
   CardContent,
   Button,
   Stack,
-  IconButton,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
+import PageHeader from "@/components/layout/PageHeader";
 import { updateExpense, softDeleteExpense } from "@/lib/actions/expense";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
 import { getDictionaryWords } from "@/lib/actions/dictionary";
@@ -49,7 +49,7 @@ export default function EditExpensePage() {
       try {
         const [dictionaryData, entitiesData] = await Promise.all([
           getDictionaryWords(),
-          getPendingToEntities()
+          getPendingToEntities(),
         ]);
         setDictionary(dictionaryData.map((w: Word) => w.word));
         setEntities(entitiesData);
@@ -142,82 +142,71 @@ export default function EditExpensePage() {
   }
 
   return (
-    <DashboardLayout>
-      <Box sx={{ maxWidth: 800, mx: "auto" }}>
-        <Box sx={{ mb: 4, display: "flex", alignItems: "center", gap: 2 }}>
-          <IconButton
-            onClick={() => router.push(`/properties/${propertyId}/expenses`)}
-            size="small"
-          >
-            <ArrowLeft size={20} />
-          </IconButton>
-          <Box>
-            <Typography variant="h4">Edit Expense</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Update the details for this expense.
+    <DashboardLayout width="md">
+      <PageHeader
+        title="Edit Expense"
+        subtitle="Update the details for this expense."
+        onBack={() => router.push(`/properties/${propertyId}/expenses`)}
+      />
+
+      <Stack spacing={4}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" mb={2}>
+              Expense Details
             </Typography>
-          </Box>
-        </Box>
+            <ExpenseForm
+              item={item}
+              onChange={handleChange}
+              entities={entities}
+              dictionary={dictionary}
+            />
+          </CardContent>
+        </Card>
 
-        <Stack spacing={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 3 }}>
-                Expense Details
-              </Typography>
-              <ExpenseForm
-                item={item}
-                onChange={handleChange}
-                entities={entities}
-                dictionary={dictionary}
-              />
-            </CardContent>
-          </Card>
-
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            justifyContent={"space-between"}
-            gap={2}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent={"space-between"}
+          gap={2}
+        >
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<Trash2 size={18} />}
+            onClick={() => setShowConfirm(true)}
+            disabled={loading}
+            sx={{ borderRadius: 1.5, px: 3 }}
           >
+            Delete Expense
+          </Button>
+          <Stack direction={{ xs: "column", sm: "row" }} gap={2}>
             <Button
               variant="outlined"
-              color="error"
-              startIcon={<Trash2 size={18} />}
-              onClick={() => setShowConfirm(true)}
-              disabled={loading}
+              onClick={() =>
+                router.push(`/properties/${propertyId}/expenses`)
+              }
               sx={{ borderRadius: 1.5, px: 3 }}
             >
-              Delete Expense
+              Cancel
             </Button>
-            <Stack direction={{ xs: "column", sm: "row" }} gap={2}>
-              <Button
-                variant="outlined"
-                onClick={() =>
-                  router.push(`/properties/${propertyId}/expenses`)
-                }
-                sx={{ borderRadius: 1.5, px: 3 }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={loading ? null : <Save size={18} />}
-                onClick={handleSave}
-                disabled={loading}
-                sx={{
-                  borderRadius: 1.5,
-                  px: 3,
-                  bgcolor: "text.primary",
-                  color: "background.paper",
-                  "&:hover": { bgcolor: "primary.main", opacity: 0.9 },
-                }}
-              >
-                {loading ? "Saving..." : "Update Expense"}
-              </Button>
-            </Stack>
+            <Button
+              variant="contained"
+              startIcon={loading ? null : <Save size={18} />}
+              onClick={handleSave}
+              disabled={loading}
+              sx={{
+                borderRadius: 1.5,
+                px: 3,
+                bgcolor: "text.primary",
+                color: "background.paper",
+                "&:hover": { bgcolor: "primary.main", opacity: 0.9 },
+              }}
+            >
+              {loading ? "Saving..." : "Update Expense"}
+            </Button>
           </Stack>
         </Stack>
-      </Box>
+      </Stack>
 
       <ConfirmDialog
         open={showConfirm}

@@ -102,134 +102,130 @@ export default function DictionaryPage() {
 
   return (
     <DashboardLayout>
-      <Box sx={{ maxWidth: 800, mx: "auto" }}>
-        <PageHeader
-          title="Dictionary"
-          subtitle="Manage frequently used words for expenses and payouts."
-        />
-        <Card sx={{ p: 3, mb: 4, borderRadius: 3 }}>
-          <form onSubmit={handleAddWord}>
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              spacing={2}
-              alignItems="center"
+      <PageHeader
+        title="Dictionary"
+        subtitle="Manage frequently used words for expenses and payouts."
+      />
+      <Card sx={{ p: 3, mb: 4, borderRadius: 3 }}>
+        <form onSubmit={handleAddWord}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            alignItems="center"
+          >
+            <TextField
+              fullWidth
+              label="New Word"
+              placeholder="e.g. Repairs, Salaries"
+              value={newWord}
+              onChange={(e) => setNewWord(e.target.value)}
+            />
+            <Button
+              variant="contained"
+              startIcon={<Plus size={18} />}
+              type="submit"
+              disabled={!newWord.trim() || isSaving}
+              sx={{ height: 56, width: { xs: "100%", sm: 200 } }}
             >
-              <TextField
-                fullWidth
-                label="New Word"
-                placeholder="e.g. Repairs, Salaries"
-                value={newWord}
-                onChange={(e) => setNewWord(e.target.value)}
-              />
-              <Button
-                variant="contained"
-                startIcon={<Plus size={18} />}
-                type="submit"
-                disabled={!newWord.trim() || isSaving}
-                sx={{ height: 56, width: { xs: "100%", sm: 200 } }}
-              >
-                Add Word
-              </Button>
-            </Stack>
-          </form>
-        </Card>
+              Add Word
+            </Button>
+          </Stack>
+        </form>
+      </Card>
 
-        {initialLoading ? (
-          <Loader message="Loading dictionary..." />
-        ) : (
-          <Grid container spacing={2}>
-            {words.map((item) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.id}>
-                <Card
-                  sx={{
-                    p: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    transition: "all 0.2s",
-                    borderRadius: 3,
-                    "&:hover": {
+      {initialLoading ? (
+        <Loader message="Loading dictionary..." />
+      ) : (
+        <Grid container spacing={2}>
+          {words.map((item) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.id}>
+              <Card
+                sx={{
+                  p: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  transition: "all 0.2s",
+                  borderRadius: 3,
+                  "&:hover": {
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+                    transform: "translateY(-2px)",
+                    boxShadow: (theme) =>
+                      `0 4px 12px ${alpha(theme.palette.common.black, 0.05)}`,
+                  },
+                }}
+              >
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  sx={{ overflow: "hidden" }}
+                >
+                  <Box
+                    sx={{
+                      p: 1,
                       bgcolor: (theme) =>
-                        alpha(theme.palette.primary.main, 0.04),
-                      transform: "translateY(-2px)",
-                      boxShadow: (theme) =>
-                        `0 4px 12px ${alpha(theme.palette.common.black, 0.05)}`,
+                        theme.palette.mode === "light"
+                          ? alpha(theme.palette.primary.main, 0.1)
+                          : alpha(theme.palette.primary.main, 0.2),
+                      borderRadius: 1.5,
+                      color: "primary.main",
+                      display: "flex",
+                    }}
+                  >
+                    <BookText size={18} />
+                  </Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {item.word}
+                  </Typography>
+                </Stack>
+                <IconButton
+                  size="small"
+                  onClick={() => handleDeleteClick(item)}
+                  sx={{
+                    color: "text.secondary",
+                    ml: 1,
+                    "&:hover": {
+                      color: "error.main",
+                      bgcolor: (theme) => alpha(theme.palette.error.main, 0.08),
                     },
                   }}
                 >
-                  <Stack
-                    direction="row"
-                    spacing={2}
-                    alignItems="center"
-                    sx={{ overflow: "hidden" }}
-                  >
-                    <Box
-                      sx={{
-                        p: 1,
-                        bgcolor: (theme) =>
-                          theme.palette.mode === "light"
-                            ? alpha(theme.palette.primary.main, 0.1)
-                            : alpha(theme.palette.primary.main, 0.2),
-                        borderRadius: 1.5,
-                        color: "primary.main",
-                        display: "flex",
-                      }}
-                    >
-                      <BookText size={18} />
-                    </Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{
-                        fontWeight: 600,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {item.word}
-                    </Typography>
-                  </Stack>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDeleteClick(item)}
-                    sx={{
-                      color: "text.secondary",
-                      ml: 1,
-                      "&:hover": {
-                        color: "error.main",
-                        bgcolor: (theme) =>
-                          alpha(theme.palette.error.main, 0.08),
-                      },
-                    }}
-                  >
-                    <Trash2 size={18} />
-                  </IconButton>
-                </Card>
-              </Grid>
-            ))}
-            {words.length === 0 && (
-              <Grid size={12}>
-                <EmptyState
-                  icon={BookText}
-                  title="No words found"
-                  description="Start adding words to your dictionary."
-                  fullHeight
-                />
-              </Grid>
-            )}
-          </Grid>
-        )}
+                  <Trash2 size={18} />
+                </IconButton>
+              </Card>
+            </Grid>
+          ))}
+          {words.length === 0 && (
+            <Grid size={12}>
+              <EmptyState
+                icon={BookText}
+                title="No words found"
+                description="Start adding words to your dictionary."
+                fullHeight
+              />
+            </Grid>
+          )}
+        </Grid>
+      )}
 
-        <ConfirmDialog
-          open={deleteDialogOpen}
-          title="Delete Word?"
-          message={`Are you sure you want to delete "${wordToDelete?.word}"? This action cannot be undone.`}
-          confirmLabel="Delete"
-          onConfirm={handleDeleteConfirm}
-          onCancel={() => setDeleteDialogOpen(false)}
-          loading={isSaving}
-        />
-      </Box>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Delete Word?"
+        message={`Are you sure you want to delete "${wordToDelete?.word}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteDialogOpen(false)}
+        loading={isSaving}
+      />
     </DashboardLayout>
   );
 }

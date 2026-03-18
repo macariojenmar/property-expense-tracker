@@ -177,7 +177,7 @@ export default function PropertyForm({
   };
 
   return (
-    <Box sx={{ maxWidth: 800, mx: "auto" }}>
+    <Box>
       <PageHeader
         title={title}
         subtitle={subtitle}

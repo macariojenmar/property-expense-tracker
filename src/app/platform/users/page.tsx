@@ -152,375 +152,358 @@ export default function UserManagementPage() {
 
   return (
     <DashboardLayout>
+      <PageHeader
+        title="User Management"
+        subtitle="Manage system users, their roles, status, and account types."
+        actions={
+          <Button
+            variant="contained"
+            startIcon={<UserPlus size={18} />}
+            onClick={() => router.push("/platform/users/create")}
+            sx={{
+              width: { xs: "100%", md: "auto" },
+            }}
+          >
+            Create User
+          </Button>
+        }
+      />
       <Box
         sx={{
-          maxWidth: 1200,
-          mx: "auto",
-          width: "100%",
-          height: "100%",
+          mb: 4,
           display: "flex",
-          flexDirection: "column",
+          flexDirection: { xs: "column", md: "row" },
+          gap: 2,
+          alignItems: { xs: "stretch", md: "flex-end" },
         }}
       >
-        <PageHeader
-          title="User Management"
-          subtitle="Manage system users, their roles, status, and account types."
-          actions={
-            <Button
-              variant="contained"
-              startIcon={<UserPlus size={18} />}
-              onClick={() => router.push("/platform/users/create")}
-              sx={{
-                width: { xs: "100%", md: "auto" },
-              }}
-            >
-              Create User
-            </Button>
-          }
-        />
-        <Box
-          sx={{
-            mb: 4,
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            gap: 2,
-            alignItems: { xs: "stretch", md: "flex-end" },
+        <TextField
+          size="small"
+          placeholder="Search name or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ flexGrow: 1 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={18} />
+              </InputAdornment>
+            ),
           }}
-        >
-          <TextField
-            size="small"
-            placeholder="Search name or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            sx={{ flexGrow: 1 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={18} />
-                </InputAdornment>
-              ),
-            }}
+        />
+        <Stack direction="row" spacing={2} sx={{ flexShrink: 0, flexGrow: 1 }}>
+          <StandardSelect
+            value={roleFilter}
+            onChange={setRoleFilter}
+            options={[
+              {
+                options: [
+                  { value: "all", label: "All Roles" },
+                  { value: "USER", label: "User" },
+                  { value: "DEVELOPER", label: "Developer" },
+                ],
+              },
+            ]}
+            fullWidth
+            sx={{ flex: 1 }}
           />
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ flexShrink: 0, flexGrow: 1 }}
-          >
-            <StandardSelect
-              value={roleFilter}
-              onChange={setRoleFilter}
-              options={[
-                {
-                  options: [
-                    { value: "all", label: "All Roles" },
-                    { value: "USER", label: "User" },
-                    { value: "DEVELOPER", label: "Developer" },
-                  ],
-                },
-              ]}
-              fullWidth
-              sx={{ flex: 1 }}
-            />
-            <StandardSelect
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={[
-                {
-                  options: [
-                    { value: "all", label: "All Status" },
-                    { value: "ACTIVE", label: "Active" },
-                    { value: "INACTIVE", label: "Inactive" },
-                    { value: "PENDING", label: "Pending" },
-                    { value: "DELETED", label: "Deleted" },
-                  ],
-                },
-              ]}
-              fullWidth
-              sx={{ flex: 1 }}
-            />
-            <StandardSelect
-              value={accountTypeFilter}
-              onChange={setAccountTypeFilter}
-              options={[
-                {
-                  options: [
-                    { value: "all", label: "All Types" },
-                    { value: "TRIAL", label: "Trial" },
-                    { value: "STANDARD", label: "Standard" },
-                    { value: "PRO", label: "Pro" },
-                  ],
-                },
-              ]}
-              fullWidth
-              sx={{ flex: 1 }}
-            />
-          </Stack>
-        </Box>
+          <StandardSelect
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              {
+                options: [
+                  { value: "all", label: "All Status" },
+                  { value: "ACTIVE", label: "Active" },
+                  { value: "INACTIVE", label: "Inactive" },
+                  { value: "PENDING", label: "Pending" },
+                  { value: "DELETED", label: "Deleted" },
+                ],
+              },
+            ]}
+            fullWidth
+            sx={{ flex: 1 }}
+          />
+          <StandardSelect
+            value={accountTypeFilter}
+            onChange={setAccountTypeFilter}
+            options={[
+              {
+                options: [
+                  { value: "all", label: "All Types" },
+                  { value: "TRIAL", label: "Trial" },
+                  { value: "STANDARD", label: "Standard" },
+                  { value: "PRO", label: "Pro" },
+                ],
+              },
+            ]}
+            fullWidth
+            sx={{ flex: 1 }}
+          />
+        </Stack>
+      </Box>
 
-        <Box sx={{ flexGrow: 1, minHeight: 400, width: "100%" }}>
-          {loading ? (
-            <Loader message="Fetching users..." />
-          ) : error ? (
-            <Alert severity="error">{error}</Alert>
-          ) : users.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title="No users found"
-              description="Manage system users, their roles, status, and account types by adding your first user."
-            />
-          ) : (
-            <>
-              {totalPages > 1 && (
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    gap: 2,
-                    mb: 3,
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    {(page - 1) * itemsPerPage + 1}–
-                    {Math.min(page * itemsPerPage, totalCount)} of {totalCount}
-                  </Typography>
-                  <Stack direction="row" spacing={1}>
-                    <IconButton
-                      size="small"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                      sx={{ color: "text.secondary" }}
-                    >
-                      <ChevronLeft size={20} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() =>
-                        setPage((p) => Math.min(totalPages, p + 1))
-                      }
-                      disabled={page === totalPages}
-                      sx={{ color: "text.secondary" }}
-                    >
-                      <ChevronRight size={20} />
-                    </IconButton>
-                  </Stack>
-                </Box>
-              )}
+      <Box sx={{ flexGrow: 1, minHeight: 400, width: "100%" }}>
+        {loading ? (
+          <Loader message="Fetching users..." />
+        ) : error ? (
+          <Alert severity="error">{error}</Alert>
+        ) : users.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="No users found"
+            description="Manage system users, their roles, status, and account types by adding your first user."
+          />
+        ) : (
+          <>
+            {totalPages > 1 && (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  gap: 2,
+                  mb: 3,
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  {(page - 1) * itemsPerPage + 1}–
+                  {Math.min(page * itemsPerPage, totalCount)} of {totalCount}
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  <IconButton
+                    size="small"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    sx={{ color: "text.secondary" }}
+                  >
+                    <ChevronLeft size={20} />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    sx={{ color: "text.secondary" }}
+                  >
+                    <ChevronRight size={20} />
+                  </IconButton>
+                </Stack>
+              </Box>
+            )}
 
-              <Grid container spacing={3}>
-                {users.map((user) => {
-                  const statusColor = getStatusColors(user.status);
-                  const accountColor = getAccountTypeColors(user.accountType);
-                  return (
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={user.id}>
-                      <Card
-                        onClick={() => handleEditClick(user)}
-                        elevation={0}
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          height: "100%",
-                          transition: "all 0.2s",
-                          border: "1px solid",
-                          borderColor: "divider",
-                          "&:hover": {
-                            bgcolor: (theme: any) =>
-                              alpha(theme.palette.primary.main, 0.04),
-                            cursor: "pointer",
-                          },
-                        }}
-                      >
-                        <CardContent sx={{ flexGrow: 1, p: 3 }}>
+            <Grid container spacing={3}>
+              {users.map((user) => {
+                const statusColor = getStatusColors(user.status);
+                const accountColor = getAccountTypeColors(user.accountType);
+                return (
+                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={user.id}>
+                    <Card
+                      onClick={() => handleEditClick(user)}
+                      elevation={0}
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        height: "100%",
+                        transition: "all 0.2s",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        "&:hover": {
+                          bgcolor: (theme: any) =>
+                            alpha(theme.palette.primary.main, 0.04),
+                          cursor: "pointer",
+                        },
+                      }}
+                    >
+                      <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "flex-start",
+                            mb: 2,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 1,
+                              flexDirection: "column",
+                            }}
+                          >
+                            <Typography
+                              variant="h6"
+                              fontWeight={700}
+                              sx={{ lineHeight: 1.2 }}
+                            >
+                              {user.name || "N/A"}
+                            </Typography>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                                color: "text.secondary",
+                              }}
+                            >
+                              <Mail size={14} />
+                              <Typography variant="body2">
+                                {user.email}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Box>
+
+                        <Divider sx={{ my: 2 }} />
+
+                        <Stack spacing={2}>
                           <Box
                             sx={{
                               display: "flex",
                               justifyContent: "space-between",
-                              alignItems: "flex-start",
-                              mb: 2,
+                              alignItems: "center",
                             }}
                           >
                             <Box
                               sx={{
                                 display: "flex",
+                                alignItems: "center",
                                 gap: 1,
-                                flexDirection: "column",
+                                color: "text.secondary",
                               }}
                             >
-                              <Typography
-                                variant="h6"
-                                fontWeight={700}
-                                sx={{ lineHeight: 1.2 }}
-                              >
-                                {user.name || "N/A"}
+                              <ShieldAlert size={16} />
+                              <Typography variant="body2" fontWeight={500}>
+                                Role
                               </Typography>
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 0.5,
-                                  color: "text.secondary",
-                                }}
-                              >
-                                <Mail size={14} />
-                                <Typography variant="body2">
-                                  {user.email}
-                                </Typography>
-                              </Box>
                             </Box>
+                            <Chip
+                              label={user.role}
+                              size="small"
+                              sx={{
+                                fontWeight: 700,
+                                fontSize: "0.72rem",
+                                borderRadius: 2,
+                              }}
+                            />
                           </Box>
 
-                          <Divider sx={{ my: 2 }} />
-
-                          <Stack spacing={2}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
                             <Box
                               sx={{
                                 display: "flex",
-                                justifyContent: "space-between",
                                 alignItems: "center",
+                                gap: 1,
+                                color: "text.secondary",
                               }}
                             >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                  color: "text.secondary",
-                                }}
-                              >
-                                <ShieldAlert size={16} />
-                                <Typography variant="body2" fontWeight={500}>
-                                  Role
-                                </Typography>
-                              </Box>
-                              <Chip
-                                label={user.role}
-                                size="small"
-                                sx={{
-                                  fontWeight: 700,
-                                  fontSize: "0.72rem",
-                                  borderRadius: 2,
-                                }}
-                              />
-                            </Box>
-
-                            <Box
-                              sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                  color: "text.secondary",
-                                }}
-                              >
-                                <UserIcon size={16} />
-                                <Typography variant="body2" fontWeight={500}>
-                                  Account
-                                </Typography>
-                              </Box>
-                              <Chip
-                                label={user.accountType}
-                                size="small"
-                                sx={{
-                                  bgcolor: alpha(accountColor.text, 0.2),
-                                  color: accountColor.text,
-                                  fontWeight: 700,
-                                  fontSize: "0.72rem",
-                                  borderRadius: 2,
-                                }}
-                              />
-                            </Box>
-
-                            <Box
-                              sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                  color: "text.secondary",
-                                }}
-                              >
-                                <Box
-                                  sx={{
-                                    width: 8,
-                                    height: 8,
-                                    borderRadius: "50%",
-                                    bgcolor: statusColor.bg,
-                                    ml: 0.5,
-                                    mr: 0.5,
-                                  }}
-                                />
-                                <Typography variant="body2" fontWeight={500}>
-                                  Status
-                                </Typography>
-                              </Box>
-                              <Chip
-                                label={user.status}
-                                size="small"
-                                sx={{
-                                  color: statusColor.text,
-                                  fontWeight: 700,
-                                  fontSize: "0.72rem",
-                                  borderRadius: 2,
-                                }}
-                              />
-                            </Box>
-
-                            <Box
-                              sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                mt: 1,
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                  color: "text.secondary",
-                                }}
-                              >
-                                <Calendar size={16} />
-                                <Typography variant="body2" fontWeight={500}>
-                                  Joined
-                                </Typography>
-                              </Box>
-                              <Typography
-                                variant="body2"
-                                fontWeight={600}
-                                color="text.primary"
-                              >
-                                {user.createdAt
-                                  ? format(
-                                      new Date(user.createdAt),
-                                      "MMM d, yyyy",
-                                    )
-                                  : "N/A"}
+                              <UserIcon size={16} />
+                              <Typography variant="body2" fontWeight={500}>
+                                Account
                               </Typography>
                             </Box>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            </>
-          )}
-        </Box>
+                            <Chip
+                              label={user.accountType}
+                              size="small"
+                              sx={{
+                                bgcolor: alpha(accountColor.text, 0.2),
+                                color: accountColor.text,
+                                fontWeight: 700,
+                                fontSize: "0.72rem",
+                                borderRadius: 2,
+                              }}
+                            />
+                          </Box>
+
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                color: "text.secondary",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  bgcolor: statusColor.bg,
+                                  ml: 0.5,
+                                  mr: 0.5,
+                                }}
+                              />
+                              <Typography variant="body2" fontWeight={500}>
+                                Status
+                              </Typography>
+                            </Box>
+                            <Chip
+                              label={user.status}
+                              size="small"
+                              sx={{
+                                color: statusColor.text,
+                                fontWeight: 700,
+                                fontSize: "0.72rem",
+                                borderRadius: 2,
+                              }}
+                            />
+                          </Box>
+
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              mt: 1,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                color: "text.secondary",
+                              }}
+                            >
+                              <Calendar size={16} />
+                              <Typography variant="body2" fontWeight={500}>
+                                Joined
+                              </Typography>
+                            </Box>
+                            <Typography
+                              variant="body2"
+                              fontWeight={600}
+                              color="text.primary"
+                            >
+                              {user.createdAt
+                                ? format(
+                                    new Date(user.createdAt),
+                                    "MMM d, yyyy",
+                                  )
+                                : "N/A"}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </>
+        )}
       </Box>
     </DashboardLayout>
   );

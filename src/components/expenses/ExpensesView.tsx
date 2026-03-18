@@ -710,7 +710,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                     sx={{
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
-                      width: 300,
+                      width: 200,
                       mr: 2,
                       display: { xs: "none", sm: "block" },
                     }}
@@ -724,7 +724,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                     sx={{
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
-                      width: 150,
+                      width: 130,
                       mr: 2,
                       display: { xs: "none", sm: "block" },
                     }}
@@ -925,7 +925,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                             ),
                           }}
                           sx={{
-                            width: { xs: 120, sm: 300 },
+                            width: { xs: 120, sm: 180 },
                             mr: { xs: 0, sm: 2 },
                             "& .MuiInputBase-input": {
                               fontWeight: 700,

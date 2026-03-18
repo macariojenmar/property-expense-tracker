@@ -26,7 +26,7 @@ export default function CreatePropertyPage() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout width="md">
       <PropertyForm
         onSubmit={handleCreate}
         loading={loading}

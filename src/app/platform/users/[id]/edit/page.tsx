@@ -94,131 +94,120 @@ export default function EditUserPage() {
   }
 
   return (
-    <DashboardLayout>
-      <Box
+    <DashboardLayout width="md">
+      <PageHeader
+        title="Edit User Access"
+        subtitle={`Modify the role, status, and account type for ${user?.name || user?.email || "this user"}.`}
+        onBack={() => router.push("/platform/users")}
+      />
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Paper
+        elevation={0}
         sx={{
-          maxWidth: 800,
-          mx: "auto",
-          width: "100%",
-          height: "100%",
+          p: 4,
+          borderRadius: 4,
+          border: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.paper",
           display: "flex",
           flexDirection: "column",
+          gap: 4,
         }}
       >
-        <PageHeader
-          title="Edit User Access"
-          subtitle={`Modify the role, status, and account type for ${user?.name || user?.email || "this user"}.`}
-          onBack={() => router.push("/platform/users")}
-        />
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            User Information
+          </Typography>
+          <Typography variant="body1" fontWeight={600}>
+            {user?.name || "Unknown"}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {user?.email}
+          </Typography>
+        </Box>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>
-            {error}
-          </Alert>
-        )}
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: 4,
-            borderRadius: 4,
-            border: "1px solid",
-            borderColor: "divider",
-            bgcolor: "background.paper",
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-          }}
-        >
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              User Information
-            </Typography>
-            <Typography variant="body1" fontWeight={600}>
-              {user?.name || "Unknown"}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {user?.email}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <FormControl fullWidth>
-              <InputLabel>Role</InputLabel>
-              <Select
-                value={editForm.role}
-                label="Role"
-                onChange={(e) =>
-                  setEditForm({ ...editForm, role: e.target.value })
-                }
-              >
-                <MenuItem value="USER">User (Standard Access)</MenuItem>
-                <MenuItem value="DEVELOPER">
-                  Developer (Platform Management Access)
-                </MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={editForm.status}
-                label="Status"
-                onChange={(e) =>
-                  setEditForm({ ...editForm, status: e.target.value })
-                }
-              >
-                <MenuItem value="ACTIVE">Active</MenuItem>
-                <MenuItem value="INACTIVE">Inactive</MenuItem>
-                <MenuItem value="PENDING">Pending</MenuItem>
-                <MenuItem value="DELETED">Deleted</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth>
-              <InputLabel>Account Type</InputLabel>
-              <Select
-                value={editForm.accountType}
-                label="Account Type"
-                onChange={(e) =>
-                  setEditForm({ ...editForm, accountType: e.target.value })
-                }
-              >
-                <MenuItem value="TRIAL">Trial</MenuItem>
-                <MenuItem value="STANDARD">Standard</MenuItem>
-                <MenuItem value="PRO">Pro</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-
-          <Box
-            sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}
-          >
-            <Button
-              variant="outlined"
-              color="inherit"
-              onClick={() => router.push("/platform/users")}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSaveUser}
-              disabled={saving}
-              startIcon={
-                saving ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : (
-                  <Save size={18} />
-                )
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <FormControl fullWidth>
+            <InputLabel>Role</InputLabel>
+            <Select
+              value={editForm.role}
+              label="Role"
+              onChange={(e) =>
+                setEditForm({ ...editForm, role: e.target.value })
               }
             >
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
-          </Box>
-        </Paper>
-      </Box>
+              <MenuItem value="USER">User (Standard Access)</MenuItem>
+              <MenuItem value="DEVELOPER">
+                Developer (Platform Management Access)
+              </MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={editForm.status}
+              label="Status"
+              onChange={(e) =>
+                setEditForm({ ...editForm, status: e.target.value })
+              }
+            >
+              <MenuItem value="ACTIVE">Active</MenuItem>
+              <MenuItem value="INACTIVE">Inactive</MenuItem>
+              <MenuItem value="PENDING">Pending</MenuItem>
+              <MenuItem value="DELETED">Deleted</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel>Account Type</InputLabel>
+            <Select
+              value={editForm.accountType}
+              label="Account Type"
+              onChange={(e) =>
+                setEditForm({ ...editForm, accountType: e.target.value })
+              }
+            >
+              <MenuItem value="TRIAL">Trial</MenuItem>
+              <MenuItem value="STANDARD">Standard</MenuItem>
+              <MenuItem value="PRO">Pro</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+
+        <Box
+          sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}
+        >
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={() => router.push("/platform/users")}
+            disabled={saving}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveUser}
+            disabled={saving}
+            startIcon={
+              saving ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <Save size={18} />
+              )
+            }
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
+        </Box>
+      </Paper>
     </DashboardLayout>
   );
 }
