@@ -53,7 +53,8 @@ export default function DashboardLayout({
   const colorMode = React.useContext(ColorModeContext);
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const { data: session } = useSession();
-  const { selectedProperty, setSelectedProperty, isSaving, isLoading } = usePropertyStore();
+  const { selectedProperty, setSelectedProperty, isSaving, isLoading } =
+    usePropertyStore();
 
   const menuItems = React.useMemo(() => {
     const baseItems: Array<{
@@ -113,7 +114,7 @@ export default function DashboardLayout({
 
   const drawer = (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Toolbar>
+      <Toolbar sx={{ display: "flex", justifyContent: "center" }}>
         <Typography
           variant="h6"
           sx={{
@@ -239,7 +240,7 @@ export default function DashboardLayout({
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
-          <ListItemButton 
+          <ListItemButton
             sx={{ borderRadius: 2, color: "error.main" }}
             onClick={() => signOut({ callbackUrl: "/login" })}
           >
@@ -310,20 +311,22 @@ export default function DashboardLayout({
                 ml: 1,
               }}
             >
-              {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "U"}
+              {session?.user?.name
+                ? session.user.name.charAt(0).toUpperCase()
+                : "U"}
             </Avatar>
           </Box>
         </Toolbar>
         {(isSaving || isLoading) && (
-          <LinearProgress 
-            sx={{ 
-              position: "absolute", 
-              bottom: 0, 
-              left: 0, 
-              right: 0, 
+          <LinearProgress
+            sx={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
               height: 2,
               zIndex: (theme) => theme.zIndex.appBar + 1,
-            }} 
+            }}
           />
         )}
       </AppBar>
