@@ -37,7 +37,10 @@ import MonthFilter, { DateRange } from "@/components/MonthFilter";
 
 import { useRouter } from "next/navigation";
 import { usePropertyStore, Property, Payout } from "@/store/usePropertyStore";
-import { refundPayout as refundPayoutAction, revertRefund as revertRefundAction } from "@/lib/actions/payout";
+import {
+  refundPayout as refundPayoutAction,
+  revertRefund as revertRefundAction,
+} from "@/lib/actions/payout";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import EmptyState from "@/components/EmptyState";
 
@@ -59,11 +62,14 @@ function RefundDialog({ open, onClose, payout, onRefund }: RefundDialogProps) {
   const [refundType, setRefundType] = React.useState<"full" | "custom">("full");
   const [customAmount, setCustomAmount] = React.useState("");
 
-  const remainingAmount = payout ? payout.amount - (payout.refundAmount || 0) : 0;
+  const remainingAmount = payout
+    ? payout.amount - (payout.refundAmount || 0)
+    : 0;
 
   const previewRemaining = React.useMemo(() => {
     if (!payout) return 0;
-    const amount = refundType === "full" ? remainingAmount : (parseFloat(customAmount) || 0);
+    const amount =
+      refundType === "full" ? remainingAmount : parseFloat(customAmount) || 0;
     return Math.max(0, remainingAmount - amount);
   }, [payout, refundType, remainingAmount, customAmount]);
 
@@ -114,9 +120,11 @@ function RefundDialog({ open, onClose, payout, onRefund }: RefundDialogProps) {
               </strong>
             </Typography>
             {(refundType === "full" || customAmount) && (
-              <Typography variant="body2" sx={{ mt: 0.5, color: "success.main", fontWeight: 600 }}>
-                Remaining After Refund:{" "}
-                {currency.symbol}
+              <Typography
+                variant="body2"
+                sx={{ mt: 0.5, color: "success.main", fontWeight: 600 }}
+              >
+                Remaining After Refund: {currency.symbol}
                 {previewRemaining.toLocaleString()}
               </Typography>
             )}
@@ -143,9 +151,19 @@ function RefundDialog({ open, onClose, payout, onRefund }: RefundDialogProps) {
               fullWidth
               label="Refund Amount"
               value={customAmount}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomAmount(e.target.value)}
-              error={customAmount ? parseFloat(customAmount) > remainingAmount : false}
-              helperText={customAmount && parseFloat(customAmount) > remainingAmount ? "Amount exceeds remaining balance" : ""}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setCustomAmount(e.target.value)
+              }
+              error={
+                customAmount
+                  ? parseFloat(customAmount) > remainingAmount
+                  : false
+              }
+              helperText={
+                customAmount && parseFloat(customAmount) > remainingAmount
+                  ? "Amount exceeds remaining balance"
+                  : ""
+              }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -166,14 +184,14 @@ function RefundDialog({ open, onClose, payout, onRefund }: RefundDialogProps) {
           onClick={handleConfirm}
           variant="contained"
           disabled={
-            (refundType === "custom" && !customAmount) || 
-            (refundType === "custom" && parseFloat(customAmount) > remainingAmount)
+            (refundType === "custom" && !customAmount) ||
+            (refundType === "custom" &&
+              parseFloat(customAmount) > remainingAmount)
           }
         >
           Confirm Refund
         </Button>
       </DialogActions>
-
     </Dialog>
   );
 }
@@ -219,12 +237,8 @@ function RevertConfirmationDialog({
 
 export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const router = useRouter();
-  const {
-    properties,
-    setSelectedProperty,
-    refresh,
-    setIsSaving
-  } = usePropertyStore();
+  const { properties, setSelectedProperty, refresh, setIsSaving } =
+    usePropertyStore();
   const { formatAmount } = useCurrency();
 
   const [payouts, setPayouts] = React.useState<Payout[]>([]);
@@ -258,7 +272,10 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const filteredPayouts = React.useMemo(() => {
     return payouts.filter((payout: Payout) => {
       // Filter by propertyId if provided
-      if (propertyId !== null && String(payout.propertyId) !== String(propertyId)) {
+      if (
+        propertyId !== null &&
+        String(payout.propertyId) !== String(propertyId)
+      ) {
         return false;
       }
 
@@ -323,22 +340,22 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
               width: { xs: "100%", sm: "auto" },
             }}
           >
-            <Box sx={{ flex: 1 }}>
+            <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
               <MonthFilter value={filterRange} onChange={setFilterRange} />
             </Box>
-            <Box sx={{ flex: 1 }}>
-              <Button
-                variant="contained"
-                startIcon={<Plus size={18} />}
-                onClick={() =>
-                  router.push(`/properties/${propertyId as string}/payouts/create`)
-                }
-                fullWidth
-                sx={{ height: 44, whiteSpace: "nowrap" }}
-              >
-                Add Payout
-              </Button>
-            </Box>
+            <Button
+              variant="contained"
+              startIcon={<Plus size={18} />}
+              onClick={() =>
+                router.push(
+                  `/properties/${propertyId as string}/payouts/create`,
+                )
+              }
+              fullWidth
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              Add Payout
+            </Button>
           </Stack>
         }
       />
@@ -356,17 +373,22 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         >
           <Typography
             variant="h5"
-            sx={{ 
-              fontWeight: 700, 
+            sx={{
+              fontWeight: 700,
               color: "success.main",
-              fontSize: { xs: "1.25rem", sm: "1.5rem" }
+              fontSize: { xs: "1.25rem", sm: "1.5rem" },
             }}
           >
             Total: {formatAmount(totalAmount)}
           </Typography>
 
           {totalPages > 1 && (
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ alignSelf: { xs: "flex-end", sm: "center" } }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              sx={{ alignSelf: { xs: "flex-end", sm: "center" } }}
+            >
               <Typography variant="body2" color="text.secondary">
                 {(page - 1) * itemsPerPage + 1}–
                 {Math.min(page * itemsPerPage, filteredPayouts.length)} of{" "}
@@ -407,7 +429,11 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
           return (
             <Card
               key={payout.id}
-              onClick={() => router.push(`/properties/${propertyId}/payouts/${payout.id}/edit`)}
+              onClick={() =>
+                router.push(
+                  `/properties/${propertyId}/payouts/${payout.id}/edit`,
+                )
+              }
               sx={{
                 p: { xs: 1.5, sm: 2 },
                 display: "flex",
@@ -455,15 +481,19 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                 </Box>
 
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 0.5, sm: 1 }} alignItems={{ xs: "flex-start", sm: "center" }}>
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={{ xs: 0.5, sm: 1 }}
+                    alignItems={{ xs: "flex-start", sm: "center" }}
+                  >
                     <Typography
                       variant="subtitle1"
                       sx={{
                         fontWeight: 600,
-                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                        fontSize: { xs: "0.9rem", sm: "1rem" },
                         color: isRefunded ? "text.disabled" : "text.primary",
                         textDecoration: isRefunded ? "line-through" : "none",
-                        lineHeight: 1.2
+                        lineHeight: 1.2,
                       }}
                     >
                       {payout.name || "Property Payout"}
@@ -496,12 +526,19 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                   >
                     <Stack direction="row" spacing={0.5} alignItems="center">
                       <Calendar size={14} />
-                      <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ fontSize: "0.75rem" }}
+                      >
                         {format(new Date(payout.date), "MMM d, yyyy")}
                       </Typography>
                     </Stack>
                     {isPartiallyRefunded && (
-                      <Typography variant="caption" color="error.main" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                      <Typography
+                        variant="caption"
+                        color="error.main"
+                        sx={{ display: { xs: "none", sm: "block" } }}
+                      >
                         Refunded: {formatAmount(payout.refundAmount || 0)}
                       </Typography>
                     )}
@@ -514,19 +551,28 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                     sx={{
                       fontWeight: 700,
                       color: isRefunded ? "text.disabled" : "success.main",
-                      fontSize: { xs: '0.95rem', sm: '1.25rem' }
+                      fontSize: { xs: "0.95rem", sm: "1.25rem" },
                     }}
                   >
                     {formatAmount(displayAmount)}
                   </Typography>
                   {isPartiallyRefunded && (
-                    <Typography variant="caption" color="error.main" sx={{ display: { xs: 'block', sm: 'none' }, fontSize: '0.65rem' }}>
+                    <Typography
+                      variant="caption"
+                      color="error.main"
+                      sx={{
+                        display: { xs: "block", sm: "none" },
+                        fontSize: "0.65rem",
+                      }}
+                    >
                       -{formatAmount(payout.refundAmount || 0)}
                     </Typography>
                   )}
                 </Box>
 
-                <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
+                <Box
+                  sx={{ flexShrink: 0, display: "flex", alignItems: "center" }}
+                >
                   {(isRefunded || isPartiallyRefunded) && (
                     <Tooltip title="Revert Refund" arrow>
                       <IconButton
@@ -550,7 +596,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
                     </Tooltip>
                   )}
 
-                  {(!isRefunded && !isPartiallyRefunded) && (
+                  {!isRefunded && !isPartiallyRefunded && (
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Tooltip title="Refund Payout" arrow>
                         <IconButton
@@ -604,7 +650,8 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
               await revertRefundAction(selectedPayout.id);
               await refresh();
               const updated = usePropertyStore.getState().selectedProperty;
-              if (updated) setPayouts((updated as unknown as Property).payouts || []);
+              if (updated)
+                setPayouts((updated as unknown as Property).payouts || []);
             } catch (error) {
               console.error("Failed to revert refund:", error);
             } finally {
