@@ -313,7 +313,13 @@ export default function PropertyDetailsPage() {
         <Button
           startIcon={<ArrowLeft size={18} />}
           onClick={() => router.push("/properties")}
-          sx={{ mb: 2, color: "text.secondary" }}
+          sx={{
+            mb: 1.5,
+            color: "text.secondary",
+            px: 0,
+            "&:hover": { bgcolor: "transparent", color: "primary.main" },
+            fontSize: "0.875rem",
+          }}
         >
           Back to Properties
         </Button>
