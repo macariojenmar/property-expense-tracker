@@ -3,11 +3,9 @@
 import * as React from "react";
 import {
   Box,
-  Typography,
-  IconButton,
 } from "@mui/material";
+import PageHeader from "@/components/layout/PageHeader";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { ArrowLeft } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import { createPayout } from "@/lib/actions/payout";
@@ -55,20 +53,11 @@ export default function CreatePayoutPage() {
   return (
     <DashboardLayout>
       <Box sx={{ maxWidth: 800, mx: "auto" }}>
-        <Box sx={{ mb: 4, display: "flex", alignItems: "center", gap: 2 }}>
-          <IconButton
-            onClick={handleCancel}
-            size="small"
-          >
-            <ArrowLeft size={20} />
-          </IconButton>
-          <Box>
-            <Typography variant="h4">Record Payouts</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Record one or more payouts for this property.
-            </Typography>
-          </Box>
-        </Box>
+        <PageHeader
+          title="Record Payouts"
+          subtitle="Record one or more payouts for this property."
+          onBack={handleCancel}
+        />
 
         <PayoutForm
           initialItems={initialItems}

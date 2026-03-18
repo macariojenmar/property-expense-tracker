@@ -17,13 +17,14 @@ import {
   Autocomplete,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { Plus, Trash2, ArrowLeft, Save } from "lucide-react";
+import { Plus, Trash2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCurrency } from "@/components/CurrencyContext";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
 import { getDictionaryWords } from "@/lib/actions/dictionary";
 import { usePropertyStore } from "@/store/usePropertyStore";
+import PageHeader from "@/components/layout/PageHeader";
 
 interface Word {
   id: string;
@@ -177,29 +178,11 @@ export default function PropertyForm({
 
   return (
     <Box sx={{ maxWidth: 800, mx: "auto" }}>
-      <Box sx={{ mb: 4, display: "flex", alignItems: "center", gap: 2 }}>
-        <IconButton
-          onClick={() => router.back()}
-          size="small"
-          sx={{
-            bgcolor: (t) => alpha(t.palette.text.primary, 0.05),
-            "&:hover": { bgcolor: (t) => alpha(t.palette.text.primary, 0.1) },
-          }}
-        >
-          <ArrowLeft size={20} />
-        </IconButton>
-        <Box>
-          <Typography
-            variant="h4"
-            sx={{ fontWeight: 800, letterSpacing: "-0.02em" }}
-          >
-            {title}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {subtitle}
-          </Typography>
-        </Box>
-      </Box>
+      <PageHeader
+        title={title}
+        subtitle={subtitle}
+        onBack={() => router.back()}
+      />
 
       <Stack spacing={4}>
         <Card

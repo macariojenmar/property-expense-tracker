@@ -17,11 +17,32 @@ model User {
   email         String?   @unique
   password      String?
   image         String?
+  role          UserRole  @default(USER)
+  status        UserStatus @default(PENDING)
+  accountType   AccountType @default(TRIAL)
   properties    Property[]
   pendingToEs   PendingTo[]
   dictionaryWords DictionaryWord[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+enum UserRole {
+  USER
+  DEVELOPER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  DELETED
+}
+
+enum AccountType {
+  TRIAL
+  STANDARD
+  PRO
 }
 
 model Property {

@@ -11,6 +11,7 @@ import {
   Skeleton,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import PageHeader from "@/components/layout/PageHeader";
 import {
   TrendingUp,
   Wallet,
@@ -129,19 +130,11 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <Box sx={{ mb: 4 }}>
-        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} spacing={2}>
-          <Box>
-            <Typography variant="h4" fontWeight={900} sx={{ letterSpacing: "-0.02em" }}>
-              Overview
-            </Typography>
-            <Typography color="text.secondary">
-              Real-time summary of your property performance
-            </Typography>
-          </Box>
-          <MonthFilter value={dateRange} onChange={setDateRange} />
-        </Stack>
-      </Box>
+      <PageHeader
+        title="Overview"
+        subtitle="Real-time summary of your property performance"
+        actions={<MonthFilter value={dateRange} onChange={setDateRange} />}
+      />
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>

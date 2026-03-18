@@ -32,6 +32,8 @@ import {
   LayoutDashboard,
   BanknoteArrowDown,
   BookText,
+  ShieldCheck,
+  Users,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
@@ -67,8 +69,8 @@ export default function DashboardLayout({
     setAnchorEl(null);
   };
 
-  const menuItems = React.useMemo(() => {
-    const baseItems: Array<{
+  const menuGroups = React.useMemo(() => {
+    const mainItems: Array<{
       text: string;
       icon: React.ReactNode;
       path: string;
@@ -87,7 +89,7 @@ export default function DashboardLayout({
     ];
 
     if (selectedProperty) {
-      baseItems.push(
+      mainItems.push(
         {
           text: "Expenses",
           icon: <BanknoteArrowDown size={20} />,
@@ -99,18 +101,40 @@ export default function DashboardLayout({
           icon: <WalletCards size={20} />,
           path: `/properties/${selectedProperty.id}/payouts`,
           indent: true,
-        },
+        }
       );
     }
 
-    baseItems.push({
+    mainItems.push({
       text: "Dictionary",
       icon: <BookText size={20} />,
       path: "/dictionary",
     });
 
-    return baseItems;
-  }, [selectedProperty]);
+    const platformItems: Array<{
+      text: string;
+      icon: React.ReactNode;
+      path: string;
+      indent?: boolean;
+    }> = [];
+
+    if (session?.user?.role === "DEVELOPER") {
+      platformItems.push(
+        {
+          text: "User Management",
+          icon: <Users size={20} />,
+          path: "/platform/users",
+        },
+        {
+          text: "Roles & Permissions",
+          icon: <ShieldCheck size={20} />,
+          path: "/platform/roles",
+        }
+      );
+    }
+
+    return { mainItems, platformItems };
+  }, [selectedProperty, session]);
 
   // Automatically clear context when navigating back to the main properties list
   React.useEffect(() => {
@@ -148,7 +172,7 @@ export default function DashboardLayout({
       </Toolbar>
       <Divider />
       <List sx={{ px: 1, py: 2, flexGrow: 1 }}>
-        {menuItems.map((item) => {
+        {menuGroups.mainItems.map((item) => {
           const isActive = pathname === item.path;
           return (
             <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
@@ -200,6 +224,74 @@ export default function DashboardLayout({
             </ListItem>
           );
         })}
+
+        {menuGroups.platformItems.length > 0 && (
+          <Box sx={{ mt: 3 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                px: 2,
+                pb: 1,
+                display: "block",
+                color: "text.secondary",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Platform Management
+            </Typography>
+            {menuGroups.platformItems.map((item) => {
+              const isActive = pathname === item.path;
+              return (
+                <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => router.push(item.path)}
+                    selected={isActive}
+                    sx={{
+                      borderRadius: 2,
+                      pl: 2,
+                      "&.Mui-selected": {
+                        bgcolor:
+                          theme.palette.mode === "light"
+                            ? "rgba(0,0,0,0.06)"
+                            : "rgba(255,255,255,0.1)",
+                        color: "text.primary",
+                        "& .MuiListItemIcon-root": { color: "primary.main" },
+                        "&:hover": {
+                          bgcolor:
+                            theme.palette.mode === "light"
+                              ? "rgba(0,0,0,0.08)"
+                              : "rgba(255,255,255,0.15)",
+                        },
+                      },
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 40,
+                        color: isActive ? "primary.main" : "text.secondary",
+                        opacity: isActive ? 1 : 0.7,
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.text}
+                      primaryTypographyProps={{
+                        fontSize: 14,
+                        fontWeight: isActive ? 600 : 500,
+                        sx: {
+                          color: isActive ? "text.primary" : "text.secondary",
+                        },
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+          </Box>
+        )}
       </List>
       <Divider />
       <List sx={{ px: 1, py: 2 }}>

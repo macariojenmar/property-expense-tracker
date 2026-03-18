@@ -14,6 +14,7 @@ import {
   Divider,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import PageHeader from "@/components/layout/PageHeader";
 import { useCurrency, currencies } from "@/components/CurrencyContext";
 import { Globe } from "lucide-react";
 import ProfileForm from "@/components/settings/ProfileForm";
@@ -25,14 +26,10 @@ export default function SettingsPage() {
   return (
     <DashboardLayout>
       <Stack spacing={3} sx={{ maxWidth: 800, mx: "auto" }}>
-        <Box>
-          <Typography variant="h4" sx={{ mb: 1 }}>
-            Settings
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage your application preferences and global configurations.
-          </Typography>
-        </Box>
+        <PageHeader
+          title="Settings"
+          subtitle="Manage your application preferences and global configurations."
+        />
         <Card>
           <CardContent sx={{ p: 3 }}>
             <Stack

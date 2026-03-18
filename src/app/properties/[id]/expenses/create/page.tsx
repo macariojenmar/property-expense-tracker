@@ -8,10 +8,10 @@ import {
   CardContent,
   Button,
   Stack,
-  IconButton,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Plus, ArrowLeft, Save } from "lucide-react";
+import { Plus, Save } from "lucide-react";
+import PageHeader from "@/components/layout/PageHeader";
 import { createExpense } from "@/lib/actions/expense";
 import { getPendingToEntities } from "@/lib/actions/pending-to";
 import { getDictionaryWords } from "@/lib/actions/dictionary";
@@ -118,20 +118,11 @@ export default function CreateExpensePage() {
   return (
     <DashboardLayout>
       <Box sx={{ maxWidth: 800, mx: "auto" }}>
-        <Box sx={{ mb: 4, display: "flex", alignItems: "center", gap: 2 }}>
-          <IconButton
-            onClick={() => router.push(`/properties/${propertyId}/expenses`)}
-            size="small"
-          >
-            <ArrowLeft size={20} />
-          </IconButton>
-          <Box>
-            <Typography variant="h4">New Expenses</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Record one or more expenses for this property.
-            </Typography>
-          </Box>
-        </Box>
+        <PageHeader
+          title="New Expenses"
+          subtitle="Record one or more expenses for this property."
+          onBack={() => router.push(`/properties/${propertyId}/expenses`)}
+        />
 
         <Stack spacing={4}>
           <Card>

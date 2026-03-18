@@ -40,9 +40,11 @@ export default function Loader({
         justifyContent: "center",
         gap: 2,
         p: 3,
-        flex: 1,
+        width: "100%",
+        height: "100%",
         minHeight: "200px",
-        color: "primary.main", // Default to monotone primary color
+        flex: 1,
+        color: "primary.main",
       }}
     >
       <Box 

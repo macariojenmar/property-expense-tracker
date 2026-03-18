@@ -49,6 +49,9 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          role: user.role,
+          status: user.status,
+          accountType: user.accountType,
         };
       },
     }),
@@ -65,6 +68,9 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub as string;
         session.user.name = token.name;
         session.user.email = token.email;
+        session.user.role = token.role as string;
+        session.user.status = token.status as string;
+        session.user.accountType = token.accountType as string;
       }
       return session;
     },
@@ -73,6 +79,9 @@ export const authOptions: NextAuthOptions = {
         token.sub = user.id;
         token.name = user.name;
         token.email = user.email;
+        token.role = user.role;
+        token.status = user.status;
+        token.accountType = user.accountType;
       }
 
       if (trigger === "update" && session) {

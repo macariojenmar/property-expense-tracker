@@ -6,18 +6,17 @@ import {
   Typography,
   Button,
   IconButton,
-  Container,
   Card,
   Stack,
   alpha,
   Grid,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import PageHeader from "@/components/layout/PageHeader";
 import {
   Plus,
   Pencil,
   Trash2,
-  ArrowLeft,
   Users,
   ChevronLeft,
   ChevronRight,
@@ -95,78 +94,60 @@ export default function EntitiesPage() {
 
   return (
     <DashboardLayout>
-      <Box
-        sx={{
-          mb: 4,
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          justifyContent: "space-between",
-          flexDirection: { xs: "column", md: "row" },
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <IconButton onClick={() => router.back()} size="small">
-            <ArrowLeft size={20} />
-          </IconButton>
-          <Box>
-            <Typography variant="h4" fontWeight={700}>
-              Entities
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Manage people or organizations for pending expenses.
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            width: { xs: "100%", md: "auto" },
-          }}
-        >
-          {entities.length > itemsPerPage && (
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              sx={{ display: { xs: "none", md: "flex" } }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                {(page - 1) * itemsPerPage + 1}–
-                {Math.min(page * itemsPerPage, entities.length)} of{" "}
-                {entities.length}
-              </Typography>
-              <Stack direction="row" spacing={0.5}>
-                <IconButton
-                  size="small"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft size={20} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                >
-                  <ChevronRight size={20} />
-                </IconButton>
-              </Stack>
-            </Stack>
-          )}
-          <Button
-            variant="contained"
-            startIcon={<Plus size={18} />}
-            onClick={() => router.push("/entities/create")}
-            sx={{ flex: { xs: 1, md: "none" } }}
+      <PageHeader
+        title="Entities"
+        subtitle="Manage people or organizations for pending expenses."
+        sx={{ mb: 4 }}
+        actions={
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              width: { xs: "100%", md: "auto" },
+            }}
           >
-            Add Entity
-          </Button>
-        </Box>
-      </Box>
+            {entities.length > itemsPerPage && (
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ display: { xs: "none", md: "flex" } }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  {(page - 1) * itemsPerPage + 1}–
+                  {Math.min(page * itemsPerPage, entities.length)} of{" "}
+                  {entities.length}
+                </Typography>
+                <Stack direction="row" spacing={0.5}>
+                  <IconButton
+                    size="small"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    <ChevronLeft size={20} />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    <ChevronRight size={20} />
+                  </IconButton>
+                </Stack>
+              </Stack>
+            )}
+            <Button
+              variant="contained"
+              startIcon={<Plus size={18} />}
+              onClick={() => router.push("/entities/create")}
+              sx={{ flex: { xs: 1, md: "none" } }}
+            >
+              Add Entity
+            </Button>
+          </Box>
+        }
+      />
 
       {entities.length > itemsPerPage && (
         <Box

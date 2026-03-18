@@ -22,20 +22,20 @@ import {
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
-  Plus,
-  Calendar,
-  ChevronRight,
-  ChevronLeft,
   WalletCards,
   Undo2,
   History,
+  Plus,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import PageHeader from "@/components/layout/PageHeader";
 import { format, startOfMonth, endOfMonth, endOfDay } from "date-fns";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { usePropertyStore, Property, Payout } from "@/store/usePropertyStore";
 import { refundPayout as refundPayoutAction, revertRefund as revertRefundAction } from "@/lib/actions/payout";
 import NumericFormatInput from "@/components/NumericFormatInput";
@@ -311,65 +311,37 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   // Render logic...
   return (
     <DashboardLayout>
-      <Box
-        sx={{
-          mb: 4,
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          justifyContent: "space-between",
-          alignItems: { xs: "flex-start", sm: "flex-start" },
-          gap: 2,
-        }}
-      >
-        <Box sx={{ width: "100%" }}>
-          <Button
-            startIcon={<ArrowLeft size={18} />}
-            onClick={() => router.push(`/properties/${propertyId as string}`)}
+      <PageHeader
+        title="Payouts"
+        subtitle="Track your earnings and payouts."
+        actions={
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1}
+            alignItems="center"
             sx={{
-              mb: 1,
-              color: "text.secondary",
-              px: 0,
-              "&:hover": { bgcolor: "transparent", color: "primary.main" },
+              width: { xs: "100%", sm: "auto" },
             }}
           >
-            Back to Overview
-          </Button>
-          <Box>
-            <Typography variant="h4" sx={{ mb: 0.5, fontWeight: 700 }}>
-              Payouts
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Track your earnings and payouts.
-            </Typography>
-          </Box>
-        </Box>
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="center"
-          sx={{
-            mt: { xs: 2, sm: 5 },
-            width: { xs: "100%", sm: "auto" },
-          }}
-        >
-          <Box sx={{ flex: 1 }}>
-            <MonthFilter value={filterRange} onChange={setFilterRange} />
-          </Box>
-          <Box sx={{ flex: 1 }}>
-            <Button
-              variant="contained"
-              startIcon={<Plus size={18} />}
-              onClick={() =>
-                router.push(`/properties/${propertyId as string}/payouts/create`)
-              }
-              fullWidth
-              sx={{ height: 44, whiteSpace: "nowrap" }}
-            >
-              Add Payout
-            </Button>
-          </Box>
-        </Stack>
-      </Box>
+            <Box sx={{ flex: 1 }}>
+              <MonthFilter value={filterRange} onChange={setFilterRange} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Button
+                variant="contained"
+                startIcon={<Plus size={18} />}
+                onClick={() =>
+                  router.push(`/properties/${propertyId as string}/payouts/create`)
+                }
+                fullWidth
+                sx={{ height: 44, whiteSpace: "nowrap" }}
+              >
+                Add Payout
+              </Button>
+            </Box>
+          </Stack>
+        }
+      />
 
       {(totalPages > 1 || filteredPayouts.length > 0) && (
         <Box

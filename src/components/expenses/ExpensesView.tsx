@@ -34,7 +34,6 @@ import {
   RefreshCw,
   CheckCircle2,
   Clock,
-  ArrowLeft,
   ChevronDown,
   Ban,
   Undo2,
@@ -45,6 +44,7 @@ import { format, startOfMonth, endOfMonth, endOfDay } from "date-fns";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
+import PageHeader from "@/components/layout/PageHeader";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import {
   usePropertyStore,
@@ -546,72 +546,35 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
 
   return (
     <DashboardLayout>
-      <Box
-        sx={{
-          mb: 4,
-          display: "flex",
-          flexDirection: { xs: "column", md: "row" },
-          justifyContent: "space-between",
-          alignItems: "flex-end",
-          gap: 3,
-        }}
-      >
-        <Box sx={{ flex: 1 }}>
-          <Button
-            startIcon={<ArrowLeft size={18} />}
-            onClick={() => router.push(`/properties/${propertyId as string}`)}
-            sx={{
-              mb: 1.5,
-              color: "text.secondary",
-              px: 0,
-              "&:hover": { bgcolor: "transparent", color: "primary.main" },
-              fontSize: "0.875rem",
-            }}
+      <PageHeader
+        title="Expenses"
+        subtitle="Track and manage your property expenditures."
+        actions={
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            gap={2}
+            sx={{ width: { xs: "100%", md: "auto" } }}
           >
-            Back to Overview
-          </Button>
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{ mb: 1, fontWeight: 800, letterSpacing: "-0.02em" }}
+            <Button
+              variant="outlined"
+              startIcon={<Settings size={18} />}
+              onClick={() => router.push("/entities")}
+              sx={{ width: { xs: "100%", md: "fit-content" } }}
             >
-              Expenses
-            </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ opacity: 0.8 }}
+              Entities
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Plus size={18} />}
+              onClick={() =>
+                router.push(`/properties/${propertyId as string}/expenses/create`)
+              }
             >
-              Track and manage your property expenditures.
-            </Typography>
-          </Box>
-        </Box>
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          gap={2}
-          sx={{ width: { xs: "100%", md: "auto" } }}
-        >
-          <Button
-            variant="outlined"
-            startIcon={<Settings size={18} />}
-            onClick={() => router.push("/entities")}
-            sx={{
-              width: { xs: "100%", md: "fit-content" },
-            }}
-          >
-            Entities
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Plus size={18} />}
-            onClick={() =>
-              router.push(`/properties/${propertyId as string}/expenses/create`)
-            }
-          >
-            Add Expense
-          </Button>
-        </Stack>
-      </Box>
+              Add Expense
+            </Button>
+          </Stack>
+        }
+      />
 
       {/* ── Recurring Expenses Quick-Add ───────────────────────────────────── */}
       {recurringExpenses.length > 0 && (

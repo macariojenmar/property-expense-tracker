@@ -19,12 +19,12 @@ import {
   TrendingUp,
   Wallet,
   Receipt,
-  MapPin,
   Settings,
   Info,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import PageHeader from "@/components/layout/PageHeader";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
@@ -309,50 +309,10 @@ export default function PropertyDetailsPage() {
 
   return (
     <DashboardLayout>
-      <Box sx={{ mb: 4 }}>
-        <Button
-          startIcon={<ArrowLeft size={18} />}
-          onClick={() => router.push("/properties")}
-          sx={{
-            mb: 1.5,
-            color: "text.secondary",
-            px: 0,
-            "&:hover": { bgcolor: "transparent", color: "primary.main" },
-            fontSize: "0.875rem",
-          }}
-        >
-          Back to Properties
-        </Button>
-
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          justifyContent="space-between"
-          alignItems={{ xs: "stretch", sm: "center" }}
-          spacing={2}
-        >
-          <Box>
-            <Typography
-              variant="h3"
-              fontWeight={700}
-              sx={{
-                mb: 1,
-                letterSpacing: "-0.02em",
-                fontSize: { xs: "2rem", sm: "3rem" },
-              }}
-            >
-              {property.name}
-            </Typography>
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              color="text.secondary"
-            >
-              <MapPin size={18} />
-              <Typography variant="body1">{property.location}</Typography>
-            </Stack>
-          </Box>
-
+      <PageHeader
+        title={property.name}
+        subtitle={property.location || undefined}
+        actions={
           <Button
             variant="outlined"
             size="small"
@@ -362,8 +322,8 @@ export default function PropertyDetailsPage() {
           >
             Edit Property
           </Button>
-        </Stack>
-      </Box>
+        }
+      />
 
       <Stack
         direction="row"

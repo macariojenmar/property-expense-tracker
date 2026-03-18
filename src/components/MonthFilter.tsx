@@ -3,17 +3,16 @@
 import * as React from "react";
 import {
   Box,
-  FormControl,
-  Select,
   MenuItem,
-  SelectChangeEvent,
   ListSubheader,
   Divider,
   Typography,
   Stack,
   Popover,
   Button,
+  SelectChangeEvent,
 } from "@mui/material";
+import StandardSelect from "./StandardSelect";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import {
   format,
@@ -22,7 +21,6 @@ import {
   subMonths,
   startOfYear,
 } from "date-fns";
-import { ChevronDown } from "lucide-react";
 
 export interface DateRange {
   start: Date | null;
@@ -42,6 +40,11 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
     start: Date | null;
     end: Date | null;
   }>({ start: value.start, end: value.end });
+  const [anchorEl, setAnchorEl] = React.useState<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    setAnchorEl(anchorRef.current);
+  }, []);
 
   const now = new Date();
 
@@ -80,7 +83,7 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
     if (value.type === "custom" && value.start && value.end) {
       try {
         return `${format(value.start, "MMM d")} - ${format(value.end, "MMM d, yyyy")}`;
-      } catch (e) {
+      } catch (_error) {
         return "Custom Range";
       }
     }
@@ -89,142 +92,89 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
 
   return (
     <Box ref={anchorRef} sx={{ position: "relative" }}>
-      <FormControl size="small" sx={{ width: { xs: "100%", sm: 220 } }}>
-        <Select
-          value={value.type}
-          onChange={handleSelectChange}
-          onOpen={() => setIsPickerOpen(false)}
-          IconComponent={(props) => (
-            <Box
-              {...props}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                mr: 1,
-                color: "text.secondary",
-              }}
-            >
-              <ChevronDown size={18} />
-            </Box>
-          )}
-          renderValue={() => {
-            return (
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {renderLabel()}
-              </Typography>
-            );
-          }}
-          MenuProps={{
-            PaperProps: {
-              sx: {
-                bgcolor: "background.paper",
-                backgroundImage: "none",
-                mt: 1,
-                borderRadius: "8px",
-                border: "1px solid",
-                borderColor: "divider",
-                boxShadow:
-                  "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-                "& .MuiList-root": {
-                  p: 1,
-                },
-              },
-            },
-          }}
+      <StandardSelect
+        value={value.type}
+        onChange={(type) => handleSelectChange({ target: { value: type } } as any)}
+        onOpen={() => setIsPickerOpen(false)}
+        renderValue={() => (
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {renderLabel()}
+          </Typography>
+        )}
+        minWidth={{ xs: "100%", sm: 220 }}
+        fullWidth
+      >
+        <ListSubheader
           sx={{
-            bgcolor: "background.paper",
-            borderRadius: "8px",
-            "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: "divider",
-              transition: "all 0.2s",
-            },
-            "&:hover": {
-              bgcolor: "action.hover",
-            },
-            "&:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: "divider",
-            },
-            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-              borderColor: "primary.main",
-              borderWidth: "1px",
-            },
-            "& .MuiSelect-select": {
-              display: "flex",
-              alignItems: "center",
-              py: "10px",
-              pr: "40px !important",
-            },
+            lineHeight: "32px",
+            bgcolor: "transparent",
+            fontSize: "11px",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            color: "text.secondary",
+            px: 1.5,
           }}
         >
-          <ListSubheader
-            sx={{
-              lineHeight: "32px",
-              bgcolor: "transparent",
-              fontSize: "11px",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              color: "text.secondary",
-              px: 1.5,
-            }}
-          >
-            Quick Select
-          </ListSubheader>
-          {[
-            { value: "this-month", label: "This Month" },
-            { value: "last-month", label: "Last Month" },
-            { value: "this-year", label: "This Year" },
-          ].map((option) => (
-            <MenuItem
-              key={option.value}
-              value={option.value}
-              sx={{
-                borderRadius: "6px",
-                mx: 0.5,
-                fontSize: "14px",
-                "&.Mui-selected": { bgcolor: "action.hover" },
-                "&:hover": { bgcolor: "action.hover" },
-              }}
-            >
-              {option.label}
-            </MenuItem>
-          ))}
-
-          <Divider sx={{ my: 1, mx: -1 }} />
-
-          <ListSubheader
-            sx={{
-              lineHeight: "32px",
-              bgcolor: "transparent",
-              fontSize: "11px",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              color: "text.secondary",
-              px: 1.5,
-            }}
-          >
-            Custom
-          </ListSubheader>
+          Quick Select
+        </ListSubheader>
+        {[
+          { value: "this-month", label: "This Month" },
+          { value: "last-month", label: "Last Month" },
+          { value: "this-year", label: "This Year" },
+        ].map((option) => (
           <MenuItem
-            value="custom"
-            onClick={() => setIsPickerOpen(true)}
+            key={option.value}
+            value={option.value}
             sx={{
               borderRadius: "6px",
               mx: 0.5,
+              mb: 0.5,
               fontSize: "14px",
-              "&.Mui-selected": { bgcolor: "action.hover" },
+              color: "text.primary",
+              "&.Mui-selected": { bgcolor: "action.selected" },
               "&:hover": { bgcolor: "action.hover" },
             }}
           >
-            Custom Range
+            {option.label}
           </MenuItem>
-        </Select>
-      </FormControl>
+        ))}
+
+        <Divider sx={{ my: 1, mx: -1 }} />
+
+        <ListSubheader
+          sx={{
+            lineHeight: "32px",
+            bgcolor: "transparent",
+            fontSize: "11px",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            color: "text.secondary",
+            px: 1.5,
+          }}
+        >
+          Custom
+        </ListSubheader>
+        <MenuItem
+          value="custom"
+          onClick={() => setIsPickerOpen(true)}
+          sx={{
+            borderRadius: "6px",
+            mx: 0.5,
+            fontSize: "14px",
+            color: "text.primary",
+            "&.Mui-selected": { bgcolor: "action.selected" },
+            "&:hover": { bgcolor: "action.hover" },
+          }}
+        >
+          Custom Range
+        </MenuItem>
+      </StandardSelect>
 
       <Popover
         open={isPickerOpen}
-        anchorEl={anchorRef.current}
+        anchorEl={anchorEl}
         onClose={() => setIsPickerOpen(false)}
         anchorOrigin={{
           vertical: "bottom",
@@ -239,12 +189,15 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
             p: 3,
             mt: 1.5,
             width: 320,
-            borderRadius: "16px",
+            borderRadius: "12px",
             border: "1px solid",
             borderColor: "divider",
-            boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+            boxShadow: (theme) => theme.palette.mode === 'dark' 
+              ? "0 20px 25px -5px rgb(0 0 0 / 0.5)"
+              : "0 10px 15px -3px rgb(0 0 0 / 0.1)",
             bgcolor: "background.paper",
             backgroundImage: "none",
+            color: "text.primary",
           },
         }}
       >
@@ -257,14 +210,36 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
             value={tempRange.start}
             onChange={(date) => setTempRange((prev) => ({ ...prev, start: date }))}
             format="MMMM d, yyyy"
-            slotProps={{ textField: { size: "small", fullWidth: true } }}
+            slotProps={{ 
+              textField: { 
+                size: "small", 
+                fullWidth: true,
+                sx: {
+                  "& .MuiInputLabel-root": { color: "text.secondary" },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { borderColor: "divider" },
+                  },
+                }
+              } 
+            }}
           />
           <DatePicker
             label="End Date"
             value={tempRange.end}
             onChange={(date) => setTempRange((prev) => ({ ...prev, end: date }))}
             format="MMMM d, yyyy"
-            slotProps={{ textField: { size: "small", fullWidth: true } }}
+            slotProps={{ 
+              textField: { 
+                size: "small", 
+                fullWidth: true,
+                sx: {
+                  "& .MuiInputLabel-root": { color: "text.secondary" },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { borderColor: "divider" },
+                  },
+                }
+              } 
+            }}
           />
           <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ mt: 1 }}>
             <Button

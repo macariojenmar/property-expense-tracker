@@ -11,9 +11,9 @@ import {
   IconButton,
   alpha,
   Grid,
-  Container,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import PageHeader from "@/components/layout/PageHeader";
 import { Plus, Trash2, BookText } from "lucide-react";
 import {
   getDictionaryWords,
@@ -103,14 +103,10 @@ export default function DictionaryPage() {
   return (
     <DashboardLayout>
       <Box sx={{ maxWidth: 800, mx: "auto" }}>
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ mb: 1, fontWeight: 700 }}>
-            Dictionary
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage frequently used words for expenses and payouts.
-          </Typography>
-        </Box>
+        <PageHeader
+          title="Dictionary"
+          subtitle="Manage frequently used words for expenses and payouts."
+        />
         <Card sx={{ p: 3, mb: 4, borderRadius: 3 }}>
           <form onSubmit={handleAddWord}>
             <Stack

@@ -16,6 +16,7 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, Home, MapPin, Wallet, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
+import PageHeader from "@/components/layout/PageHeader";
 import { useCurrency } from "@/components/CurrencyContext";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import Loader from "@/components/Loader";
@@ -36,33 +37,20 @@ export default function PropertiesPage() {
 
   return (
     <DashboardLayout>
-      <Box
-        sx={{
-          mb: 4,
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          justifyContent: "space-between",
-          alignItems: { xs: "stretch", sm: "center" },
-          gap: 2,
-        }}
-      >
-        <Box>
-          <Typography variant="h4" sx={{ mb: 0.5, fontWeight: 700 }}>
-            Properties
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage your property listings and their finances.
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<Plus size={18} />}
-          onClick={() => router.push("/properties/create")}
-          fullWidth={{ xs: true, sm: false } as any}
-        >
-          Add Property
-        </Button>
-      </Box>
+      <PageHeader
+        title="Properties"
+        subtitle="Manage your property listings and their finances."
+        actions={
+          <Button
+            variant="contained"
+            startIcon={<Plus size={18} />}
+            onClick={() => router.push("/properties/create")}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+          >
+            Add Property
+          </Button>
+        }
+      />
 
       <Grid container spacing={3}>
         {properties.map((property) => (
