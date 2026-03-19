@@ -95,6 +95,7 @@ export default function EntitiesPage() {
   return (
     <DashboardLayout width="md">
       <PageHeader
+        onBack={() => router.back()}
         title="Entities"
         subtitle="Manage people or organizations for pending expenses."
         sx={{ mb: 4 }}
