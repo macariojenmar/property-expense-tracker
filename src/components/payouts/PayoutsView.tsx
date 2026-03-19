@@ -329,7 +329,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   return (
     <DashboardLayout>
       <PageHeader
-        onBack={() => router.back()}
+        onBack={() => router.push(`/properties/${propertyId}`)}
         title="Payouts"
         subtitle="Track your earnings and payouts."
         actions={

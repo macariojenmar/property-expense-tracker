@@ -547,7 +547,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   return (
     <DashboardLayout>
       <PageHeader
-        onBack={() => router.back()}
+        onBack={() => router.push(`/properties/${propertyId}`)}
         title="Expenses"
         subtitle="Track and manage your property expenditures."
         actions={
