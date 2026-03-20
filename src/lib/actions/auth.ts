@@ -21,7 +21,10 @@ export type SignUpState = {
   success?: boolean;
 } | null;
 
-export async function signUp(prevState: SignUpState, formData: FormData): Promise<SignUpState> {
+export async function signUp(
+  prevState: SignUpState,
+  formData: FormData,
+): Promise<SignUpState> {
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -50,7 +53,7 @@ export async function signUp(prevState: SignUpState, formData: FormData): Promis
     const hashedPassword = await bcrypt.hash(password, 10);
     const settings = await getPlatformSettings();
     const trialDays = settings?.trialPeriodDays || 7;
-    
+
     const expiredAt = new Date();
     expiredAt.setDate(expiredAt.getDate() + trialDays);
 
@@ -60,7 +63,7 @@ export async function signUp(prevState: SignUpState, formData: FormData): Promis
         email,
         password: hashedPassword,
         accountType: "TRIAL",
-        status: "PENDING",
+        status: "ACTIVE",
         expiredAt,
       },
     });

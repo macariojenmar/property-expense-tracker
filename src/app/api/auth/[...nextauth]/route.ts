@@ -1,5 +1,6 @@
 import NextAuth, { NextAuthOptions, DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -36,6 +37,11 @@ declare module "next-auth/jwt" {
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      allowDangerousEmailAccountLinking: true,
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -89,6 +95,41 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        if (!user.email) return false;
+
+        let dbUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        });
+
+        if (!dbUser) {
+          const settings = await prisma.platformSetting.findUnique({
+            where: { id: "default" },
+          });
+          const trialDays = settings?.trialPeriodDays || 7;
+          const expiredAt = new Date();
+          expiredAt.setDate(expiredAt.getDate() + trialDays);
+
+          dbUser = await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name,
+              image: user.image,
+              status: "ACTIVE",
+              accountType: "TRIAL",
+              expiredAt,
+              emailVerified: new Date(),
+            },
+          });
+        }
+
+        if (dbUser.status !== "ACTIVE") {
+          return "/login?error=account_disabled";
+        }
+      }
+      return true;
+    },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.sub as string;
