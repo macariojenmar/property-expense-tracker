@@ -60,6 +60,7 @@ export async function signUp(prevState: SignUpState, formData: FormData): Promis
         email,
         password: hashedPassword,
         accountType: "TRIAL",
+        status: "PENDING",
         expiredAt,
       },
     });

@@ -112,7 +112,7 @@ function LoginFormContent() {
             <Typography variant="body2" mt={2} mb={1}>
               New User?{" "}
               <Link
-                href="/auth/signup"
+                href="/signup"
                 component={NextLink}
                 rel="noopener noreferrer"
                 sx={{

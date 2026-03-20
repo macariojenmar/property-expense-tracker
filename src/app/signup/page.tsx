@@ -6,5 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function SignUpPage() {
-  return null; // <SignUpForm />;
+  return <SignUpForm />;
 }
