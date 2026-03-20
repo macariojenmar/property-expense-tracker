@@ -14,6 +14,7 @@ declare module "next-auth" {
       accountType: string;
       expiredAt: Date | null;
       image?: string | null;
+      provider?: string;
     } & DefaultSession["user"];
   }
 
@@ -24,6 +25,7 @@ declare module "next-auth" {
     accountType: string;
     expiredAt: Date | null;
     image?: string | null;
+    provider?: string;
   }
 }
 
@@ -35,6 +37,7 @@ declare module "next-auth/jwt" {
     expiredAt?: string | null;
     picture?: string | null;
     image?: string | null;
+    provider?: string;
   }
 }
 
@@ -147,10 +150,14 @@ export const authOptions: NextAuthOptions = {
           ? new Date(token.expiredAt)
           : null;
         session.user.image = (token.picture || token.image) as string | null;
+        session.user.provider = token.provider as string | undefined;
       }
       return session;
     },
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, account, trigger, session }) {
+      if (account) {
+        token.provider = account.provider;
+      }
       if (user) {
         token.sub = user.id;
         token.name = user.name;

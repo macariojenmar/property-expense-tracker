@@ -19,9 +19,11 @@ import { useCurrency, currencies } from "@/components/CurrencyContext";
 import { Globe } from "lucide-react";
 import ProfileForm from "@/components/settings/ProfileForm";
 import PasswordForm from "@/components/settings/PasswordForm";
+import { useSession } from "next-auth/react";
 
 export default function SettingsPage() {
   const { currency, setCurrency } = useCurrency();
+  const { data: session, status } = useSession();
 
   return (
     <DashboardLayout>
@@ -95,7 +97,7 @@ export default function SettingsPage() {
         </Card>
 
         <ProfileForm />
-        <PasswordForm />
+        {status === "authenticated" && session?.user?.provider !== "google" && <PasswordForm />}
       </Stack>
     </DashboardLayout>
   );

@@ -53,7 +53,7 @@ export default function ProfileForm() {
           type: "success",
           text: result.message || "Profile updated successfully",
         });
-        
+
         // Update the session to reflect changes in the UI globally
         await updateSession({
           ...session,
@@ -137,16 +137,13 @@ export default function ProfileForm() {
                 },
               }}
             />
-
             <TextField
               fullWidth
               label="Email Address"
               name="email"
               type="email"
+              disabled
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={!!errors.email}
-              helperText={errors.email?.[0]}
               variant="outlined"
               slotProps={{
                 input: {

@@ -10,6 +10,7 @@ declare module "next-auth" {
       role: string;
       status: string;
       accountType: string;
+      provider?: string;
     } & DefaultSession["user"];
   }
 
@@ -20,6 +21,7 @@ declare module "next-auth" {
     role: string;
     status: string;
     accountType: string;
+    provider?: string;
   }
 }
 
@@ -29,5 +31,6 @@ declare module "next-auth/jwt" {
     /** OpenID ID Token */
     idToken?: string;
     sub: string;
+    provider?: string;
   }
 }
