@@ -19,7 +19,7 @@ export default function CreatePropertyPage() {
       await refresh();
       router.push("/properties");
     } catch (error) {
-      console.error("Failed to create property:", error);
+      throw error; // Let PropertyForm handle the error (e.g. LIMIT_REACHED → PricingDialog)
     } finally {
       setLoading(false);
     }

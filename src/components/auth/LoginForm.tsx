@@ -20,12 +20,13 @@ import NextLink from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Footer from "@/components/layout/Footer";
+import ThemeSwitch from "@/components/layout/ThemeSwitch";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import toast from "react-hot-toast";
 
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -33,10 +34,11 @@ function LoginFormContent() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLoading(true);
-    setError(null);
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.target as HTMLFormElement;
+    setLoading(true);
+
+    const formData = new FormData(form);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
@@ -48,13 +50,18 @@ function LoginFormContent() {
       });
 
       if (result?.error) {
-        setError("Invalid email or password");
+        if (result.error === "CredentialsSignin") {
+          toast.error("Invalid email or password");
+        } else {
+          toast.error(result.error);
+        }
       } else {
+        toast.success("Login success! Setting up dashboard...");
         router.push("/dashboard");
         router.refresh();
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      toast.error("An unexpected error occurred");
     } finally {
       setLoading(false);
     }
@@ -67,8 +74,12 @@ function LoginFormContent() {
         display: "flex",
         flexDirection: "column",
         bgcolor: "background.default",
+        position: "relative",
       }}
     >
+      <Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+        <ThemeSwitch />
+      </Box>
       <Box
         sx={{
           flex: 1,
@@ -113,19 +124,14 @@ function LoginFormContent() {
                 Create an account
               </Link>
             </Typography>
+
             {signupSuccess && (
               <Alert severity="success" sx={{ mb: 1, mt: 3 }}>
                 Account created successfully! Please sign in.
               </Alert>
             )}
 
-            {error && (
-              <Alert severity="error" sx={{ mb: 1, mt: 3 }}>
-                {error}
-              </Alert>
-            )}
-
-            <Box component="form" onSubmit={handleSubmit} noValidate>
+            <form onSubmit={handleSubmit} noValidate>
               <TextField
                 margin="normal"
                 required
@@ -197,11 +203,17 @@ function LoginFormContent() {
                 variant="contained"
                 disabled={loading}
                 sx={{ mt: 3, mb: 2, py: 1.5 }}
-                endIcon={loading ? <CircularProgress size={18} color="inherit"/> : <ArrowRight size={18} />}
+                endIcon={
+                  loading ? (
+                    <CircularProgress size={18} color="inherit" />
+                  ) : (
+                    <ArrowRight size={18} />
+                  )
+                }
               >
                 {loading ? "Signing In" : "Sign In"}
               </Button>
-            </Box>
+            </form>
           </Paper>
         </Container>
       </Box>

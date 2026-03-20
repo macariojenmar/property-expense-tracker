@@ -48,7 +48,7 @@ export default function PageHeader({
             variant="h3"
             fontWeight={700}
             sx={{
-              mb: subtitle ? 1 : 0,
+              mb: subtitle ? 0.5 : 0,
               letterSpacing: "-0.02em",
               fontSize: { xs: "2rem", sm: "3rem" },
             }}
@@ -56,7 +56,7 @@ export default function PageHeader({
             {title}
           </Typography>
           {subtitle && (
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body2" color="text.secondary">
               {subtitle}
             </Typography>
           )}

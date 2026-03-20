@@ -21,6 +21,7 @@ import {
   subMonths,
   startOfYear,
 } from "date-fns";
+import { BOX_SHADOW } from "@/theme";
 
 export interface DateRange {
   start: Date | null;
@@ -55,7 +56,6 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
       return;
     }
 
-    // Ensure picker is closed when switching to a predefined range
     setIsPickerOpen(false);
 
     let start: Date | null = null;
@@ -94,7 +94,9 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
     <Box ref={anchorRef} sx={{ position: "relative" }}>
       <StandardSelect
         value={value.type}
-        onChange={(type) => handleSelectChange({ target: { value: type } } as any)}
+        onChange={(type) =>
+          handleSelectChange({ target: { value: type } } as any)
+        }
         onOpen={() => setIsPickerOpen(false)}
         renderValue={() => (
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -132,8 +134,8 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
               mb: 0.5,
               fontSize: "14px",
               color: "text.primary",
-              "&.Mui-selected": { bgcolor: "action.selected" },
-              "&:hover": { bgcolor: "action.hover" },
+              "&.Mui-selected": { bgcolor: "secondary.main" },
+              "&:hover": { bgcolor: "secondary.main" },
             }}
           >
             {option.label}
@@ -164,8 +166,8 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
             mx: 0.5,
             fontSize: "14px",
             color: "text.primary",
-            "&.Mui-selected": { bgcolor: "action.selected" },
-            "&:hover": { bgcolor: "action.hover" },
+            "&.Mui-selected": { bgcolor: "secondary.dark" },
+            "&:hover": { bgcolor: "secondary.main" },
           }}
         >
           Custom Range
@@ -184,79 +186,86 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
           vertical: "top",
           horizontal: "right",
         }}
-        PaperProps={{
-          sx: {
-            p: 3,
-            mt: 1.5,
-            width: 320,
-            borderRadius: "12px",
-            border: "1px solid",
-            borderColor: "divider",
-            boxShadow: (theme) => theme.palette.mode === 'dark' 
-              ? "0 20px 25px -5px rgb(0 0 0 / 0.5)"
-              : "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-            bgcolor: "background.paper",
-            backgroundImage: "none",
-            color: "text.primary",
+        slotProps={{
+          paper: {
+            sx: {
+              p: 3,
+              mt: 1.5,
+              width: 320,
+              borderRadius: "12px",
+              border: "1px solid",
+              borderColor: "divider",
+              boxShadow: BOX_SHADOW,
+              bgcolor: "background.paper",
+              backgroundImage: "none",
+              color: "text.primary",
+            },
           },
         }}
       >
-        <Typography variant="subtitle1" sx={{ mb: 2.5, fontWeight: 700, letterSpacing: "-0.01em" }}>
+        <Typography
+          variant="subtitle1"
+          sx={{ mb: 2.5, fontWeight: 700, letterSpacing: "-0.01em" }}
+        >
           Select Custom Range
         </Typography>
         <Stack spacing={2.5}>
           <DatePicker
             label="Start Date"
             value={tempRange.start}
-            onChange={(date) => setTempRange((prev) => ({ ...prev, start: date }))}
+            onChange={(date) =>
+              setTempRange((prev) => ({ ...prev, start: date }))
+            }
             format="MMMM d, yyyy"
-            slotProps={{ 
-              textField: { 
-                size: "small", 
+            slotProps={{
+              textField: {
+                size: "small",
                 fullWidth: true,
                 sx: {
                   "& .MuiInputLabel-root": { color: "text.secondary" },
                   "& .MuiOutlinedInput-root": {
                     "& fieldset": { borderColor: "divider" },
                   },
-                }
-              } 
+                },
+              },
             }}
           />
           <DatePicker
             label="End Date"
             value={tempRange.end}
-            onChange={(date) => setTempRange((prev) => ({ ...prev, end: date }))}
+            onChange={(date) =>
+              setTempRange((prev) => ({ ...prev, end: date }))
+            }
             format="MMMM d, yyyy"
-            slotProps={{ 
-              textField: { 
-                size: "small", 
+            slotProps={{
+              textField: {
+                size: "small",
                 fullWidth: true,
                 sx: {
                   "& .MuiInputLabel-root": { color: "text.secondary" },
                   "& .MuiOutlinedInput-root": {
                     "& fieldset": { borderColor: "divider" },
                   },
-                }
-              } 
+                },
+              },
             }}
           />
-          <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ mt: 1 }}>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            justifyContent="flex-end"
+            sx={{ mt: 1 }}
+          >
             <Button
-              size="small"
+              fullWidth
+              variant="outlined"
               onClick={() => setIsPickerOpen(false)}
-              sx={{ 
-                color: "text.secondary",
-                textTransform: "none",
-                fontWeight: 600,
-                "&:hover": { bgcolor: "action.hover" }
-              }}
             >
               Cancel
             </Button>
             <Button
+              fullWidth
               variant="contained"
-              size="small"
               onClick={() => {
                 onChange({
                   start: tempRange.start,
@@ -264,14 +273,6 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
                   type: "custom",
                 });
                 setIsPickerOpen(false);
-              }}
-              sx={{
-                borderRadius: "8px",
-                textTransform: "none",
-                fontWeight: 600,
-                px: 3,
-                boxShadow: "none",
-                "&:hover": { boxShadow: "none" }
               }}
             >
               Apply

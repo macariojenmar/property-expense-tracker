@@ -1,19 +1,26 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { getThemeOptions } from '@/theme';
-import { useThemeStore } from '@/store/useThemeStore';
+import * as React from "react";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import { getThemeOptions } from "@/theme";
+import { useThemeStore } from "@/store/useThemeStore";
 
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { CurrencyProvider } from './CurrencyContext';
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { CurrencyProvider } from "./CurrencyContext";
+import { Toaster } from "react-hot-toast";
 
-export const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
+export const ColorModeContext = React.createContext({
+  toggleColorMode: () => {},
+});
 
-export default function ThemeRegistry({ children }: { children: React.ReactNode }) {
+export default function ThemeRegistry({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { mode, toggleMode } = useThemeStore();
   const [mounted, setMounted] = React.useState(false);
 
@@ -41,6 +48,20 @@ export default function ThemeRegistry({ children }: { children: React.ReactNode 
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <CurrencyProvider>
             <ThemeProvider theme={theme}>
+              <Toaster
+                position="top-center"
+                reverseOrder={false}
+                toastOptions={{
+                  style: {
+                    fontSize: "14px",
+                    boxShadow: "none",
+                    border: "1px solid",
+                    borderColor: theme.palette.divider,
+                    backgroundColor: theme.palette.background.default,
+                    color: theme.palette.text.primary,
+                  },
+                }}
+              />
               <CssBaseline />
               {children}
             </ThemeProvider>

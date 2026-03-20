@@ -27,14 +27,16 @@ import {
   UserPlus,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { getUsers } from "@/lib/actions/platform";
-import { format } from "date-fns";
+import { getUsers, expireUserTrial } from "@/lib/actions/platform";
+import { format, differenceInDays, isPast } from "date-fns";
 import { useRouter } from "next/navigation";
 import EmptyState from "@/components/EmptyState";
 import Loader from "@/components/Loader";
 import { InputAdornment, TextField } from "@mui/material";
 import StandardSelect from "@/components/StandardSelect";
 import PageHeader from "@/components/layout/PageHeader";
+import { Clock, AlertTriangle } from "lucide-react";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type UserData = {
   id: string;
@@ -43,6 +45,7 @@ type UserData = {
   role: string;
   status: string;
   accountType: string;
+  expiredAt: Date | null;
   createdAt: Date;
 };
 
@@ -58,6 +61,8 @@ export default function UserManagementPage() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [accountTypeFilter, setAccountTypeFilter] = useState("all");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const itemsPerPage = 10;
   const router = useRouter();
 
@@ -115,6 +120,33 @@ export default function UserManagementPage() {
 
   const handleEditClick = (user: UserData) => {
     router.push(`/platform/users/${user.id}/edit`);
+  };
+
+  const handleExpireTrial = async (e: React.MouseEvent, userId: string) => {
+    e.stopPropagation();
+    setSelectedUserId(userId);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmExpire = async () => {
+    if (!selectedUserId) return;
+    
+    setLoading(true);
+    try {
+      const res = await expireUserTrial(selectedUserId);
+      if (res?.success) {
+        fetchUsers();
+      } else {
+        alert(res?.message || "Failed to expire trial");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An unexpected error occurred while expiring trial.");
+    } finally {
+      setConfirmOpen(false);
+      setSelectedUserId(null);
+      setLoading(false);
+    }
   };
 
   const getStatusColors = (status: string) => {
@@ -495,6 +527,65 @@ export default function UserManagementPage() {
                                 : "N/A"}
                             </Typography>
                           </Box>
+                          {user.accountType === "TRIAL" && user.expiredAt && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                mt: 0.5,
+                                p: 1,
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette.warning.main, 0.08),
+                                borderRadius: 1.5,
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  color: "warning.main",
+                                }}
+                              >
+                                <Clock size={16} />
+                                <Typography variant="body2" fontWeight={600}>
+                                  Trial Status
+                                </Typography>
+                              </Box>
+                                <Box sx={{ textAlign: "right" }}>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={700}
+                                    color={
+                                      isPast(new Date(user.expiredAt))
+                                        ? "error.main"
+                                        : "warning.main"
+                                    }
+                                  >
+                                    {isPast(new Date(user.expiredAt))
+                                      ? "Expired"
+                                      : `${differenceInDays(new Date(user.expiredAt), new Date())} days left`}
+                                  </Typography>
+                                  {!isPast(new Date(user.expiredAt)) && (
+                                    <Button
+                                      size="small"
+                                      color="warning"
+                                      onClick={(e) => handleExpireTrial(e, user.id)}
+                                      sx={{ 
+                                        p: 0, 
+                                        minWidth: 0, 
+                                        fontSize: "0.65rem", 
+                                        height: "auto",
+                                        "&:hover": { bgcolor: "transparent", textDecoration: "underline" }
+                                      }}
+                                    >
+                                      Expire Today
+                                    </Button>
+                                  )}
+                                </Box>
+                            </Box>
+                          )}
                         </Stack>
                       </CardContent>
                     </Card>
@@ -505,6 +596,16 @@ export default function UserManagementPage() {
           </>
         )}
       </Box>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        loading={loading}
+        title="Expire Trial Immediately"
+        message="Are you sure you want to expire this trial for this user today? This action cannot be undone."
+        confirmLabel="Expire Now"
+        onConfirm={handleConfirmExpire}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </DashboardLayout>
   );
 }

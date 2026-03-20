@@ -9,18 +9,11 @@ import {
   List,
   Typography,
   Divider,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   IconButton,
-  Avatar,
   useTheme,
   LinearProgress,
-  Menu,
-  MenuItem,
-  Tooltip,
   Container,
+  Stack,
 } from "@mui/material";
 import {
   Building2,
@@ -28,8 +21,6 @@ import {
   Settings,
   Menu as MenuIcon,
   LogOut,
-  Sun,
-  Moon,
   LayoutDashboard,
   BanknoteArrowDown,
   BookText,
@@ -39,10 +30,15 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import PropertySwitcher from "@/components/layout/PropertySwitcher";
-import { ColorModeContext } from "@/components/ThemeRegistry";
+import ThemeSwitch from "@/components/layout/ThemeSwitch";
 import Image from "next/image";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import Footer from "./Footer";
+import SidebarItem from "./SidebarItem";
+import AccountMenu from "./AccountMenu";
+import TrialBanner from "./TrialBanner";
+import PricingDialog from "@/components/PricingDialog";
+import { differenceInDays } from "date-fns";
 
 const drawerWidth = 240;
 
@@ -56,21 +52,11 @@ export default function DashboardLayout({
   const router = useRouter();
   const theme = useTheme();
   const pathname = usePathname();
-  const colorMode = React.useContext(ColorModeContext);
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const { data: session } = useSession();
   const { selectedProperty, setSelectedProperty, isSaving, isLoading } =
     usePropertyStore();
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-
-  const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleProfileClose = () => {
-    setAnchorEl(null);
-  };
+  const [pricingOpen, setPricingOpen] = React.useState(false);
 
   const menuGroups = React.useMemo(() => {
     const mainItems: Array<{
@@ -133,13 +119,17 @@ export default function DashboardLayout({
           icon: <ShieldCheck size={20} />,
           path: "/platform/roles",
         },
+        {
+          text: "Platform Setting",
+          icon: <Settings size={20} />,
+          path: "/platform/settings",
+        },
       );
     }
 
     return { mainItems, platformItems };
   }, [selectedProperty, session]);
 
-  // Automatically clear context when navigating back to the main properties list
   React.useEffect(() => {
     if (pathname === "/properties") {
       setSelectedProperty(null);
@@ -154,79 +144,37 @@ export default function DashboardLayout({
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <Toolbar sx={{ display: "flex", justifyContent: "center" }}>
         <Typography
+          onClick={() => router.push("/dashboard")}
           variant="h6"
           sx={{
             fontWeight: 700,
-            letterSpacing: "-0.02em",
             display: "flex",
             alignItems: "center",
             gap: 1,
+            cursor: "pointer",
           }}
         >
-          <Image
-            src="/ntorra.svg"
-            alt="Ntorra Logo"
-            width={28}
-            height={28}
-            style={{ borderRadius: "4px" }}
-          />
+          <Image src="/ntorra.svg" alt="Ntorra Logo" width={28} height={28} />
           Ntorra
         </Typography>
       </Toolbar>
       <Divider />
       <List sx={{ px: 1, py: 2, flexGrow: 1 }}>
-        {menuGroups.mainItems.map((item) => {
-          const isActive = pathname === item.path;
-          return (
-            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                onClick={() => {
-                  if (item.text === "Dashboard" || item.text === "Properties") {
-                    setSelectedProperty(null);
-                  }
-                  router.push(item.path);
-                }}
-                selected={isActive}
-                sx={{
-                  borderRadius: 2,
-                  pl: item.indent ? 5 : 2,
-                  "&.Mui-selected": {
-                    bgcolor:
-                      theme.palette.mode === "light"
-                        ? "rgba(0,0,0,0.06)"
-                        : "rgba(255,255,255,0.1)",
-                    color: "text.primary",
-                    "& .MuiListItemIcon-root": { color: "primary.main" },
-                    "&:hover": {
-                      bgcolor:
-                        theme.palette.mode === "light"
-                          ? "rgba(0,0,0,0.08)"
-                          : "rgba(255,255,255,0.15)",
-                    },
-                  },
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 40,
-                    color: isActive ? "primary.main" : "text.secondary",
-                    opacity: isActive ? 1 : 0.7,
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.text}
-                  primaryTypographyProps={{
-                    fontSize: 14,
-                    fontWeight: isActive ? 600 : 500,
-                    sx: { color: isActive ? "text.primary" : "text.secondary" },
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
+        {menuGroups.mainItems.map((item) => (
+          <SidebarItem
+            key={item.text}
+            text={item.text}
+            icon={item.icon}
+            isActive={pathname === item.path}
+            indent={item.indent}
+            onClick={() => {
+              if (item.text === "Dashboard" || item.text === "Properties") {
+                setSelectedProperty(null);
+              }
+              router.push(item.path);
+            }}
+          />
+        ))}
 
         {menuGroups.platformItems.length > 0 && (
           <Box sx={{ mt: 3 }}>
@@ -244,121 +192,33 @@ export default function DashboardLayout({
             >
               Platform Management
             </Typography>
-            {menuGroups.platformItems.map((item) => {
-              const isActive = pathname === item.path;
-              return (
-                <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-                  <ListItemButton
-                    onClick={() => router.push(item.path)}
-                    selected={isActive}
-                    sx={{
-                      borderRadius: 2,
-                      pl: 2,
-                      "&.Mui-selected": {
-                        bgcolor:
-                          theme.palette.mode === "light"
-                            ? "rgba(0,0,0,0.06)"
-                            : "rgba(255,255,255,0.1)",
-                        color: "text.primary",
-                        "& .MuiListItemIcon-root": { color: "primary.main" },
-                        "&:hover": {
-                          bgcolor:
-                            theme.palette.mode === "light"
-                              ? "rgba(0,0,0,0.08)"
-                              : "rgba(255,255,255,0.15)",
-                        },
-                      },
-                    }}
-                  >
-                    <ListItemIcon
-                      sx={{
-                        minWidth: 40,
-                        color: isActive ? "primary.main" : "text.secondary",
-                        opacity: isActive ? 1 : 0.7,
-                      }}
-                    >
-                      {item.icon}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={item.text}
-                      primaryTypographyProps={{
-                        fontSize: 14,
-                        fontWeight: isActive ? 600 : 500,
-                        sx: {
-                          color: isActive ? "text.primary" : "text.secondary",
-                        },
-                      }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              );
-            })}
+            {menuGroups.platformItems.map((item) => (
+              <SidebarItem
+                key={item.text}
+                text={item.text}
+                icon={item.icon}
+                isActive={pathname === item.path}
+                onClick={() => router.push(item.path)}
+              />
+            ))}
           </Box>
         )}
       </List>
       <Divider />
       <List sx={{ px: 1, py: 2 }}>
-        <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => router.push("/settings")}
-            selected={pathname === "/settings"}
-            sx={{
-              borderRadius: 2,
-              "&.Mui-selected": {
-                bgcolor:
-                  theme.palette.mode === "light"
-                    ? "rgba(0,0,0,0.06)"
-                    : "rgba(255,255,255,0.1)",
-                color: "text.primary",
-                "& .MuiListItemIcon-root": { color: "primary.main" },
-                "&:hover": {
-                  bgcolor:
-                    theme.palette.mode === "light"
-                      ? "rgba(0,0,0,0.08)"
-                      : "rgba(255,255,255,0.15)",
-                },
-              },
-            }}
-          >
-            <ListItemIcon
-              sx={{
-                minWidth: 40,
-                color:
-                  pathname === "/settings" ? "primary.main" : "text.secondary",
-                opacity: pathname === "/settings" ? 1 : 0.7,
-              }}
-            >
-              <Settings size={20} />
-            </ListItemIcon>
-            <ListItemText
-              primary="Settings"
-              primaryTypographyProps={{
-                fontSize: 14,
-                fontWeight: pathname === "/settings" ? 600 : 500,
-                sx: {
-                  color:
-                    pathname === "/settings"
-                      ? "text.primary"
-                      : "text.secondary",
-                },
-              }}
-            />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton
-            sx={{ borderRadius: 2, color: "error.main" }}
-            onClick={() => signOut({ callbackUrl: "/login" })}
-          >
-            <ListItemIcon sx={{ minWidth: 40, color: "error.main" }}>
-              <LogOut size={20} />
-            </ListItemIcon>
-            <ListItemText
-              primary="Logout"
-              primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }}
-            />
-          </ListItemButton>
-        </ListItem>
+        <SidebarItem
+          text="Settings"
+          icon={<Settings size={20} />}
+          isActive={pathname === "/settings"}
+          onClick={() => router.push("/settings")}
+        />
+        <SidebarItem
+          text="Logout"
+          icon={<LogOut size={20} />}
+          isActive={false}
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          color="error.main"
+        />
       </List>
     </Box>
   );
@@ -397,107 +257,8 @@ export default function DashboardLayout({
             <PropertySwitcher />
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton
-              onClick={colorMode.toggleColorMode}
-              color="inherit"
-              size="small"
-            >
-              {theme.palette.mode === "dark" ? (
-                <Sun size={22} />
-              ) : (
-                <Moon size={22} />
-              )}
-            </IconButton>
-            <Tooltip title="Account settings">
-              <IconButton
-                onClick={handleProfileClick}
-                size="small"
-                sx={{ ml: 1, p: 0.5 }}
-                aria-controls={open ? "account-menu" : undefined}
-                aria-haspopup="true"
-                aria-expanded={open ? "true" : undefined}
-              >
-                <Avatar
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    fontSize: 14,
-                    bgcolor: "primary.main",
-                  }}
-                >
-                  {session?.user?.name
-                    ? session.user.name.charAt(0).toUpperCase()
-                    : "U"}
-                </Avatar>
-              </IconButton>
-            </Tooltip>
-            <Menu
-              anchorEl={anchorEl}
-              id="account-menu"
-              open={open}
-              onClose={handleProfileClose}
-              onClick={handleProfileClose}
-              transformOrigin={{ horizontal: "right", vertical: "top" }}
-              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-              PaperProps={{
-                elevation: 0,
-                sx: {
-                  overflow: "visible",
-                  filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.12))",
-                  mt: 1.5,
-                  minWidth: 200,
-                  "& .MuiAvatar-root": {
-                    width: 32,
-                    height: 32,
-                    ml: -0.5,
-                    mr: 1,
-                  },
-                  "&::before": {
-                    content: '""',
-                    display: "block",
-                    position: "absolute",
-                    top: 0,
-                    right: 14,
-                    width: 10,
-                    height: 10,
-                    bgcolor: "background.paper",
-                    transform: "translateY(-50%) rotate(45deg)",
-                    zIndex: 0,
-                  },
-                },
-              }}
-            >
-              <Box sx={{ px: 2, py: 1.5 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 600, mb: 0.5 }}
-                >
-                  {session?.user?.name || "User"}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" noWrap>
-                  {session?.user?.email}
-                </Typography>
-              </Box>
-              <Divider />
-              <MenuItem
-                onClick={() => router.push("/settings")}
-                sx={{ py: 1.2 }}
-              >
-                <ListItemIcon>
-                  <Settings size={18} />
-                </ListItemIcon>
-                <Typography variant="body2">Settings</Typography>
-              </MenuItem>
-              <MenuItem
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                sx={{ py: 1.2, color: "error.main" }}
-              >
-                <ListItemIcon sx={{ color: "error.main" }}>
-                  <LogOut size={18} />
-                </ListItemIcon>
-                <Typography variant="body2">Logout</Typography>
-              </MenuItem>
-            </Menu>
+            <ThemeSwitch />
+            <AccountMenu />
           </Box>
         </Toolbar>
         {(isSaving || isLoading) && (
@@ -556,7 +317,6 @@ export default function DashboardLayout({
         component="main"
         sx={{
           flexGrow: 1,
-          py: { xs: 2, md: 4 },
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           mt: "64px",
           display: "flex",
@@ -564,8 +324,30 @@ export default function DashboardLayout({
           overflow: "auto",
         }}
       >
+        <Box mb={{ xs: 2, md: 4 }}>
+          {session?.user?.accountType === "TRIAL" && (
+            <TrialBanner
+              daysRemaining={
+                session.user.expiredAt
+                  ? Math.max(
+                      0,
+                      differenceInDays(
+                        new Date(session.user.expiredAt),
+                        new Date(),
+                      ),
+                    )
+                  : 0
+              }
+              onUpgrade={() => setPricingOpen(true)}
+            />
+          )}
+        </Box>
         <Container maxWidth={width}>{children}</Container>
         <Footer />
+        <PricingDialog
+          open={pricingOpen}
+          onClose={() => setPricingOpen(false)}
+        />
       </Box>
     </Box>
   );

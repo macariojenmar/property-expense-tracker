@@ -24,6 +24,7 @@ import { usePropertyStore } from "@/store/usePropertyStore";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import Loader from "@/components/Loader";
 import EmptyState from "@/components/EmptyState";
+import PricingDialog from "@/components/PricingDialog";
 
 interface Word {
   id: string;
@@ -38,6 +39,7 @@ export default function DictionaryPage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [wordToDelete, setWordToDelete] = React.useState<Word | null>(null);
+  const [pricingDialogOpen, setPricingDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     fetchWords(true);
@@ -69,8 +71,12 @@ export default function DictionaryPage() {
         await addDictionaryWord(trimmed);
         setNewWord("");
         await fetchWords();
-      } catch (error) {
-        console.error("Failed to add word:", error);
+      } catch (error: any) {
+        if (error?.message === "LIMIT_REACHED") {
+          setPricingDialogOpen(true);
+        } else {
+          console.error("Failed to add word:", error);
+        }
       } finally {
         setIsSaving(false);
       }
@@ -225,6 +231,13 @@ export default function DictionaryPage() {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteDialogOpen(false)}
         loading={isSaving}
+      />
+      <PricingDialog
+        open={pricingDialogOpen}
+        onClose={() => setPricingDialogOpen(false)}
+        title="Dictionary Limit Reached"
+        message="You've reached the maximum number of dictionary words for your current plan. Upgrade to add more terms."
+        limitType="dictionary"
       />
     </DashboardLayout>
   );

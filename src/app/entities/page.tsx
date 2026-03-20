@@ -93,7 +93,7 @@ export default function EntitiesPage() {
   );
 
   return (
-    <DashboardLayout width="md">
+    <DashboardLayout>
       <PageHeader
         onBack={() => router.back()}
         title="Entities"

@@ -13,12 +13,16 @@ import {
   CircularProgress,
   Alert,
   Paper,
+  alpha,
 } from "@mui/material";
 import { Save } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { getUser, updateUserAccess } from "@/lib/actions/platform";
+import { getUser, updateUserAccess, expireUserTrial } from "@/lib/actions/platform";
 import Loader from "@/components/Loader";
+import { Clock, AlertTriangle } from "lucide-react";
+import { format, isPast } from "date-fns";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function EditUserPage() {
   const router = useRouter();
@@ -28,10 +32,12 @@ export default function EditUserPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [user, setUser] = useState<{
     name: string | null;
     email: string | null;
+    expiredAt: Date | null;
   } | null>(null);
   const [editForm, setEditForm] = useState({
     role: "",
@@ -47,7 +53,11 @@ export default function EditUserPage() {
         const res = await getUser(userId);
         if (res.success && res.data) {
           const userData = res.data as any;
-          setUser({ name: userData.name, email: userData.email });
+          setUser({ 
+            name: userData.name, 
+            email: userData.email,
+            expiredAt: userData.expiredAt ? new Date(userData.expiredAt) : null
+          });
           setEditForm({
             role: userData.role,
             status: userData.status,
@@ -81,6 +91,38 @@ export default function EditUserPage() {
       console.error(err);
       setError("An unexpected error occurred while updating.");
     } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleExpireTrial = async () => {
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmExpire = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await expireUserTrial(userId);
+      if (res?.success) {
+        // Refresh page data
+        const refreshRes = await getUser(userId);
+        if (refreshRes.success && refreshRes.data) {
+          const userData = refreshRes.data as any;
+          setUser({ 
+            name: userData.name, 
+            email: userData.email,
+            expiredAt: userData.expiredAt ? new Date(userData.expiredAt) : null
+          });
+        }
+      } else {
+        setError(res?.message || "Failed to expire trial");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("An unexpected error occurred while expiring trial.");
+    } finally {
+      setConfirmOpen(false);
       setSaving(false);
     }
   };
@@ -179,6 +221,62 @@ export default function EditUserPage() {
               <MenuItem value="PRO">Pro</MenuItem>
             </Select>
           </FormControl>
+
+          {editForm.accountType === "TRIAL" && (
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                bgcolor: (theme) => alpha(theme.palette.warning.main, 0.05),
+                border: "1px dashed",
+                borderColor: "warning.main",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Clock size={18} className="text-amber-500" style={{ color: '#f59e0b' }} />
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    Trial Management
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {user?.expiredAt ? (
+                      <>
+                        Expires on {format(user.expiredAt, "PPP")}
+                        {isPast(user.expiredAt) && (
+                          <Typography component="span" variant="body2" color="error.main" fontWeight={700} sx={{ ml: 1 }}>
+                            (Already Expired)
+                          </Typography>
+                        )}
+                      </>
+                    ) : (
+                      "No expiration date set"
+                    )}
+                  </Typography>
+                </Box>
+              </Box>
+              
+              {!user?.expiredAt || !isPast(user.expiredAt) ? (
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  size="small"
+                  onClick={handleExpireTrial}
+                  disabled={saving}
+                  startIcon={<AlertTriangle size={16} />}
+                  sx={{ alignSelf: "flex-start", fontWeight: 600 }}
+                >
+                  Expire Trial Today
+                </Button>
+              ) : (
+                <Alert severity="info" icon={<Clock size={16} />} sx={{ borderRadius: 2 }}>
+                  This trial has already expired.
+                </Alert>
+              )}
+            </Box>
+          )}
         </Box>
 
         <Box
@@ -208,6 +306,16 @@ export default function EditUserPage() {
           </Button>
         </Box>
       </Paper>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        loading={saving}
+        title="Expire Trial Immediately"
+        message="Are you sure you want to expire this trial for this user today? This action cannot be undone."
+        confirmLabel="Expire Now"
+        onConfirm={handleConfirmExpire}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </DashboardLayout>
   );
 }

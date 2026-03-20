@@ -11,6 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import { ChevronDown } from "lucide-react";
+import { BOX_SHADOW } from "@/theme";
 
 interface Option {
   value: string;
@@ -54,13 +55,13 @@ export default function StandardSelect({
   };
 
   return (
-    <FormControl 
-      size="small" 
-      fullWidth={fullWidth} 
-      sx={{ 
+    <FormControl
+      size="small"
+      fullWidth={fullWidth}
+      sx={{
         ...(minWidth && { minWidth }),
         width: fullWidth ? "100%" : "auto",
-        ...externalSx
+        ...externalSx,
       }}
     >
       {label && (
@@ -98,15 +99,18 @@ export default function StandardSelect({
         )}
         renderValue={(selected) => {
           if (customRenderValue) return customRenderValue(selected);
-          
+
           if (!selected && placeholder) {
             return (
-              <Typography variant="body2" sx={{ color: "text.secondary", opacity: 0.6 }}>
+              <Typography
+                variant="body2"
+                sx={{ color: "text.secondary", opacity: 0.6 }}
+              >
                 {placeholder}
               </Typography>
             );
           }
-          
+
           let displayLabel = selected;
           if (options) {
             for (const opt of options) {
@@ -122,7 +126,7 @@ export default function StandardSelect({
               }
             }
           }
-          
+
           return (
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               {displayLabel}
@@ -131,20 +135,20 @@ export default function StandardSelect({
         }}
         sx={{
           bgcolor: "background.paper",
-          borderRadius: "8px",
+          borderRadius: 1.5,
           color: "text.primary",
+          transition: "all 0.2s",
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: "divider",
-            transition: "all 0.2s",
           },
           "&:hover": {
-            bgcolor: "action.hover",
+            bgcolor: "secondary.main",
           },
           "&:hover .MuiOutlinedInput-notchedOutline": {
-            borderColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.3)",
+            borderColor: "divider",
           },
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: "primary.main",
+            borderColor: "divider",
             borderWidth: "1px",
           },
           "& .MuiSelect-select": {
@@ -164,38 +168,60 @@ export default function StandardSelect({
               borderRadius: "12px",
               border: "1px solid",
               borderColor: "divider",
-              boxShadow: (theme) => theme.palette.mode === 'dark' 
-                ? "0 20px 25px -5px rgb(0 0 0 / 0.5)"
-                : "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+              boxShadow: BOX_SHADOW,
               "& .MuiList-root": { p: 1 },
             },
           },
         }}
       >
-        {children || (options && options.map((opt, idx) => {
-          if ("options" in opt) {
-            return [
-              opt.label && (
-                <ListSubheader
-                  key={`header-${idx}`}
-                  sx={{
-                    lineHeight: "32px",
-                    bgcolor: "transparent",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    color: "text.secondary",
-                    px: 1.5,
-                  }}
-                >
-                  {opt.label}
-                </ListSubheader>
-              ),
-              ...opt.options.map((subOpt) => (
+        {children ||
+          (options &&
+            options.map((opt, idx) => {
+              if ("options" in opt) {
+                return [
+                  opt.label && (
+                    <ListSubheader
+                      key={`header-${idx}`}
+                      sx={{
+                        lineHeight: "32px",
+                        bgcolor: "transparent",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        color: "text.secondary",
+                        px: 1.5,
+                      }}
+                    >
+                      {opt.label}
+                    </ListSubheader>
+                  ),
+                  ...opt.options.map((subOpt) => (
+                    <MenuItem
+                      key={subOpt.value}
+                      value={subOpt.value}
+                      sx={{
+                        borderRadius: "6px",
+                        mx: 0.5,
+                        mb: 0.5,
+                        fontSize: "14px",
+                        color: "text.primary",
+                        "&.Mui-selected": {
+                          bgcolor: "secondary.dark",
+                          "&:hover": { bgcolor: "secondary.main" },
+                        },
+                        "&:hover": { bgcolor: "secondary.main" },
+                      }}
+                    >
+                      {subOpt.label}
+                    </MenuItem>
+                  )),
+                ];
+              }
+              return (
                 <MenuItem
-                  key={subOpt.value}
-                  value={subOpt.value}
+                  key={opt.value}
+                  value={opt.value}
                   sx={{
                     borderRadius: "6px",
                     mx: 0.5,
@@ -203,38 +229,16 @@ export default function StandardSelect({
                     fontSize: "14px",
                     color: "text.primary",
                     "&.Mui-selected": {
-                      bgcolor: "action.selected",
-                      "&:hover": { bgcolor: "action.selected" },
+                      bgcolor: "secondary.dark",
+                      "&:hover": { bgcolor: "secondary.main" },
                     },
-                    "&:hover": { bgcolor: "action.hover" },
+                    "&:hover": { bgcolor: "secondary.main" },
                   }}
                 >
-                  {subOpt.label}
+                  {opt.label}
                 </MenuItem>
-              )),
-            ];
-          }
-          return (
-            <MenuItem
-              key={opt.value}
-              value={opt.value}
-              sx={{
-                borderRadius: "6px",
-                mx: 0.5,
-                mb: 0.5,
-                fontSize: "14px",
-                color: "text.primary",
-                "&.Mui-selected": {
-                  bgcolor: "action.selected",
-                  "&:hover": { bgcolor: "action.selected" },
-                },
-                "&:hover": { bgcolor: "action.hover" },
-              }}
-            >
-              {opt.label}
-            </MenuItem>
-          );
-        }))}
+              );
+            }))}
       </Select>
     </FormControl>
   );

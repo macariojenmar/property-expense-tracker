@@ -8,6 +8,7 @@ import { useRouter, useParams } from "next/navigation";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import { createPayout } from "@/lib/actions/payout";
 import PayoutForm, { PayoutItem } from "@/components/payouts/PayoutForm";
+import PricingDialog from "@/components/PricingDialog";
 
 export default function CreatePayoutPage() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function CreatePayoutPage() {
   const propertyId = params.id as string;
   const { setIsSaving, refresh } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
+  const [pricingDialogOpen, setPricingDialogOpen] = React.useState(false);
+  const [isExpired, setIsExpired] = React.useState(false);
 
   const initialItems: PayoutItem[] = [
     { id: Date.now(), label: "Property Payout", amount: "", date: new Date() },
@@ -36,8 +39,13 @@ export default function CreatePayoutPage() {
       }
       await refresh();
       router.push(`/properties/${propertyId}/payouts`);
-    } catch (error) {
-      console.error("Failed to save payouts:", error);
+    } catch (error: any) {
+      if (error?.message === "LIMIT_REACHED" || error?.message === "ACCOUNT_EXPIRED") {
+        setIsExpired(error.message === "ACCOUNT_EXPIRED");
+        setPricingDialogOpen(true);
+      } else {
+        console.error("Failed to save payouts:", error);
+      }
     } finally {
       setLoading(false);
       setIsSaving(false);
@@ -49,6 +57,7 @@ export default function CreatePayoutPage() {
   };
 
   return (
+    <>
     <DashboardLayout width="md">
       <PageHeader
         title="Record Payouts"
@@ -63,5 +72,13 @@ export default function CreatePayoutPage() {
         loading={loading}
       />
     </DashboardLayout>
+
+    <PricingDialog
+      open={pricingDialogOpen}
+      onClose={() => setPricingDialogOpen(false)}
+      isExpired={isExpired}
+      limitType="payout"
+    />
+    </>
   );
 }

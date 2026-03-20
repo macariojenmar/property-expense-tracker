@@ -1,30 +1,144 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("PRISMA_DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("PRISMA_DATABASE_URL")
   directUrl = env("POSTGRES_URL")
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  password      String?
-  image         String?
-  role          UserRole  @default(USER)
-  status        UserStatus @default(PENDING)
-  accountType   AccountType @default(TRIAL)
-  properties    Property[]
-  pendingToEs   PendingTo[]
+  id              String           @id @default(cuid())
+  name            String?
+  email           String?          @unique
+  password        String?
+  image           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  accountType     AccountType      @default(TRIAL)
+  role            UserRole         @default(USER)
+  status          UserStatus       @default(PENDING)
+  expiredAt       DateTime?
   dictionaryWords DictionaryWord[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  pendingToEs     PendingTo[]
+  properties      Property[]
+}
+
+model Property {
+  id                      String                  @id @default(cuid())
+  name                    String
+  location                String?
+  price                   Float?                  @default(0)
+  initialFunds            Float?                  @default(0)
+  userId                  String
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  expenses                Expense[]
+  payouts                 Payout[]
+  user                    User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurringExpenses       RecurringExpense[]
+  waivedRecurringExpenses RecurringExpenseWaive[]
+}
+
+model Expense {
+  id           String        @id @default(cuid())
+  name         String
+  amount       Float
+  note         String?
+  date         DateTime
+  propertyId   String
+  isRecurring  Boolean       @default(false)
+  recurringRef String?
+  status       ExpenseStatus @default(SETTLED)
+  pendingToId  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  pendingTo    PendingTo?    @relation(fields: [pendingToId], references: [id])
+  property     Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model PendingTo {
+  id                String             @id @default(cuid())
+  name              String
+  type              String?
+  userId            String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  expenses          Expense[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurringExpenses RecurringExpense[]
+}
+
+model Payout {
+  id           String       @id @default(cuid())
+  amount       Float
+  date         DateTime
+  propertyId   String
+  refundAmount Float?       @default(0)
+  status       PayoutStatus @default(PAID)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  name         String?
+  property     Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model RecurringExpense {
+  id          String                  @id @default(cuid())
+  name        String
+  amount      Float
+  day         Int
+  propertyId  String
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  pendingToId String?
+  pendingTo   PendingTo?              @relation(fields: [pendingToId], references: [id])
+  property    Property                @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  waives      RecurringExpenseWaive[]
+}
+
+model RecurringExpenseWaive {
+  id                 String           @id @default(cuid())
+  monthKey           String
+  recurringExpenseId String
+  propertyId         String
+  createdAt          DateTime         @default(now())
+  property           Property         @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  recurringExpense   RecurringExpense @relation(fields: [recurringExpenseId], references: [id], onDelete: Cascade)
+
+  @@unique([monthKey, recurringExpenseId, propertyId])
+}
+
+model DictionaryWord {
+  id        String   @id @default(cuid())
+  word      String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([word, userId])
+}
+
+model PlatformSetting {
+  id                      String   @id @default("default")
+  trialPeriodDays         Int      @default(7)
+  trialMaxProperties      Int      @default(1)
+  trialMaxEntities        Int      @default(2)
+  trialMaxDictionaries    Int      @default(5)
+  trialMaxExpenses        Int      @default(10)
+  trialMaxPayouts         Int      @default(5)
+  standardMaxProperties   Int      @default(5)
+  standardMaxEntities     Int      @default(5)
+  standardMaxDictionaries Int      @default(10)
+  standardMaxExpenses     Int      @default(-1)
+  standardMaxPayouts      Int      @default(-1)
+  proMaxProperties        Int      @default(-1)
+  proMaxEntities          Int      @default(-1)
+  proMaxDictionaries      Int      @default(-1)
+  proMaxExpenses          Int      @default(-1)
+  proMaxPayouts           Int      @default(-1)
+  updatedAt               DateTime @updatedAt
 }
 
 enum UserRole {
@@ -45,68 +159,10 @@ enum AccountType {
   PRO
 }
 
-model Property {
-  id                String             @id @default(cuid())
-  name              String
-  location          String?
-  price             Float?             @default(0)
-  initialFunds      Float?             @default(0)
-  userId            String
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expenses          Expense[]
-  payouts           Payout[]
-  recurringExpenses RecurringExpense[]
-  waivedRecurringExpenses RecurringExpenseWaive[]
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-}
-
-model Expense {
-  id           String         @id @default(cuid())
-  name         String
-  amount       Float
-  note         String?
-  date         DateTime
-  propertyId   String
-  property     Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  isRecurring  Boolean        @default(false)
-  recurringRef String?
-  status       ExpenseStatus  @default(SETTLED)
-  pendingToId  String?
-  pendingTo    PendingTo?     @relation(fields: [pendingToId], references: [id])
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-}
-
 enum ExpenseStatus {
   PENDING
   SETTLED
   DELETED
-}
-
-model PendingTo {
-  id        String    @id @default(cuid())
-  name      String
-  type      String?   // e.g., "Person", "Organization"
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expenses  Expense[]
-  recurringExpenses RecurringExpense[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-}
-
-model Payout {
-  id           String       @id @default(cuid())
-  name         String?
-  amount       Float
-  date         DateTime
-  propertyId   String
-  property     Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  refundAmount Float?       @default(0)
-  status       PayoutStatus @default(PAID)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
 }
 
 enum PayoutStatus {
@@ -114,41 +170,4 @@ enum PayoutStatus {
   REFUNDED
   PARTIALLY_REFUNDED
   DELETED
-}
-
-model RecurringExpense {
-  id         String   @id @default(cuid())
-  name       String
-  amount     Float
-  day        Int
-  propertyId String
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  pendingToId String?
-  pendingTo   PendingTo? @relation(fields: [pendingToId], references: [id])
-  waives     RecurringExpenseWaive[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model RecurringExpenseWaive {
-  id                 String           @id @default(cuid())
-  monthKey           String // e.g., "2026-03"
-  recurringExpenseId String
-  recurringExpense   RecurringExpense @relation(fields: [recurringExpenseId], references: [id], onDelete: Cascade)
-  propertyId         String
-  property           Property         @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  createdAt          DateTime         @default(now())
-
-  @@unique([monthKey, recurringExpenseId, propertyId])
-}
-
-model DictionaryWord {
-  id        String   @id @default(cuid())
-  word      String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([word, userId])
 }

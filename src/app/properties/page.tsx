@@ -45,7 +45,7 @@ export default function PropertiesPage() {
             variant="contained"
             startIcon={<Plus size={18} />}
             onClick={() => router.push("/properties/create")}
-            sx={{ width: { xs: '100%', sm: 'auto' } }}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             Add Property
           </Button>
@@ -56,13 +56,7 @@ export default function PropertiesPage() {
         {properties.map((property) => (
           <Grid size={{ xs: 12, md: 6 }} key={property.id}>
             <Card
-              sx={{
-                cursor: "pointer",
-                transition: "all 0.2s",
-                "&:hover": {
-                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
-                },
-              }}
+              sx={{ cursor: "pointer" }}
               onClick={() => router.push(`/properties/${property.id}`)}
             >
               <CardContent>
@@ -76,7 +70,7 @@ export default function PropertiesPage() {
                     sx={{
                       bgcolor: "action.hover",
                       color: "text.primary",
-                      borderRadius: 2,
+                      borderRadius: 1.5,
                       border: "1px solid",
                       borderColor: "divider",
                     }}
@@ -97,7 +91,9 @@ export default function PropertiesPage() {
                     >
                       <MapPin size={14} />
                       <Typography variant="caption">
-                        {property.location}
+                        {property.location && property.location !== ""
+                          ? property.location
+                          : "No location"}
                       </Typography>
                     </Box>
                   </Box>
@@ -121,7 +117,9 @@ export default function PropertiesPage() {
                     <Typography
                       variant="h6"
                       fontWeight={600}
-                      color={property.profit < 0 ? "error.main" : "success.main"}
+                      color={
+                        property.profit < 0 ? "error.main" : "success.main"
+                      }
                     >
                       {formatAmount(property.profit)}
                     </Typography>

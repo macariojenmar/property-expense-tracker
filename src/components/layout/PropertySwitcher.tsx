@@ -4,7 +4,6 @@ import * as React from "react";
 import {
   Box,
   Typography,
-  IconButton,
   Menu,
   MenuItem,
   TextField,
@@ -17,6 +16,7 @@ import {
 import { Search, Check, Building2, ChevronUp, ChevronDown } from "lucide-react";
 import { usePropertyStore, Property } from "@/store/usePropertyStore";
 import { useRouter, usePathname } from "next/navigation";
+import { BOX_SHADOW } from "@/theme";
 
 export default function PropertySwitcher() {
   const { properties, selectedProperty, setSelectedProperty } =
@@ -24,7 +24,6 @@ export default function PropertySwitcher() {
   const router = useRouter();
   const pathname = usePathname();
   const theme = useTheme();
-
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [search, setSearch] = React.useState("");
   const open = Boolean(anchorEl);
@@ -43,7 +42,6 @@ export default function PropertySwitcher() {
     handleClose();
 
     if (property) {
-      // Maintain context if we're on a sub-page
       if (pathname.includes("/expenses")) {
         router.push(`/properties/${property.id}/expenses`);
       } else if (pathname.includes("/payouts")) {
@@ -52,7 +50,6 @@ export default function PropertySwitcher() {
         router.push(`/properties/${property.id}`);
       }
     } else {
-      // "All Properties" selected
       router.push("/dashboard");
     }
   };
@@ -70,22 +67,16 @@ export default function PropertySwitcher() {
           display: "flex",
           alignItems: "center",
           gap: 1.5,
-          px: 1.5,
+          px: 2,
           py: 0.75,
-          bgcolor: (theme) =>
-            theme.palette.mode === "light"
-              ? alpha(theme.palette.primary.main, 0.04)
-              : alpha(theme.palette.primary.main, 0.08),
+          bgcolor: (theme) => theme.palette.secondary.main,
           borderRadius: 1.5,
           border: "1px solid",
-          borderColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+          borderColor: (theme) => theme.palette.divider,
           cursor: "pointer",
           transition: "all 0.2s",
           "&:hover": {
-            bgcolor: (theme) =>
-              theme.palette.mode === "light"
-                ? alpha(theme.palette.primary.main, 0.12)
-                : alpha(theme.palette.primary.main, 0.2),
+            bgcolor: (theme) => theme.palette.secondary.dark,
           },
         }}
       >
@@ -123,8 +114,8 @@ export default function PropertySwitcher() {
               mt: 1,
               width: 320,
               maxHeight: 480,
-              borderRadius: 3,
-              boxShadow: (theme) => theme.shadows[10],
+              borderRadius: 2,
+              boxShadow: BOX_SHADOW,
               border: "1px solid",
               borderColor: "divider",
               overflow: "hidden",
@@ -144,23 +135,19 @@ export default function PropertySwitcher() {
             placeholder="Find property..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={16} color={theme.palette.text.secondary} />
-                </InputAdornment>
-              ),
-              sx: {
-                borderRadius: 1,
-                fontSize: "14px",
-                "& fieldset": { borderColor: "divider" },
+            slotProps={{
+              input: {
+                sx: { fontSize: "14px" },
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={16} color={theme.palette.text.secondary} />
+                  </InputAdornment>
+                ),
               },
             }}
           />
         </Box>
-
         <Divider />
-
         <Box sx={{ py: 1, overflowY: "auto", flexGrow: 1 }}>
           <Typography
             variant="caption"
@@ -186,7 +173,7 @@ export default function PropertySwitcher() {
               alignItems: "center",
               justifyContent: "space-between",
               "&:hover": {
-                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+                bgcolor: "secondary.main",
               },
             }}
           >
@@ -219,11 +206,6 @@ export default function PropertySwitcher() {
               </Typography>
             </Box>
           ) : (
-            // The original instruction included a line 'waivedRecurringExpenses.forEach((w) => {' here.
-            // This line seems to be specific to an 'ExpensesView.tsx' component and uses an undefined variable
-            // ('waivedRecurringExpenses') in the context of PropertySwitcher.tsx.
-            // To maintain syntactic correctness and avoid breaking the component,
-            // this specific line has been omitted from the PropertySwitcher.tsx file.
             filteredProperties.map((property) => (
               <MenuItem
                 key={property.id}

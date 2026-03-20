@@ -11,6 +11,7 @@ declare module "next-auth" {
       role: string;
       status: string;
       accountType: string;
+      expiredAt: Date | null;
     } & DefaultSession["user"];
   }
 
@@ -19,6 +20,7 @@ declare module "next-auth" {
     role: string;
     status: string;
     accountType: string;
+    expiredAt: Date | null;
   }
 }
 
@@ -27,6 +29,7 @@ declare module "next-auth/jwt" {
     role?: string;
     status?: string;
     accountType?: string;
+    expiredAt?: string | null;
   }
 }
 
@@ -56,11 +59,15 @@ export const authOptions: NextAuthOptions = {
 
         const isPasswordCorrect = await bcrypt.compare(
           credentials.password,
-          user.password
+          user.password,
         );
 
         if (!isPasswordCorrect) {
           throw new Error("Invalid credentials");
+        }
+
+        if (user.status !== "ACTIVE") {
+          throw new Error("Your account is currently disabled.");
         }
 
         return {
@@ -70,6 +77,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           status: user.status,
           accountType: user.accountType,
+          expiredAt: (user as any).expiredAt,
         };
       },
     }),
@@ -89,6 +97,9 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string;
         session.user.status = token.status as string;
         session.user.accountType = token.accountType as string;
+        session.user.expiredAt = token.expiredAt
+          ? new Date(token.expiredAt)
+          : null;
       }
       return session;
     },
@@ -100,6 +111,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.status = user.status;
         token.accountType = user.accountType;
+        token.expiredAt = user.expiredAt ? user.expiredAt.toISOString() : null;
       }
 
       if (trigger === "update" && session) {

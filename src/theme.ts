@@ -2,26 +2,36 @@
 
 import { createTheme, ThemeOptions } from "@mui/material/styles";
 
-// Vercel/Supabase inspired theme generator
+export const DARK = "dark";
+export const LIGHT = "light";
+export const BOX_SHADOW = "0 1px 3px rgba(0, 0, 0, 0.08)";
+
+export const PURPLE = "#8B5CF6";
+export const ORANGE = "#FF9800";
+export const BLUE = "#2196F3";
+export const GREEN = "#4CAF50";
+export const RED = "#FA5B45";
+
 export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
   palette: {
     mode,
     primary: {
-      main: mode === "light" ? "#000000" : "#ffffff",
+      main: mode === LIGHT ? "#000000" : "#ffffff",
     },
     secondary: {
-      main: "#666666",
+      main: mode === LIGHT ? "#f5f5f5ff" : "#080808ff",
+      dark: mode === LIGHT ? "#dadadaff" : "rgba(27, 27, 27, 1)",
     },
     background: {
-      default: mode === "light" ? "#ffffff" : "#000000",
-      paper: mode === "light" ? "#ffffff" : "#000000",
+      default: mode === LIGHT ? "#ffffff" : "#000000",
+      paper: mode === LIGHT ? "#ffffff" : "#000000",
     },
     text: {
-      primary: mode === "light" ? "#000000" : "#ffffff",
+      primary: mode === LIGHT ? "#000000" : "#ffffff",
       secondary: "#666666",
     },
     divider:
-      mode === "light" ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)",
+      mode === LIGHT ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)",
   },
   typography: {
     fontFamily: "var(--font-geist-sans), Inter, system-ui, sans-serif",
@@ -54,10 +64,10 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
           },
         },
         containedPrimary: {
-          backgroundColor: mode === "light" ? "#000" : "#fff",
-          color: mode === "light" ? "#fff" : "#000",
+          backgroundColor: mode === LIGHT ? "#000" : "#fff",
+          color: mode === LIGHT ? "#fff" : "#000",
           "&:hover": {
-            backgroundColor: mode === "light" ? "#333" : "#ccc",
+            backgroundColor: mode === LIGHT ? "#333" : "#ccc",
           },
         },
       },
@@ -65,10 +75,15 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
     MuiCard: {
       styleOverrides: {
         root: {
-          border: `1px solid ${mode === "light" ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)"}`,
-          backgroundColor: mode === "light" ? "#ffffff" : "#000000",
+          border: `1px solid ${mode === LIGHT ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)"}`,
+          backgroundColor: mode === LIGHT ? "#ffffff" : "#000000",
           boxShadow: "none",
           borderRadius: 12,
+          transition: "all 0.3s ease",
+          "&:hover": {
+            boxShadow: "none",
+            backgroundColor: mode === LIGHT ? "#f5f5f5ff" : "#080808ff",
+          },
         },
       },
     },
@@ -77,8 +92,8 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
         root: {
           backgroundImage: "none",
           boxShadow: "none",
-          border: `1px solid ${mode === "light" ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)"}`,
-          backgroundColor: mode === "light" ? "#ffffff" : "#000000",
+          border: `1px solid ${mode === LIGHT ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)"}`,
+          backgroundColor: mode === LIGHT ? "#ffffff" : "#000000",
         },
       },
     },
@@ -86,9 +101,7 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
       styleOverrides: {
         root: {
           borderColor:
-            mode === "light"
-              ? "rgba(0, 0, 0, 0.06)"
-              : "rgba(255, 255, 255, 0.1)",
+            mode === LIGHT ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)",
         },
       },
     },
@@ -103,7 +116,7 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
           backdrop: {
             sx: {
               backgroundColor:
-                mode === "light" ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.8)",
+                mode === LIGHT ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.8)",
             },
           },
         },
@@ -112,5 +125,5 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
   },
 });
 
-const theme = createTheme(getThemeOptions("light"));
+const theme = createTheme(getThemeOptions(LIGHT));
 export default theme;

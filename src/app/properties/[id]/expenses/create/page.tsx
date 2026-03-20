@@ -20,6 +20,7 @@ import { usePropertyStore } from "@/store/usePropertyStore";
 import ExpenseForm, {
   ExpenseFormData,
 } from "@/components/expenses/ExpenseForm";
+import PricingDialog from "@/components/PricingDialog";
 
 interface Word {
   id: string;
@@ -32,6 +33,8 @@ export default function CreateExpensePage() {
   const propertyId = params.id as string;
   const { setIsSaving, refresh } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
+  const [pricingDialogOpen, setPricingDialogOpen] = React.useState(false);
+  const [isExpired, setIsExpired] = React.useState(false);
 
   const [items, setItems] = React.useState<ExpenseFormData[]>([
     {
@@ -107,8 +110,13 @@ export default function CreateExpensePage() {
       }
       await refresh();
       router.push(`/properties/${propertyId}/expenses`);
-    } catch (error) {
-      console.error("Failed to save expenses:", error);
+    } catch (error: any) {
+      if (error?.message === "LIMIT_REACHED" || error?.message === "ACCOUNT_EXPIRED") {
+        setIsExpired(error.message === "ACCOUNT_EXPIRED");
+        setPricingDialogOpen(true);
+      } else {
+        console.error("Failed to save expenses:", error);
+      }
     } finally {
       setLoading(false);
       setIsSaving(false);
@@ -116,6 +124,7 @@ export default function CreateExpensePage() {
   };
 
   return (
+    <>
     <DashboardLayout width="md">
       <PageHeader
         title="New Expenses"
@@ -185,5 +194,13 @@ export default function CreateExpensePage() {
         </Stack>
       </Stack>
     </DashboardLayout>
+
+    <PricingDialog
+      open={pricingDialogOpen}
+      onClose={() => setPricingDialogOpen(false)}
+      isExpired={isExpired}
+      limitType="expense"
+    />
+    </>
   );
 }

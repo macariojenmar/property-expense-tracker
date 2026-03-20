@@ -42,6 +42,12 @@ export async function createPendingToEntity(data: {
     throw new Error("Unauthorized");
   }
 
+  const { checkUserLimit } = await import("@/lib/limits");
+  const limitCheck = await checkUserLimit(session.user.id, "entity");
+  if (limitCheck.reached) {
+    throw new Error(limitCheck.expired ? "ACCOUNT_EXPIRED" : "LIMIT_REACHED");
+  }
+
   const entity = await prisma.pendingTo.create({
     data: {
       name: data.name,

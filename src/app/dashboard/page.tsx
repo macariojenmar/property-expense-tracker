@@ -9,20 +9,17 @@ import {
   CardContent,
   Stack,
   Skeleton,
+  alpha,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PageHeader from "@/components/layout/PageHeader";
-import {
-  TrendingUp,
-  Wallet,
-  Calculator,
-  TrendingDown,
-} from "lucide-react";
+import { TrendingUp, Wallet, Calculator, TrendingDown } from "lucide-react";
 import { useCurrency } from "@/components/CurrencyContext";
 import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import { getDashboardStats } from "@/lib/actions/dashboard";
+import { BLUE, GREEN, ORANGE, RED } from "@/theme";
 
 const StatCard = ({
   title,
@@ -53,9 +50,9 @@ const StatCard = ({
         <Box
           sx={{
             p: 1.5,
-            borderRadius: 3,
-            bgcolor: `${color || "primary"}.lighter`,
-            color: `${color || "primary"}.main`,
+            borderRadius: 2,
+            backgroundColor: alpha(color || BLUE, 0.1),
+            color: color || BLUE,
             display: "flex",
           }}
         >
@@ -74,17 +71,26 @@ const StatCard = ({
       )}
       {loading ? (
         <Skeleton variant="text" width="40%" height={20} />
-      ) : trend && (
-        <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center" }}>
-          <Box component="span" sx={{ 
-            color: trend.startsWith("+") ? "success.main" : "error.main",
-            fontWeight: 700,
-            mr: 0.5 
-          }}>
-            {trend}
-          </Box>
-          from last period
-        </Typography>
+      ) : (
+        trend && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            <Box
+              component="span"
+              sx={{
+                color: trend.startsWith("+") ? "success.main" : "error.main",
+                fontWeight: 700,
+                mr: 0.5,
+              }}
+            >
+              {trend}
+            </Box>
+            from last period
+          </Typography>
+        )
       )}
     </CardContent>
   </Card>
@@ -136,43 +142,43 @@ export default function DashboardPage() {
       />
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <StatCard
             title="Total Revenue"
             amount={formatAmount(stats?.totalRevenue.value || 0)}
             icon={TrendingUp}
             trend={stats?.totalRevenue.trend}
-            color="success"
+            color={GREEN}
             loading={isLoading}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Total Expenses"
-            amount={formatAmount(stats?.totalExpenses.value || 0)}
-            icon={TrendingDown}
-            trend={stats?.totalExpenses.trend}
-            color="error"
-            loading={isLoading}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <StatCard
             title="Net Profit"
             amount={formatAmount(stats?.netProfit.value || 0)}
             icon={Wallet}
             trend={stats?.netProfit.trend}
-            color="primary"
+            color={BLUE}
             loading={isLoading}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <StatCard
+            title="Total Expenses"
+            amount={formatAmount(stats?.totalExpenses.value || 0)}
+            icon={TrendingDown}
+            trend={stats?.totalExpenses.trend}
+            color={RED}
+            loading={isLoading}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <StatCard
             title="Profit Margin"
             amount={stats?.profitMargin.value || "0%"}
             icon={Calculator}
             trend={stats?.profitMargin.trend}
-            color="warning"
+            color={ORANGE}
             loading={isLoading}
           />
         </Grid>

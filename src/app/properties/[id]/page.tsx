@@ -21,6 +21,7 @@ import {
   Receipt,
   Settings,
   Info,
+  PackageOpen,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -31,6 +32,7 @@ import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import Loader from "@/components/Loader";
 import CompactFinancialStats from "@/components/CompactFinancialStats";
+import { BLUE, GREEN, RED } from "@/theme";
 
 const FinanceCard = ({
   title,
@@ -70,7 +72,7 @@ const FinanceCard = ({
         overflow: "hidden",
         transition: "all 0.2s",
         cursor: onAction ? "pointer" : "default",
-        "&:hover": { bgcolor: (t) => alpha(t.palette.primary.main, 0.08) },
+        "&:hover": { bgcolor: alpha(color, 0.05) },
         border: "1px solid",
         borderColor: alpha(color, 0.1),
         bgcolor: "transparent",
@@ -121,7 +123,7 @@ const FinanceCard = ({
               fontWeight={700}
               sx={{
                 letterSpacing: "-0.02em",
-                color: currentValue < 0 ? "#f43f5e" : "text.primary",
+                color: currentValue < 0 ? RED : "text.primary",
               }}
             >
               {formatAmount(currentValue)}
@@ -137,7 +139,7 @@ const FinanceCard = ({
             <Typography
               variant="h6"
               fontWeight={600}
-              color={estimatedValue < 0 ? "#f43f5e" : color}
+              color={estimatedValue < 0 ? RED : color}
               sx={{ opacity: 0.9 }}
             >
               {formatAmount(estimatedValue)}
@@ -293,8 +295,24 @@ export default function PropertyDetailsPage() {
   if (!property || property.id !== propertyId) {
     return (
       <DashboardLayout>
-        <Box sx={{ p: 4, textAlign: "center" }}>
-          <Typography variant="h5">Property not found</Typography>
+        <Box
+          sx={{
+            p: 4,
+            textAlign: "center",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            flexDirection: "column",
+            height: "70vh",
+          }}
+        >
+          <PackageOpen size={48} />
+          <Typography variant="h5" mb={1} mt={2}>
+            Oops! Property not found
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            The property you are looking for does not exist.
+          </Typography>
           <Button
             startIcon={<ArrowLeft size={18} />}
             onClick={() => router.push("/properties")}
@@ -312,6 +330,7 @@ export default function PropertyDetailsPage() {
       <PageHeader
         title={property.name}
         subtitle={property.location || undefined}
+        onBack={() => router.push("/properties")}
         actions={
           <Button
             variant="outlined"
@@ -341,7 +360,7 @@ export default function PropertyDetailsPage() {
             icon={Wallet}
             currentValue={stats.currentFunds}
             estimatedValue={stats.estimatedFunds}
-            color="#3b82f6"
+            color={BLUE}
             formatAmount={formatAmount}
             description="Total cash available for the property, including initial funds and all net profits to date."
           />
@@ -352,7 +371,7 @@ export default function PropertyDetailsPage() {
             icon={TrendingUp}
             currentValue={stats.currentProfit}
             estimatedValue={stats.estimatedProfit}
-            color="#10b981"
+            color={GREEN}
             formatAmount={formatAmount}
             description="Net income for the selected period (Payouts minus Expenses)."
             onAction={() => router.push(`/properties/${property.id}/payouts`)}
@@ -364,7 +383,7 @@ export default function PropertyDetailsPage() {
             icon={Receipt}
             currentValue={stats.currentExpenses}
             estimatedValue={stats.estimatedExpenses}
-            color="#f43f5e"
+            color={RED}
             formatAmount={formatAmount}
             description="Total costs incurred during the selected period."
             onAction={() => router.push(`/properties/${property.id}/expenses`)}
@@ -372,44 +391,44 @@ export default function PropertyDetailsPage() {
         </Grid>
       </Grid>
 
-      {/* Recurring Expenses */}
-      {property.recurringExpenses && property.recurringExpenses.length > 0 && (
-        <Box sx={{ mt: 4, mb: 2 }}>
-          <Grid container spacing={4} alignItems="stretch">
-            <Grid
-              size={{ xs: 12, md: 6 }}
-              sx={{ display: "flex", flexDirection: "column" }}
+      <Box sx={{ mt: 4, mb: 2 }}>
+        <Grid container spacing={4} alignItems="stretch">
+          <Grid
+            size={{ xs: 12, md: 6 }}
+            sx={{ display: "flex", flexDirection: "column" }}
+          >
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Financial Health
+            </Typography>
+            <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+              <CompactFinancialStats
+                expenses={rangeData.expenses}
+                payouts={rangeData.payouts}
+                formatAmount={formatAmount}
+              />
+            </Box>
+          </Grid>
+          <Grid
+            size={{ xs: 12, md: 6 }}
+            sx={{ display: "flex", flexDirection: "column" }}
+          >
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Recurring Expenses
+            </Typography>
+            <Card
+              sx={{
+                border: "1px solid",
+                borderColor: alpha(RED, 0.15),
+                bgcolor: "transparent",
+                mb: { xs: 2, md: 0 },
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+              }}
             >
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Financial Health
-              </Typography>
-              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                <CompactFinancialStats
-                  expenses={rangeData.expenses}
-                  payouts={rangeData.payouts}
-                  formatAmount={formatAmount}
-                />
-              </Box>
-            </Grid>
-            <Grid
-              size={{ xs: 12, md: 6 }}
-              sx={{ display: "flex", flexDirection: "column" }}
-            >
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Recurring Expenses
-              </Typography>
-              <Card
-                sx={{
-                  border: "1px solid",
-                  borderColor: alpha("#f43f5e", 0.15),
-                  bgcolor: "transparent",
-                  mb: { xs: 2, md: 0 },
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <CardContent>
+              <CardContent>
+                {property.recurringExpenses &&
+                property.recurringExpenses.length > 0 ? (
                   <Stack spacing={0}>
                     {property.recurringExpenses.map((exp, index) => (
                       <Box key={index}>
@@ -428,8 +447,8 @@ export default function PropertyDetailsPage() {
                               sx={{
                                 p: 0.5,
                                 borderRadius: 1.25,
-                                bgcolor: alpha("#f43f5e", 0.1),
-                                color: "#f43f5e",
+                                bgcolor: alpha(RED, 0.1),
+                                color: RED,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -452,7 +471,7 @@ export default function PropertyDetailsPage() {
                           <Typography
                             variant="body2"
                             fontWeight={700}
-                            color="#f43f5e"
+                            color={RED}
                           >
                             {formatAmount(exp.amount)}
                           </Typography>
@@ -465,12 +484,35 @@ export default function PropertyDetailsPage() {
                       </Box>
                     ))}
                   </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
+                ) : (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: "200px",
+                    }}
+                  >
+                    <Stack alignItems={"center"}>
+                      <PackageOpen size={20} strokeWidth={1.5} />
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        sx={{ pt: 1 }}
+                      >
+                        No recurring expenses
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Add recurring expenses to this property
+                      </Typography>
+                    </Stack>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
           </Grid>
-        </Box>
-      )}
+        </Grid>
+      </Box>
     </DashboardLayout>
   );
 }

@@ -55,6 +55,7 @@ import {
 } from "@/store/usePropertyStore";
 import Loader from "@/components/Loader";
 import EmptyState from "@/components/EmptyState";
+import PricingDialog from "@/components/PricingDialog";
 
 // Local interfaces removed in favor of store interfaces
 
@@ -86,6 +87,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const { formatAmount, currency } = useCurrency();
   const [loading, setLoading] = React.useState(false);
   const [expenses, setExpenses] = React.useState<Expense[]>([]);
+  const [pricingDialogOpen, setPricingDialogOpen] = React.useState(false);
 
   // Initialize store if we're on a property-specific page but no property is selected
   React.useEffect(() => {
@@ -383,8 +385,12 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       const nextChecked = new Set(checkedSet);
       checkedAndAvailable.forEach((id) => nextChecked.delete(id));
       setCheckedSet(nextChecked);
-    } catch (error) {
-      console.error("Failed to add selected recurring:", error);
+    } catch (error: any) {
+      if (error?.message === "LIMIT_REACHED") {
+        setPricingDialogOpen(true);
+      } else {
+        console.error("Failed to add selected recurring:", error);
+      }
     } finally {
       setLoading(false);
       setIsSaving(false);
@@ -416,8 +422,12 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       if (updated) {
         setExpenses((updated as unknown as Property).expenses || []);
       }
-    } catch (error) {
-      console.error("Failed to add recurring expense:", error);
+    } catch (error: any) {
+      if (error?.message === "LIMIT_REACHED") {
+        setPricingDialogOpen(true);
+      } else {
+        console.error("Failed to add recurring expense:", error);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -1506,6 +1516,13 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
           />
         )}
       </Stack>
+      <PricingDialog
+        open={pricingDialogOpen}
+        onClose={() => setPricingDialogOpen(false)}
+        title="Expense Limit Reached"
+        message="You've reached the maximum number of expenses for your current plan. Upgrade to continue tracking expenses."
+        limitType="expense"
+      />
     </DashboardLayout>
   );
 }

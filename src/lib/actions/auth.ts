@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { getPlatformSettings } from "@/lib/limits";
 
 const signUpSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -47,12 +48,19 @@ export async function signUp(prevState: SignUpState, formData: FormData): Promis
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const settings = await getPlatformSettings();
+    const trialDays = settings?.trialPeriodDays || 7;
+    
+    const expiredAt = new Date();
+    expiredAt.setDate(expiredAt.getDate() + trialDays);
 
     await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        accountType: "TRIAL",
+        expiredAt,
       },
     });
 

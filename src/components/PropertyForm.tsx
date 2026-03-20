@@ -25,6 +25,7 @@ import { getPendingToEntities } from "@/lib/actions/pending-to";
 import { getDictionaryWords } from "@/lib/actions/dictionary";
 import { usePropertyStore } from "@/store/usePropertyStore";
 import PageHeader from "@/components/layout/PageHeader";
+import PricingDialog from "@/components/PricingDialog";
 
 interface Word {
   id: string;
@@ -92,6 +93,8 @@ export default function PropertyForm({
   >(null);
   const [dictionaryWords, setDictionaryWords] = React.useState<string[]>([]);
   const [internalLoading, setInternalLoading] = React.useState(false);
+  const [pricingDialogOpen, setPricingDialogOpen] = React.useState(false);
+  const [isExpired, setIsExpired] = React.useState(false);
 
   const loading = externalLoading || internalLoading;
 
@@ -168,8 +171,13 @@ export default function PropertyForm({
             pendingToId: exp.pendingToId || undefined,
           })),
       });
-    } catch (error) {
-      console.error("Form submission failed:", error);
+    } catch (error: any) {
+      if (error?.message === "LIMIT_REACHED" || error?.message === "ACCOUNT_EXPIRED") {
+        setIsExpired(error.message === "ACCOUNT_EXPIRED");
+        setPricingDialogOpen(true);
+      } else {
+        console.error("Form submission failed:", error);
+      }
     } finally {
       setInternalLoading(false);
       setIsSaving(false);
@@ -475,6 +483,13 @@ export default function PropertyForm({
           })}
         </Grid>
       </Popover>
+
+      <PricingDialog
+        open={pricingDialogOpen}
+        onClose={() => setPricingDialogOpen(false)}
+        isExpired={isExpired}
+        limitType="property"
+      />
     </Box>
   );
 }

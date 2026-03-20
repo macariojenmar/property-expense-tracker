@@ -11,6 +11,7 @@ type UserStatus = "ACTIVE" | "INACTIVE" | "PENDING" | "DELETED";
 type AccountType = "TRIAL" | "STANDARD" | "PRO";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { getPlatformSettings } from "@/lib/limits";
 
 export type PlatformActionState = {
   errors?: Record<string, string[]>;
@@ -79,6 +80,7 @@ export async function getUsers(params: {
           role: true,
           status: true,
           accountType: true,
+          expiredAt: true,
           createdAt: true,
         },
         orderBy: {
@@ -117,6 +119,7 @@ export async function getUser(userId: string) {
         role: true,
         status: true,
         accountType: true,
+        expiredAt: true,
         createdAt: true,
       },
     });
@@ -139,13 +142,31 @@ export async function updateUserAccess(
   try {
     await checkDeveloperAccess();
 
+    const updateData: any = {
+      ...(data.role && { role: data.role as import("@prisma/client").UserRole }),
+      ...(data.status && { status: data.status as import("@prisma/client").UserStatus }),
+      ...(data.accountType && { accountType: data.accountType as import("@prisma/client").AccountType }),
+    };
+
+    if (data.accountType === "TRIAL") {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { createdAt: true },
+      });
+      if (user) {
+        const settings = await getPlatformSettings();
+        const trialDays = settings?.trialPeriodDays || 7;
+        const expiredAt = new Date(user.createdAt);
+        expiredAt.setDate(expiredAt.getDate() + trialDays);
+        updateData.expiredAt = expiredAt;
+      }
+    } else if (data.accountType && data.accountType !== "TRIAL") {
+      updateData.expiredAt = null;
+    }
+
     await prisma.user.update({
       where: { id: userId },
-      data: {
-        ...(data.role && { role: data.role as import("@prisma/client").UserRole }),
-        ...(data.status && { status: data.status as import("@prisma/client").UserStatus }),
-        ...(data.accountType && { accountType: data.accountType as import("@prisma/client").AccountType }),
-      },
+      data: updateData,
     });
 
     revalidatePath("/platform/users");
@@ -201,11 +222,20 @@ export async function createUser(
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
+    
+    let expiredAt: Date | null = null;
+    if (data.accountType === "TRIAL") {
+      const settings = await getPlatformSettings();
+      const trialDays = settings?.trialPeriodDays || 7;
+      expiredAt = new Date();
+      expiredAt.setDate(expiredAt.getDate() + trialDays);
+    }
 
     await prisma.user.create({
       data: {
         ...data,
         password: hashedPassword,
+        expiredAt,
       },
     });
 
@@ -214,5 +244,24 @@ export async function createUser(
   } catch (error) {
     console.error("Create user error:", error);
     return { success: false, message: "Failed to create user" };
+  }
+}
+
+export async function expireUserTrial(userId: string): Promise<PlatformActionState> {
+  try {
+    await checkDeveloperAccess();
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        expiredAt: new Date(),
+      },
+    });
+
+    revalidatePath("/platform/users");
+    return { success: true, message: "User trial expired successfully" };
+  } catch (error) {
+    console.error("Expire user trial error:", error);
+    return { success: false, message: "Failed to expire user trial" };
   }
 }

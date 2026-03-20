@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { TrendingUp, Clock, Percent, PieChart, Info } from "lucide-react";
 import { Expense, Payout } from "@/store/usePropertyStore";
+import { GREEN, ORANGE, RED } from "@/theme";
 
 interface CompactFinancialStatsProps {
   expenses: Expense[];
@@ -69,15 +70,7 @@ const StatItem = ({
       >
         <Icon size={16} />
       </Box>
-      <Stack direction="row" spacing={0.5} alignItems="center">
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          fontWeight={500}
-          noWrap
-        >
-          {label}
-        </Typography>
+      <Stack direction="row" alignItems="center">
         <Tooltip
           title={description}
           placement="top"
@@ -89,6 +82,14 @@ const StatItem = ({
             <Info size={16} color="grey" />
           </IconButton>
         </Tooltip>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          fontWeight={500}
+          noWrap
+        >
+          {label}
+        </Typography>
       </Stack>
       <Typography
         variant="body2"
@@ -167,9 +168,9 @@ export default function CompactFinancialStats({
               description="The actual cash generated or consumed by the property in the selected period."
               color={
                 stats.netCashFlow > 0
-                  ? "#10b981"
+                  ? GREEN
                   : stats.netCashFlow < 0
-                    ? "#f43f5e"
+                    ? RED
                     : undefined
               }
             />
@@ -180,7 +181,7 @@ export default function CompactFinancialStats({
               label="Pending"
               value={formatAmount(stats.pendingExpenses)}
               description="Total amount of expenses that are currently in 'PENDING' status."
-              color={stats.pendingExpenses > 0 ? "#f59e0b" : undefined}
+              color={stats.pendingExpenses > 0 ? ORANGE : undefined}
             />
           </Box>
           <Box sx={{ width: { xs: "50%", sm: "50%", md: "50%" } }}>
@@ -192,9 +193,9 @@ export default function CompactFinancialStats({
               isPercent
               color={
                 Number(stats.profitMargin) > 0
-                  ? "#10b981"
+                  ? GREEN
                   : Number(stats.profitMargin) < 0
-                    ? "#f43f5e"
+                    ? RED
                     : undefined
               }
             />
@@ -206,7 +207,7 @@ export default function CompactFinancialStats({
               value={stats.expenseRatio}
               description="Percentage of payouts that goes towards paying expenses."
               isPercent
-              color={Number(stats.expenseRatio) > 30 ? "#f59e0b" : undefined}
+              color={Number(stats.expenseRatio) > 30 ? ORANGE : undefined}
             />
           </Box>
         </Stack>

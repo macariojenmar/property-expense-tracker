@@ -15,6 +15,7 @@ import { signUp, type SignUpState } from "@/lib/actions/auth";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import Footer from "@/components/layout/Footer";
+import ThemeSwitch from "@/components/layout/ThemeSwitch";
 
 export default function SignUpForm() {
   const router = useRouter();
@@ -36,8 +37,12 @@ export default function SignUpForm() {
         display: "flex",
         flexDirection: "column",
         bgcolor: "background.default",
+        position: "relative",
       }}
     >
+      <Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+        <ThemeSwitch />
+      </Box>
       <Box
         sx={{
           flex: 1,

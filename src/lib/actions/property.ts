@@ -115,6 +115,12 @@ export async function createProperty(data: {
     throw new Error("Unauthorized");
   }
 
+  const { checkUserLimit } = await import("@/lib/limits");
+  const limitCheck = await checkUserLimit(session.user.id, "property");
+  if (limitCheck.reached) {
+    throw new Error(limitCheck.expired ? "ACCOUNT_EXPIRED" : "LIMIT_REACHED");
+  }
+
   const property = await prisma.property.create({
     data: {
       name: data.name,
