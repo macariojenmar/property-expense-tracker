@@ -13,6 +13,7 @@ declare module "next-auth" {
       status: string;
       accountType: string;
       expiredAt: Date | null;
+      image?: string | null;
     } & DefaultSession["user"];
   }
 
@@ -22,6 +23,7 @@ declare module "next-auth" {
     status: string;
     accountType: string;
     expiredAt: Date | null;
+    image?: string | null;
   }
 }
 
@@ -31,6 +33,8 @@ declare module "next-auth/jwt" {
     status?: string;
     accountType?: string;
     expiredAt?: string | null;
+    picture?: string | null;
+    image?: string | null;
   }
 }
 
@@ -84,6 +88,7 @@ export const authOptions: NextAuthOptions = {
           status: user.status,
           accountType: user.accountType,
           expiredAt: (user as any).expiredAt,
+          image: user.image,
         };
       },
     }),
@@ -141,6 +146,7 @@ export const authOptions: NextAuthOptions = {
         session.user.expiredAt = token.expiredAt
           ? new Date(token.expiredAt)
           : null;
+        session.user.image = (token.picture || token.image) as string | null;
       }
       return session;
     },
@@ -153,6 +159,8 @@ export const authOptions: NextAuthOptions = {
         token.status = user.status;
         token.accountType = user.accountType;
         token.expiredAt = user.expiredAt ? user.expiredAt.toISOString() : null;
+        token.picture = user.image || token.picture;
+        token.image = user.image;
       }
 
       if (trigger === "update" && session) {

@@ -17,6 +17,7 @@ import {
 import { Settings, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import Image from "next/image";
 
 export default function AccountMenu() {
   const router = useRouter();
@@ -53,18 +54,28 @@ export default function AccountMenu() {
           aria-haspopup="true"
           aria-expanded={open ? "true" : undefined}
         >
-          <Avatar
-            sx={{
-              width: 32,
-              height: 32,
-              fontSize: 14,
-              bgcolor: "primary.main",
-            }}
-          >
-            {session?.user?.name
-              ? session.user.name.charAt(0).toUpperCase()
-              : "A"}
-          </Avatar>
+          {session?.user?.image ? (
+            <Image
+              src={session.user.image}
+              alt={session.user.name || "User avatar"}
+              width={32}
+              height={32}
+              style={{ borderRadius: "50%" }}
+            />
+          ) : (
+            <Avatar
+              sx={{
+                width: 32,
+                height: 32,
+                fontSize: 14,
+                bgcolor: "primary.main",
+              }}
+            >
+              {session?.user?.name
+                ? session.user.name.charAt(0).toUpperCase()
+                : "A"}
+            </Avatar>
+          )}
         </IconButton>
       </Tooltip>
       <Menu
