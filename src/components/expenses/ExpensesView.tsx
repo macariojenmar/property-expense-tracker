@@ -39,6 +39,7 @@ import {
   Undo2,
   TriangleAlert,
   Settings,
+  Search,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, endOfDay } from "date-fns";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -113,6 +114,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     end: endOfMonth(new Date()),
     type: "this-month",
   });
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
   const [pendingToFilter, setPendingToFilter] = React.useState<string | null>(
@@ -188,9 +190,30 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         return false;
       }
 
+      if (searchQuery.trim().length > 0) {
+        const query = searchQuery.toLowerCase();
+        const expenseName = (expense.name || "").toLowerCase();
+        const expenseNote = (expense.note || "").toLowerCase();
+        const expenseAmount = expense.amount.toString();
+        if (
+          !expenseName.includes(query) &&
+          !expenseNote.includes(query) &&
+          !expenseAmount.includes(query)
+        ) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [filterRange, propertyId, expenses, statusFilter, pendingToFilter]);
+  }, [
+    filterRange,
+    propertyId,
+    expenses,
+    statusFilter,
+    pendingToFilter,
+    searchQuery,
+  ]);
 
   const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
   const paginatedExpenses = filteredExpenses.slice(
@@ -1249,6 +1272,20 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
             width: { xs: "100%", sm: "auto" },
           }}
         >
+          <TextField
+            size="small"
+            placeholder="Search expenses"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={18} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ width: { xs: "100%", sm: 250 } }}
+          />
           <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
             <MonthFilter value={filterRange} onChange={setFilterRange} />
           </Box>

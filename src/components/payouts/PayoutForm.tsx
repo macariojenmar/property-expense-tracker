@@ -178,9 +178,11 @@ export default function PayoutForm({
                       slotProps={{ textField: { fullWidth: true } }}
                     />
                   </Grid>
-                  <Grid size={12}>
-                    <Divider sx={{ borderStyle: "dashed" }} />
-                  </Grid>
+                  {index < items.length - 1 && (
+                    <Grid size={12}>
+                      <Divider sx={{ borderStyle: "dashed" }} />
+                    </Grid>
+                  )}
                 </Grid>
               </Box>
             ))}

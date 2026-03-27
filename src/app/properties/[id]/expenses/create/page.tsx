@@ -152,6 +152,7 @@ export default function CreateExpensePage() {
                     onChange={handleChange}
                     entities={entities}
                     dictionary={dictionary}
+                    hideDivider={index === items.length - 1}
                   />
                 ))}
                 <Button

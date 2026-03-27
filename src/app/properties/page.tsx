@@ -56,7 +56,13 @@ export default function PropertiesPage() {
         {properties.map((property) => (
           <Grid size={{ xs: 12, md: 6 }} key={property.id}>
             <Card
-              sx={{ cursor: "pointer" }}
+              sx={{
+                cursor: "pointer",
+                "&:hover": {
+                  boxShadow: "none",
+                  backgroundColor: "secondary.main",
+                },
+              }}
               onClick={() => router.push(`/properties/${property.id}`)}
             >
               <CardContent>

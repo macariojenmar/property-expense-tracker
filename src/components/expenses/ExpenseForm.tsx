@@ -40,6 +40,7 @@ interface ExpenseFormProps {
   ) => void;
   entities: { id: string; name: string }[];
   dictionary: string[];
+  hideDivider?: boolean;
 }
 
 export default function ExpenseForm({
@@ -50,6 +51,7 @@ export default function ExpenseForm({
   onChange,
   entities,
   dictionary,
+  hideDivider = false,
 }: ExpenseFormProps) {
   const { currency } = useCurrency();
 
@@ -240,9 +242,11 @@ export default function ExpenseForm({
             }}
           />
         </Grid>
-        <Grid size={12}>
-          <Divider sx={{ borderStyle: "dashed" }} />
-        </Grid>
+        {!hideDivider && (
+          <Grid size={12}>
+            <Divider sx={{ borderStyle: "dashed" }} />
+          </Grid>
+        )}
       </Grid>
     </Box>
   );

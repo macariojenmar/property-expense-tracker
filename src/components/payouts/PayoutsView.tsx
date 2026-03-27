@@ -19,6 +19,7 @@ import {
   InputAdornment,
   Chip,
   Tooltip,
+  TextField,
 } from "@mui/material";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -29,6 +30,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Search,
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { format, startOfMonth, endOfMonth, endOfDay } from "date-fns";
@@ -238,8 +240,14 @@ function RevertConfirmationDialog({
 
 export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const router = useRouter();
-  const { properties, setSelectedProperty, refresh, setIsSaving, isFetchingDetails, fetchPropertyDetails } =
-    usePropertyStore();
+  const {
+    properties,
+    setSelectedProperty,
+    refresh,
+    setIsSaving,
+    isFetchingDetails,
+    fetchPropertyDetails,
+  } = usePropertyStore();
   const { formatAmount } = useCurrency();
   const [loading, setLoading] = React.useState(false);
 
@@ -273,6 +281,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
     end: endOfMonth(new Date()),
     type: "this-month",
   });
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   // Pagination state
   const [page, setPage] = React.useState(1);
@@ -290,14 +299,26 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
 
       const payoutDate = new Date(payout.date);
       if (filterRange.start && filterRange.end) {
-        return (
-          payoutDate >= startOfMonth(new Date(filterRange.start)) &&
-          payoutDate <= endOfDay(new Date(filterRange.end))
-        );
+        if (
+          payoutDate < startOfMonth(new Date(filterRange.start)) ||
+          payoutDate > endOfDay(new Date(filterRange.end))
+        ) {
+          return false;
+        }
       }
+
+      if (searchQuery.trim().length > 0) {
+        const query = searchQuery.toLowerCase();
+        const payoutName = (payout.name || "").toLowerCase();
+        const payoutAmount = payout.amount.toString();
+        if (!payoutName.includes(query) && !payoutAmount.includes(query)) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [filterRange, propertyId, payouts]);
+  }, [filterRange, propertyId, payouts, searchQuery]);
 
   const totalPages = Math.ceil(filteredPayouts.length / itemsPerPage);
   const paginatedPayouts = filteredPayouts.slice(
@@ -358,6 +379,20 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
               width: { xs: "100%", sm: "auto" },
             }}
           >
+            <TextField
+              size="small"
+              placeholder="Search payouts"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={18} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ width: { xs: "100%", sm: 250 } }}
+            />
             <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
               <MonthFilter value={filterRange} onChange={setFilterRange} />
             </Box>

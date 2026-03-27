@@ -160,6 +160,7 @@ export default function EditExpensePage() {
               onChange={handleChange}
               entities={entities}
               dictionary={dictionary}
+              hideDivider={true}
             />
           </CardContent>
         </Card>
