@@ -94,11 +94,18 @@ export default function DashboardLayout({
       );
     }
 
-    mainItems.push({
-      text: "Dictionary",
-      icon: <BookText size={20} />,
-      path: "/dictionary",
-    });
+    mainItems.push(
+      {
+        text: "Entities",
+        icon: <Users size={20} />,
+        path: "/entities",
+      },
+      {
+        text: "Dictionary",
+        icon: <BookText size={20} />,
+        path: "/dictionary",
+      },
+    );
 
     const platformItems: Array<{
       text: string;

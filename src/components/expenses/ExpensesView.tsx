@@ -38,7 +38,6 @@ import {
   Ban,
   Undo2,
   TriangleAlert,
-  Settings,
   Search,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, endOfDay } from "date-fns";
@@ -563,14 +562,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
             gap={2}
             sx={{ width: { xs: "100%", md: "auto" } }}
           >
-            <Button
-              variant="outlined"
-              startIcon={<Settings size={18} />}
-              onClick={() => router.push("/entities")}
-              sx={{ width: { xs: "100%", md: "fit-content" } }}
-            >
-              Entities
-            </Button>
             <Button
               variant="contained"
               startIcon={<Plus size={18} />}

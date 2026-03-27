@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Building2,
   User,
+  HelpCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -233,8 +234,10 @@ export default function EntitiesPage() {
                       flexShrink: 0,
                     }}
                   >
-                    {entity.type === "ORGANIZATION" ? (
+                    {entity.type === "Organization" ? (
                       <Building2 size={18} />
+                    ) : entity.type === "Other" ? (
+                      <HelpCircle size={18} />
                     ) : (
                       <User size={18} />
                     )}
