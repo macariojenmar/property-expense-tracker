@@ -19,20 +19,61 @@ import {
   startOfMonth,
   endOfMonth,
   subMonths,
+  addMonths,
   startOfYear,
+  isWithinInterval,
+  isSameDay,
+  isBefore,
+  isAfter,
 } from "date-fns";
 import { BOX_SHADOW } from "@/theme";
+import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import { PickersDay, PickersDayProps } from "@mui/x-date-pickers/PickersDay";
+import { styled } from "@mui/material/styles";
 
 export interface DateRange {
   start: Date | null;
   end: Date | null;
-  type: "this-month" | "last-month" | "this-year" | "custom";
+  type: "this-month" | "last-month" | "next-month" | "this-year" | "custom";
 }
 
 interface MonthFilterProps {
   value: DateRange;
   onChange: (range: DateRange) => void;
 }
+
+const StyledPickersDay = styled(PickersDay, {
+  shouldForwardProp: (prop) =>
+    prop !== "isRangeStart" &&
+    prop !== "isRangeEnd" &&
+    prop !== "isWithinRange",
+})<{
+  isRangeStart?: boolean;
+  isRangeEnd?: boolean;
+  isWithinRange?: boolean;
+}>(({ theme, isRangeStart, isRangeEnd, isWithinRange }) => ({
+  margin: 0,
+  width: 40,
+  height: 40,
+  ...((isWithinRange || isRangeStart || isRangeEnd) && {
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+    "&:hover, &:focus": {
+      backgroundColor: theme.palette.primary.main,
+    },
+  }),
+  ...(isWithinRange && {
+    borderRadius: 0,
+  }),
+  ...(isRangeStart && {
+    borderTopLeftRadius: "50%",
+    borderBottomLeftRadius: "50%",
+  }),
+  ...(isRangeEnd && {
+    borderTopRightRadius: "50%",
+    borderBottomRightRadius: "50%",
+  }),
+}));
 
 export default function MonthFilter({ value, onChange }: MonthFilterProps) {
   const [isPickerOpen, setIsPickerOpen] = React.useState(false);
@@ -68,6 +109,10 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
       const lastMonth = subMonths(now, 1);
       start = startOfMonth(lastMonth);
       end = endOfMonth(lastMonth);
+    } else if (type === "next-month") {
+      const nextMonth = addMonths(now, 1);
+      start = startOfMonth(nextMonth);
+      end = endOfMonth(nextMonth);
     } else if (type === "this-year") {
       start = startOfYear(now);
       end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999); // End of year
@@ -79,6 +124,7 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
   const renderLabel = () => {
     if (value.type === "this-month") return "This Month";
     if (value.type === "last-month") return "Last Month";
+    if (value.type === "next-month") return "Next Month";
     if (value.type === "this-year") return "This Year";
     if (value.type === "custom" && value.start && value.end) {
       try {
@@ -123,6 +169,7 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
         {[
           { value: "this-month", label: "This Month" },
           { value: "last-month", label: "Last Month" },
+          { value: "next-month", label: "Next Month" },
           { value: "this-year", label: "This Year" },
         ].map((option) => (
           <MenuItem
@@ -205,51 +252,83 @@ export default function MonthFilter({ value, onChange }: MonthFilterProps) {
       >
         <Typography
           variant="subtitle1"
-          sx={{ mb: 2.5, fontWeight: 700, letterSpacing: "-0.01em" }}
+          sx={{ mb: 2, fontWeight: 700, letterSpacing: "-0.01em" }}
         >
           Select Custom Range
         </Typography>
-        <Stack spacing={2.5}>
-          <DatePicker
-            label="Start Date"
-            value={tempRange.start}
-            onChange={(date) =>
-              setTempRange((prev) => ({ ...prev, start: date }))
-            }
-            format="MMMM d, yyyy"
-            slotProps={{
-              textField: {
-                size: "small",
-                fullWidth: true,
-                sx: {
-                  "& .MuiInputLabel-root": { color: "text.secondary" },
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "divider" },
-                  },
+        <Stack spacing={2}>
+          <Box sx={{ minHeight: 340 }}>
+            <DateCalendar
+              value={tempRange.start}
+              onChange={(newDate) => {
+                if (!newDate) return;
+
+                setTempRange((prev) => {
+                  // If no start or already have both, start fresh
+                  if (!prev.start || (prev.start && prev.end)) {
+                    return { start: newDate, end: null };
+                  }
+
+                  // If we have a start but no end
+                  if (prev.start && !prev.end) {
+                    if (isBefore(newDate, prev.start)) {
+                      return { start: newDate, end: prev.start };
+                    }
+                    return { ...prev, end: newDate };
+                  }
+
+                  return prev;
+                });
+              }}
+              slots={{
+                day: (props: PickersDayProps) => {
+                  const { day, ...other } = props;
+                  const isRangeStart =
+                    tempRange.start && isSameDay(day, tempRange.start);
+                  const isRangeEnd =
+                    tempRange.end && isSameDay(day, tempRange.end);
+                  const isWithinRange =
+                    tempRange.start &&
+                    tempRange.end &&
+                    isWithinInterval(day, {
+                      start: tempRange.start,
+                      end: tempRange.end,
+                    });
+
+                  return (
+                    <StyledPickersDay
+                      {...other}
+                      day={day}
+                      isRangeStart={!!isRangeStart}
+                      isRangeEnd={!!isRangeEnd}
+                      isWithinRange={!!isWithinRange}
+                    />
+                  );
                 },
-              },
-            }}
-          />
-          <DatePicker
-            label="End Date"
-            value={tempRange.end}
-            onChange={(date) =>
-              setTempRange((prev) => ({ ...prev, end: date }))
-            }
-            format="MMMM d, yyyy"
-            slotProps={{
-              textField: {
-                size: "small",
-                fullWidth: true,
-                sx: {
-                  "& .MuiInputLabel-root": { color: "text.secondary" },
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "divider" },
-                  },
+              }}
+              sx={{
+                width: 280,
+                mx: "auto",
+                height: "auto",
+                "& .MuiPickersCalendarHeader-root": {
+                  px: 1,
                 },
-              },
-            }}
-          />
+                "& .MuiDayCalendar-header": {
+                  justifyContent: "center",
+                },
+                "& .MuiDayCalendar-weekContainer": {
+                  justifyContent: "center",
+                },
+              }}
+            />
+          </Box>
+          {tempRange.start && (
+            <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+              {tempRange.end
+                ? `Selected: ${format(tempRange.start, "MMM d")} - ${format(tempRange.end, "MMM d, yyyy")}`
+                : `Selecting end date (Start: ${format(tempRange.start, "MMM d")})`}
+            </Typography>
+          )}
           <Stack
             direction="row"
             spacing={1.5}
