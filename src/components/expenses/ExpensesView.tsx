@@ -83,6 +83,8 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     selectedProperty,
     refresh,
     setIsSaving,
+    isFetchingDetails,
+    fetchPropertyDetails,
   } = usePropertyStore();
   const { formatAmount, currency } = useCurrency();
   const [loading, setLoading] = React.useState(false);
@@ -99,6 +101,12 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
       }
     }
   }, [propertyId, properties, setSelectedProperty]);
+
+  React.useEffect(() => {
+    if (propertyId) {
+      fetchPropertyDetails(propertyId);
+    }
+  }, [propertyId, fetchPropertyDetails]);
 
   const [filterRange, setFilterRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
@@ -546,7 +554,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     }
   };
 
-  if (loading) {
+  if (loading || isFetchingDetails) {
     return (
       <DashboardLayout>
         <Loader message="Loading expenses..." />

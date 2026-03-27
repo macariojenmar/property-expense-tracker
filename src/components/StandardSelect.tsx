@@ -134,6 +134,7 @@ export default function StandardSelect({
           );
         }}
         sx={{
+          height: 46,
           bgcolor: "background.paper",
           borderRadius: 1.5,
           color: "text.primary",
@@ -154,7 +155,9 @@ export default function StandardSelect({
           "& .MuiSelect-select": {
             display: "flex",
             alignItems: "center",
-            py: "10px",
+            height: "46px",
+            boxSizing: "border-box",
+            py: 0,
             pr: "36px !important",
             fontSize: "14px",
           },

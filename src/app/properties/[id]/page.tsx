@@ -161,7 +161,7 @@ const FinanceCard = ({
 export default function PropertyDetailsPage() {
   const router = useRouter();
   const params = useParams();
-  const { properties, setSelectedProperty, selectedProperty, isLoading } =
+  const { properties, setSelectedProperty, selectedProperty, isLoading, isFetchingDetails, fetchPropertyDetails } =
     usePropertyStore();
   const { formatAmount } = useCurrency();
   const [filterRange, setFilterRange] = React.useState<DateRange>({
@@ -180,6 +180,12 @@ export default function PropertyDetailsPage() {
       }
     }
   }, [propertyId, properties, setSelectedProperty]);
+
+  React.useEffect(() => {
+    if (propertyId) {
+      fetchPropertyDetails(propertyId);
+    }
+  }, [propertyId, fetchPropertyDetails]);
 
   const property = selectedProperty;
 
@@ -284,7 +290,7 @@ export default function PropertyDetailsPage() {
     };
   }, [property, filterRange, rangeData]);
 
-  if (isLoading) {
+  if (isLoading || isFetchingDetails) {
     return (
       <DashboardLayout>
         <Loader message="Loading property details..." />

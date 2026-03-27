@@ -86,12 +86,15 @@ interface PropertyStore {
   isLoading: boolean;
   isSaving: boolean;
   isInitialized: boolean;
+  isFetchingDetails?: boolean;
   setProperties: (properties: Property[] | ((prev: Property[]) => Property[])) => void;
   setSelectedProperty: (property: Property | null | ((prev: Property | null) => Property | null)) => void;
   setIsLoading: (isLoading: boolean) => void;
   setIsSaving: (isSaving: boolean) => void;
   setIsInitialized: (isInitialized: boolean) => void;
+  setIsFetchingDetails: (isFetchingDetails: boolean) => void;
   refresh: () => Promise<void>;
+  fetchPropertyDetails: (id: string) => Promise<void>;
 }
 
 export const usePropertyStore = create<PropertyStore>((set, get) => ({
@@ -100,6 +103,7 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
   isLoading: false,
   isSaving: false,
   isInitialized: false,
+  isFetchingDetails: false,
   setProperties: (properties: Property[] | ((prev: Property[]) => Property[])) =>
     set((state) => ({
       properties: typeof properties === "function" ? properties(state.properties) : properties,
@@ -112,15 +116,24 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
   setIsLoading: (isLoading: boolean) => set({ isLoading }),
   setIsSaving: (isSaving: boolean) => set({ isSaving }),
   setIsInitialized: (isInitialized: boolean) => set({ isInitialized }),
+  setIsFetchingDetails: (isFetchingDetails: boolean) => set({ isFetchingDetails }),
   refresh: async () => {
     const { getProperties } = await import("@/lib/actions/property");
     set({ isLoading: true });
     try {
       const data = await getProperties() as unknown as Property[];
-      const currentSelectedId = get().selectedProperty?.id;
-      set({ properties: data });
-      if (currentSelectedId) {
-        const updatedSelected = data.find((p) => p.id === currentSelectedId);
+      const currentSelected = get().selectedProperty;
+      
+      const mergedData = data.map((p) => {
+        if (currentSelected && p.id === currentSelected.id && currentSelected.expenses) {
+           return { ...p, expenses: currentSelected.expenses, payouts: currentSelected.payouts };
+        }
+        return p;
+      });
+
+      set({ properties: mergedData });
+      if (currentSelected) {
+        const updatedSelected = mergedData.find((p) => p.id === currentSelected.id);
         if (updatedSelected) {
           set({ selectedProperty: updatedSelected });
         }
@@ -129,6 +142,23 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
       console.error("Failed to refresh properties:", error);
     } finally {
       set({ isLoading: false });
+    }
+  },
+  fetchPropertyDetails: async (id: string) => {
+    const { getProperty } = await import("@/lib/actions/property");
+    set({ isFetchingDetails: true });
+    try {
+      const data = await getProperty(id) as unknown as Property;
+      if (data) {
+        set((state) => ({
+          properties: state.properties.map((p) => (p.id === id ? data : p)),
+          selectedProperty: state.selectedProperty?.id === id ? data : state.selectedProperty,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch property details:", error);
+    } finally {
+      set({ isFetchingDetails: false });
     }
   },
 }));

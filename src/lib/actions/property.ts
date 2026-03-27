@@ -14,44 +14,38 @@ export async function getProperties() {
   const properties = await prisma.property.findMany({
     where: { userId: session.user.id },
     include: {
-      expenses: {
-        where: { status: { not: "DELETED" } },
-        include: { pendingTo: true },
-        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
-      },
-      payouts: {
-        where: { status: { not: "DELETED" } },
-        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
-      },
       recurringExpenses: { include: { pendingTo: true } },
       waivedRecurringExpenses: true,
     },
     orderBy: { createdAt: "desc" },
   });
 
-  interface PayoutQueryResult {
-    amount: number;
-    refundAmount: number | null;
-  }
+  const propertyIds = properties.map((p) => p.id);
 
-  interface ExpenseQueryResult {
-    amount: number;
-  }
+  const payoutsGrouped = await prisma.payout.groupBy({
+    by: ["propertyId"],
+    where: { propertyId: { in: propertyIds }, status: { not: "DELETED" } },
+    _sum: { amount: true, refundAmount: true },
+  });
 
-  // Calculate fields that were mock in the frontend
+  const expensesGrouped = await prisma.expense.groupBy({
+    by: ["propertyId"],
+    where: { propertyId: { in: propertyIds }, status: { not: "DELETED" } },
+    _sum: { amount: true },
+  });
+
   return properties.map((property) => {
-    const totalPayouts = property.payouts.reduce(
-      (sum: number, p: PayoutQueryResult) => sum + (p.amount - (p.refundAmount || 0)),
-      0
-    );
-    const totalExpenses = property.expenses.reduce(
-      (sum: number, e: ExpenseQueryResult) => sum + e.amount,
-      0
-    );
+    const payoutSum = payoutsGrouped.find((p) => p.propertyId === property.id)?._sum;
+    const expenseSum = expensesGrouped.find((e) => e.propertyId === property.id)?._sum;
+
+    const totalPayouts = (payoutSum?.amount || 0) - (payoutSum?.refundAmount || 0);
+    const totalExpenses = expenseSum?.amount || 0;
     const profit = totalPayouts - totalExpenses;
 
     return {
       ...property,
+      expenses: [],
+      payouts: [],
       profit,
       funds: (property.initialFunds || 0) + profit,
       currentExpense: totalExpenses,

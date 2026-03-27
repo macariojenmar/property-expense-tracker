@@ -43,6 +43,7 @@ import {
 } from "@/lib/actions/payout";
 import NumericFormatInput from "@/components/NumericFormatInput";
 import EmptyState from "@/components/EmptyState";
+import Loader from "@/components/Loader";
 
 // Local interfaces removed in favor of store interfaces
 
@@ -237,9 +238,10 @@ function RevertConfirmationDialog({
 
 export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const router = useRouter();
-  const { properties, setSelectedProperty, refresh, setIsSaving } =
+  const { properties, setSelectedProperty, refresh, setIsSaving, isFetchingDetails, fetchPropertyDetails } =
     usePropertyStore();
   const { formatAmount } = useCurrency();
+  const [loading, setLoading] = React.useState(false);
 
   const [payouts, setPayouts] = React.useState<Payout[]>([]);
 
@@ -259,6 +261,13 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
       }
     }
   }, [propertyId, properties, setSelectedProperty]);
+
+  React.useEffect(() => {
+    if (propertyId) {
+      fetchPropertyDetails(propertyId);
+    }
+  }, [propertyId, fetchPropertyDetails]);
+
   const [filterRange, setFilterRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
     end: endOfMonth(new Date()),
@@ -324,6 +333,14 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
       }
     }
   };
+
+  if (loading || isFetchingDetails) {
+    return (
+      <DashboardLayout>
+        <Loader message="Loading payouts..." />
+      </DashboardLayout>
+    );
+  }
 
   // Render logic...
   return (
