@@ -15,6 +15,7 @@ import {
   Popover,
   ButtonBase,
   Autocomplete,
+  Divider,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { Plus, Trash2, Save } from "lucide-react";
@@ -172,7 +173,10 @@ export default function PropertyForm({
           })),
       });
     } catch (error: any) {
-      if (error?.message === "LIMIT_REACHED" || error?.message === "ACCOUNT_EXPIRED") {
+      if (
+        error?.message === "LIMIT_REACHED" ||
+        error?.message === "ACCOUNT_EXPIRED"
+      ) {
         setIsExpired(error.message === "ACCOUNT_EXPIRED");
         setPricingDialogOpen(true);
       } else {
@@ -372,6 +376,11 @@ export default function PropertyForm({
                           />
                         )}
                       />
+                    </Grid>
+                    <Grid size={12}>
+                      {index < recurringExpenses.length - 1 && (
+                        <Divider sx={{ borderStyle: "dashed" }} />
+                      )}
                     </Grid>
                   </Grid>
                 </React.Fragment>

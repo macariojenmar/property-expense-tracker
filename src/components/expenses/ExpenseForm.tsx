@@ -11,6 +11,7 @@ import {
   Autocomplete,
   ToggleButton,
   ToggleButtonGroup,
+  Divider,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { Trash2 } from "lucide-react";
@@ -238,6 +239,9 @@ export default function ExpenseForm({
               },
             }}
           />
+        </Grid>
+        <Grid size={12}>
+          <Divider sx={{ borderStyle: "dashed" }} />
         </Grid>
       </Grid>
     </Box>

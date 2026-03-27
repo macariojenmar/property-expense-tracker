@@ -111,7 +111,10 @@ export default function CreateExpensePage() {
       await refresh();
       router.push(`/properties/${propertyId}/expenses`);
     } catch (error: any) {
-      if (error?.message === "LIMIT_REACHED" || error?.message === "ACCOUNT_EXPIRED") {
+      if (
+        error?.message === "LIMIT_REACHED" ||
+        error?.message === "ACCOUNT_EXPIRED"
+      ) {
         setIsExpired(error.message === "ACCOUNT_EXPIRED");
         setPricingDialogOpen(true);
       } else {
@@ -125,82 +128,82 @@ export default function CreateExpensePage() {
 
   return (
     <>
-    <DashboardLayout width="md">
-      <PageHeader
-        title="New Expenses"
-        subtitle="Record one or more expenses for this property."
-        onBack={() => router.push(`/properties/${propertyId}/expenses`)}
-      />
+      <DashboardLayout width="md">
+        <PageHeader
+          title="New Expenses"
+          subtitle="Record one or more expenses for this property."
+          onBack={() => router.push(`/properties/${propertyId}/expenses`)}
+        />
 
-      <Stack spacing={4}>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" mb={2}>
-              Expense Details
-            </Typography>
-            <Stack spacing={3}>
-              {items.map((item, index) => (
-                <ExpenseForm
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  showIndex={items.length > 1}
-                  onRemove={items.length > 1 ? handleRemove : undefined}
-                  onChange={handleChange}
-                  entities={entities}
-                  dictionary={dictionary}
-                />
-              ))}
-              <Button
-                variant="outlined"
-                startIcon={<Plus size={16} />}
-                onClick={handleAddRow}
-                size="small"
-                sx={{ width: { xs: "100%", sm: "fit-content" } }}
-              >
-                Add Row
-              </Button>
-            </Stack>
-          </CardContent>
-        </Card>
+        <Stack spacing={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" mb={2}>
+                Expense Details
+              </Typography>
+              <Stack spacing={3}>
+                {items.map((item, index) => (
+                  <ExpenseForm
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    showIndex={items.length > 1}
+                    onRemove={items.length > 1 ? handleRemove : undefined}
+                    onChange={handleChange}
+                    entities={entities}
+                    dictionary={dictionary}
+                  />
+                ))}
+                <Button
+                  variant="outlined"
+                  startIcon={<Plus size={16} />}
+                  onClick={handleAddRow}
+                  size="small"
+                  sx={{ width: { xs: "100%", sm: "fit-content" } }}
+                >
+                  Add Row
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
 
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          justifyContent="flex-end"
-          gap={2}
-        >
-          <Button
-            variant="outlined"
-            onClick={() => router.push(`/properties/${propertyId}/expenses`)}
-            sx={{ borderRadius: 1.5, px: 3 }}
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            justifyContent="flex-end"
+            gap={2}
           >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={loading ? null : <Save size={18} />}
-            onClick={handleSave}
-            disabled={loading}
-            sx={{
-              borderRadius: 1.5,
-              px: 3,
-              bgcolor: "text.primary",
-              color: "background.paper",
-              "&:hover": { bgcolor: "primary.main", opacity: 0.9 },
-            }}
-          >
-            {loading ? "Saving..." : "Save Expenses"}
-          </Button>
+            <Button
+              variant="outlined"
+              onClick={() => router.push(`/properties/${propertyId}/expenses`)}
+              sx={{ borderRadius: 1.5, px: 3 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={loading ? null : <Save size={18} />}
+              onClick={handleSave}
+              disabled={loading}
+              sx={{
+                borderRadius: 1.5,
+                px: 3,
+                bgcolor: "text.primary",
+                color: "background.paper",
+                "&:hover": { bgcolor: "primary.main", opacity: 0.9 },
+              }}
+            >
+              {loading ? "Saving..." : "Save Expenses"}
+            </Button>
+          </Stack>
         </Stack>
-      </Stack>
-    </DashboardLayout>
+      </DashboardLayout>
 
-    <PricingDialog
-      open={pricingDialogOpen}
-      onClose={() => setPricingDialogOpen(false)}
-      isExpired={isExpired}
-      limitType="expense"
-    />
+      <PricingDialog
+        open={pricingDialogOpen}
+        onClose={() => setPricingDialogOpen(false)}
+        isExpired={isExpired}
+        limitType="expense"
+      />
     </>
   );
 }

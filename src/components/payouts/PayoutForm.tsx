@@ -13,6 +13,7 @@ import {
   InputAdornment,
   Autocomplete,
   Typography,
+  Divider,
 } from "@mui/material";
 import { Plus, Trash2, Save } from "lucide-react";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -176,6 +177,9 @@ export default function PayoutForm({
                       format="MMMM d, yyyy"
                       slotProps={{ textField: { fullWidth: true } }}
                     />
+                  </Grid>
+                  <Grid size={12}>
+                    <Divider sx={{ borderStyle: "dashed" }} />
                   </Grid>
                 </Grid>
               </Box>

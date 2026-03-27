@@ -80,10 +80,6 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
           boxShadow: "none",
           borderRadius: 12,
           transition: "all 0.3s ease",
-          "&:hover": {
-            boxShadow: "none",
-            backgroundColor: mode === LIGHT ? "#f5f5f5ff" : "#080808ff",
-          },
         },
       },
     },
