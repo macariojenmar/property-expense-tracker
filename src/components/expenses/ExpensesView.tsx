@@ -56,6 +56,7 @@ import {
 import Loader from "@/components/Loader";
 import EmptyState from "@/components/EmptyState";
 import PricingDialog from "@/components/PricingDialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 // Local interfaces removed in favor of store interfaces
 
@@ -90,6 +91,18 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const [loading, setLoading] = React.useState(false);
   const [expenses, setExpenses] = React.useState<Expense[]>([]);
   const [pricingDialogOpen, setPricingDialogOpen] = React.useState(false);
+  const [confirmSettleData, setConfirmSettleData] = React.useState<{
+    open: boolean;
+    ids: string[];
+    title: string;
+    message: React.ReactNode;
+  }>({
+    open: false,
+    ids: [],
+    title: "",
+    message: "",
+  });
+  const [isSettling, setIsSettling] = React.useState(false);
 
   // Initialize store if we're on a property-specific page but no property is selected
   React.useEffect(() => {
@@ -119,20 +132,73 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const [pendingToFilter, setPendingToFilter] = React.useState<string | null>(
     null,
   );
+  const [selectedPendingIds, setSelectedPendingIds] = React.useState<
+    Set<string>
+  >(new Set());
   const [entities, setEntities] = React.useState<
     { id: string; name: string }[]
   >([]);
 
   const handleSettleIndividual = async (id: string) => {
-    if (!propertyId) return;
+    const expense = expenses.find((e) => e.id === id);
+    if (!expense) return;
+
+    const entityName = expense.pendingTo?.name || "Unassigned";
+    const amountStr = formatAmount(expense.amount);
+
+    setConfirmSettleData({
+      open: true,
+      ids: [id],
+      title: `Settle ${entityName}’s Expenses`,
+      message: (
+        <>
+          Mark this expense amounting
+          <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
+            &nbsp;{amountStr}&nbsp;
+          </Box>
+          as settled?
+        </>
+      ),
+    });
+  };
+
+  const handleSettleGroup = async (
+    ids: string[],
+    entityName: string,
+    amount: number,
+  ) => {
+    if (ids.length === 0) return;
+
+    const amountStr = formatAmount(amount);
+
+    setConfirmSettleData({
+      open: true,
+      ids,
+      title: `Settle ${entityName}’s Expenses`,
+      message: (
+        <>
+          Mark {ids.length} expenses amounting
+          <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
+            &nbsp;{amountStr}&nbsp;
+          </Box>
+          as settled?
+        </>
+      ),
+    });
+  };
+
+  const handleConfirmSettle = async () => {
+    if (!propertyId || confirmSettleData.ids.length === 0) return;
+
+    setIsSettling(true);
     try {
-      setIsSaving(true);
-      await settleExpenses([id], propertyId as string);
+      await settleExpenses(confirmSettleData.ids, propertyId as string);
       await fetchPropertyDetails(propertyId, { force: true });
+      setConfirmSettleData((prev) => ({ ...prev, open: false }));
     } catch (error) {
-      console.error("Failed to settle expense:", error);
+      console.error("Failed to settle expenses:", error);
     } finally {
-      setIsSaving(false);
+      setIsSettling(false);
     }
   };
 
@@ -209,6 +275,47 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     pendingToFilter,
     searchQuery,
   ]);
+
+  const groupedPendingExpenses = React.useMemo(() => {
+    if (statusFilter !== "PENDING") return null;
+
+    const groups: Record<string, { entity: any; expenses: Expense[] }> = {};
+
+    filteredExpenses.forEach((exp) => {
+      const entityId = exp.pendingToId || "unassigned";
+      if (!groups[entityId]) {
+        groups[entityId] = {
+          entity: exp.pendingTo || { id: "unassigned", name: "Unassigned" },
+          expenses: [],
+        };
+      }
+      groups[entityId].expenses.push(exp);
+    });
+
+    return Object.values(groups).sort((a, b) => {
+      if (a.entity.id === "unassigned") return 1;
+      if (b.entity.id === "unassigned") return -1;
+      return a.entity.name.localeCompare(b.entity.name);
+    });
+  }, [filteredExpenses, statusFilter]);
+
+  // Handle auto-select all pending on filter change
+  React.useEffect(() => {
+    if (statusFilter === "PENDING" && filteredExpenses.length > 0) {
+      setSelectedPendingIds(new Set(filteredExpenses.map((e) => e.id)));
+    } else {
+      setSelectedPendingIds(new Set());
+    }
+  }, [statusFilter, filteredExpenses]);
+
+  const togglePendingSelection = (id: string) => {
+    setSelectedPendingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
   const paginatedExpenses = filteredExpenses.slice(
@@ -1310,214 +1417,128 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         spacing={2}
         sx={{ flexGrow: 1, display: "flex", flexDirection: "column", mb: 4 }}
       >
-        {paginatedExpenses.map((expense) => (
-          <Card
-            key={expense.id}
-            onClick={() =>
-              router.push(
-                `/properties/${propertyId}/expenses/${expense.id}/edit`,
-              )
-            }
-            sx={{
-              p: { xs: 1.5, sm: 2 },
-              transition: "all 0.2s",
-              cursor: "pointer",
-              "&:hover": {
-                bgcolor: (theme) => alpha(theme.palette.error.main, 0.04),
-              },
-            }}
-          >
-            <Grid container spacing={2} alignItems="center">
-              {/* Column 1: Content (Icon + Name + Date + Status) */}
-              <Grid size={{ xs: 12, md: 4 }}>
+        {statusFilter === "PENDING" && groupedPendingExpenses
+          ? groupedPendingExpenses.map((group) => (
+              <Box key={group.entity.id} sx={{ mb: 4 }}>
                 <Stack
-                  direction="row"
-                  spacing={{ xs: 2, sm: 3 }}
-                  alignItems="center"
-                  sx={{ flexGrow: 1, minWidth: 0 }}
-                >
-                  <Box
-                    sx={{
-                      p: { xs: 1, sm: 1.5 },
-                      bgcolor: (theme) =>
-                        theme.palette.mode === "light"
-                          ? alpha(theme.palette.error.main, 0.1)
-                          : alpha(theme.palette.error.main, 0.2),
-                      borderRadius: 2,
-                      color: "error.main",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <BanknoteArrowDown size={22} />
-                  </Box>
-
-                  <Stack spacing={0.5} sx={{ minWidth: 0 }}>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: { xs: "0.9rem", sm: "1rem" },
-                        lineHeight: 1.2,
-                        mb: 0.25,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 1,
-                        WebkitBoxOrient: "vertical",
-                      }}
-                    >
-                      {expense.name}
-                    </Typography>
-
-                    <Stack
-                      direction="row"
-                      spacing={0.5}
-                      alignItems="center"
-                      color="text.secondary"
-                    >
-                      <Calendar size={14} />
-                      <Typography
-                        variant="caption"
-                        sx={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}
-                      >
-                        {format(new Date(expense.date), "MMM d, yyyy")}
-                      </Typography>
-                    </Stack>
-
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      spacing={1}
-                      sx={{ mt: 0.5 }}
-                    >
-                      <Chip
-                        label={
-                          expense.status === "PENDING" ? "Pending" : "Settled"
-                        }
-                        sx={{
-                          fontSize: "0.65rem",
-                          fontWeight: 700,
-                          bgcolor: (t) =>
-                            expense.status === "PENDING"
-                              ? alpha(t.palette.warning.main, 0.1)
-                              : alpha(t.palette.success.main, 0.1),
-                          color: (t) =>
-                            expense.status === "PENDING"
-                              ? "warning.main"
-                              : "success.main",
-                        }}
-                      />
-                      {expense.status === "PENDING" && expense.pendingTo && (
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ fontSize: "0.65rem" }}
-                        >
-                          To: {expense.pendingTo.name}
-                        </Typography>
-                      )}
-                    </Stack>
-                  </Stack>
-                </Stack>
-              </Grid>
-
-              {/* Column 2: Note */}
-              <Grid
-                size={{ xs: 12, md: 4 }}
-                display={{
-                  xs:
-                    expense.note && expense.note.trim() !== ""
-                      ? "block"
-                      : "none",
-                  md: "block",
-                }}
-              >
-                {expense.note && expense.note.trim() !== "" && (
-                  <Box sx={{ px: { xs: 5.5, sm: 0 } }}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <FileText size={14} color="gray" />
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {expense.note}
-                      </Typography>
-                    </Stack>
-                  </Box>
-                )}
-              </Grid>
-
-              {/* Column 3: Amount + Actions */}
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={{ xs: 1, sm: 2 }}
+                  direction={{ xs: "column", sm: "row" }}
+                  justifyContent="space-between"
+                  alignItems={{ xs: "flex-start", sm: "center" }}
+                  spacing={1.5}
                   sx={{
-                    justifyContent: { xs: "space-between", sm: "flex-end" },
-                    pl: { xs: 5.5, sm: 0 },
+                    px: 2,
+                    py: { xs: 2.5, sm: 1.5 },
+                    bgcolor: (t) => alpha(t.palette.primary.main, 0.05),
+                    borderRadius: 2.5,
+                    mb: 2,
                   }}
                 >
-                  <Box sx={{ textAlign: "right" }}>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 700,
-                        color: "error.main",
-                        fontSize: {
-                          xs: "0.95rem",
-                          sm: "1.1rem",
-                          md: "1.25rem",
-                        },
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      -{formatAmount(expense.amount)}
-                    </Typography>
-                  </Box>
-
-                  {expense.status === "PENDING" && (
-                    <Tooltip title="Mark as Settled">
-                      <IconButton
+                  <Stack>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Typography variant="h6" fontWeight={800}>
+                        {group.entity.name}
+                      </Typography>
+                      <Chip
+                        label={`${group.expenses.length} Pending`}
                         size="small"
-                        color="success"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSettleIndividual(expense.id);
-                        }}
                         sx={{
-                          bgcolor: (t) => alpha(t.palette.success.main, 0.1),
-                          "&:hover": {
-                            bgcolor: (t) => alpha(t.palette.success.main, 0.2),
-                          },
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          bgcolor: (t) => alpha(t.palette.warning.main, 0.1),
+                          color: "warning.main",
                         }}
-                      >
-                        <CheckCircle2 size={22} />
-                      </IconButton>
-                    </Tooltip>
-                  )}
+                      />
+                    </Stack>
+                    <Typography color="error.main" fontWeight={700}>
+                      Total Selected:{" "}
+                      {formatAmount(
+                        group.expenses
+                          .filter((e) => selectedPendingIds.has(e.id))
+                          .reduce((sum, e) => sum + e.amount, 0),
+                      )}
+                    </Typography>
+                  </Stack>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<CheckCircle2 size={18} />}
+                    disabled={
+                      !group.expenses.some((e) => selectedPendingIds.has(e.id))
+                    }
+                    onClick={() => {
+                      const selectedIds = group.expenses
+                        .map((e) => e.id)
+                        .filter((id) => selectedPendingIds.has(id));
+                      const totalSelected = group.expenses
+                        .filter((e) => selectedPendingIds.has(e.id))
+                        .reduce((sum, e) => sum + e.amount, 0);
+                      handleSettleGroup(
+                        selectedIds,
+                        group.entity.name,
+                        totalSelected,
+                      );
+                    }}
+                    sx={{
+                      borderRadius: 1.5,
+                      textTransform: "none",
+                      fontWeight: 800,
+                      boxShadow: "none",
+                      width: { xs: "100%", sm: "auto" },
+                      "&:hover": { boxShadow: "none" },
+                    }}
+                  >
+                    Settle Selected (
+                    {
+                      group.expenses.filter((e) => selectedPendingIds.has(e.id))
+                        .length
+                    }
+                    )
+                  </Button>
                 </Stack>
-              </Grid>
-            </Grid>
-          </Card>
-        ))}
+                <Stack spacing={2}>
+                  {group.expenses.map((expense) => (
+                    <ExpenseCard
+                      key={expense.id}
+                      expense={expense}
+                      propertyId={propertyId}
+                      router={router}
+                      formatAmount={formatAmount}
+                      handleSettleIndividual={handleSettleIndividual}
+                      showCheckbox={statusFilter === "PENDING"}
+                      isChecked={selectedPendingIds.has(expense.id)}
+                      toggleChecked={togglePendingSelection}
+                    />
+                  ))}
+                </Stack>
+              </Box>
+            ))
+          : paginatedExpenses.map((expense) => (
+              <ExpenseCard
+                key={expense.id}
+                expense={expense}
+                propertyId={propertyId}
+                router={router}
+                formatAmount={formatAmount}
+                handleSettleIndividual={handleSettleIndividual}
+                showCheckbox={false}
+                isChecked={false}
+                toggleChecked={() => {}}
+              />
+            ))}
 
-        {paginatedExpenses.length === 0 && (
-          <EmptyState
-            icon={BanknoteArrowDown}
-            title="No expenses found"
-            description="Try adjusting your filter or add a new expense to get started."
-          />
-        )}
+        {paginatedExpenses.length === 0 &&
+          (!statusFilter ||
+            statusFilter !== "PENDING" ||
+            !groupedPendingExpenses ||
+            groupedPendingExpenses.length === 0) && (
+            <EmptyState
+              icon={BanknoteArrowDown}
+              title="No expenses found"
+              description="Try adjusting your filter or add a new expense to get started."
+            />
+          )}
       </Stack>
+
       <PricingDialog
         open={pricingDialogOpen}
         onClose={() => setPricingDialogOpen(false)}
@@ -1525,6 +1546,254 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         message="You've reached the maximum number of expenses for your current plan. Upgrade to continue tracking expenses."
         limitType="expense"
       />
+      <ConfirmDialog
+        open={confirmSettleData.open}
+        title={confirmSettleData.title}
+        message={confirmSettleData.message}
+        onConfirm={handleConfirmSettle}
+        onCancel={() =>
+          setConfirmSettleData({ ...confirmSettleData, open: false })
+        }
+        loading={isSettling}
+        confirmLabel="Settle"
+        color="primary"
+      />
     </DashboardLayout>
+  );
+}
+
+interface ExpenseCardProps {
+  expense: Expense;
+  propertyId: string | null;
+  router: any;
+  formatAmount: (amount: number) => string;
+  handleSettleIndividual: (id: string) => Promise<void>;
+  showCheckbox?: boolean;
+  isChecked?: boolean;
+  toggleChecked?: (id: string) => void;
+}
+
+function ExpenseCard({
+  expense,
+  propertyId,
+  router,
+  formatAmount,
+  handleSettleIndividual,
+  showCheckbox,
+  isChecked,
+  toggleChecked,
+}: ExpenseCardProps) {
+  return (
+    <Card
+      onClick={() =>
+        router.push(`/properties/${propertyId}/expenses/${expense.id}/edit`)
+      }
+      sx={{
+        p: { xs: 1.5, sm: 2 },
+        transition: "all 0.2s",
+        cursor: "pointer",
+        position: "relative",
+        borderRadius: 2.5,
+        "&:hover": {
+          bgcolor: (theme) => alpha(theme.palette.error.main, 0.04),
+        },
+        ...(isChecked && {
+          bgcolor: (theme) => alpha(theme.palette.success.main, 0.02),
+          borderColor: (theme) => alpha(theme.palette.success.main, 0.2),
+          borderWidth: 1,
+          borderStyle: "solid",
+        }),
+      }}
+    >
+      <Grid container spacing={2} alignItems="center">
+        {/* Column 1: Content (Icon + Name + Date + Status) */}
+        <Grid size={{ xs: 12, md: 5 }}>
+          <Stack
+            direction="row"
+            spacing={{ xs: 2, sm: 3 }}
+            alignItems="center"
+            sx={{ flexGrow: 1, minWidth: 0 }}
+          >
+            {showCheckbox && (
+              <Checkbox
+                checked={isChecked}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  toggleChecked?.(expense.id);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                color="success"
+                sx={{ p: 0.5 }}
+              />
+            )}
+            <Box
+              sx={{
+                p: { xs: 1, sm: 1.5 },
+                bgcolor: (theme) =>
+                  theme.palette.mode === "light"
+                    ? alpha(theme.palette.error.main, 0.1)
+                    : alpha(theme.palette.error.main, 0.2),
+                borderRadius: 2,
+                color: "error.main",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <BanknoteArrowDown size={22} />
+            </Box>
+
+            <Stack spacing={0.5} sx={{ minWidth: 0 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: { xs: "0.9rem", sm: "1rem" },
+                  lineHeight: 1.2,
+                  mb: 0.25,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 1,
+                  WebkitBoxOrient: "vertical",
+                }}
+              >
+                {expense.name}
+              </Typography>
+
+              <Stack
+                direction="row"
+                spacing={0.5}
+                alignItems="center"
+                color="text.secondary"
+              >
+                <Calendar size={14} />
+                <Typography
+                  variant="caption"
+                  sx={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}
+                >
+                  {format(new Date(expense.date), "MMM d, yyyy")}
+                </Typography>
+              </Stack>
+
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                sx={{ mt: 0.5 }}
+              >
+                <Chip
+                  label={expense.status === "PENDING" ? "Pending" : "Settled"}
+                  sx={{
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    bgcolor: (t) =>
+                      expense.status === "PENDING"
+                        ? alpha(t.palette.warning.main, 0.1)
+                        : alpha(t.palette.success.main, 0.1),
+                    color: (t) =>
+                      expense.status === "PENDING"
+                        ? "warning.main"
+                        : "success.main",
+                  }}
+                />
+                {expense.status === "PENDING" && expense.pendingTo && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.65rem" }}
+                  >
+                    To: {expense.pendingTo.name}
+                  </Typography>
+                )}
+              </Stack>
+            </Stack>
+          </Stack>
+        </Grid>
+
+        {/* Column 2: Note */}
+        <Grid
+          size={{ xs: 12, md: 3 }}
+          display={{
+            xs: expense.note && expense.note.trim() !== "" ? "block" : "none",
+            md: "block",
+          }}
+        >
+          {expense.note && expense.note.trim() !== "" && (
+            <Box sx={{ px: { xs: showCheckbox ? 11 : 5.5, sm: 0 } }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <FileText size={14} color="gray" />
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {expense.note}
+                </Typography>
+              </Stack>
+            </Box>
+          )}
+        </Grid>
+
+        {/* Column 3: Amount + Actions */}
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={{ xs: 1, sm: 2 }}
+            sx={{
+              justifyContent: { xs: "space-between", sm: "flex-end" },
+              pl: { xs: showCheckbox ? 11 : 5.5, sm: 0 },
+            }}
+          >
+            <Box sx={{ textAlign: "right", minWidth: 0, flexShrink: 0 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: "error.main",
+                  fontSize: {
+                    xs: "0.95rem",
+                    sm: "1.1rem",
+                    md: "1.25rem",
+                  },
+                  whiteSpace: "nowrap",
+                }}
+              >
+                -{formatAmount(expense.amount)}
+              </Typography>
+            </Box>
+
+            {expense.status === "PENDING" && (
+              <Box sx={{ flexShrink: 0 }}>
+                <Tooltip title="Mark as Settled">
+                  <IconButton
+                    size="small"
+                    color="success"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSettleIndividual(expense.id);
+                    }}
+                    sx={{
+                      bgcolor: (t) => alpha(t.palette.success.main, 0.1),
+                      "&:hover": {
+                        bgcolor: (t) => alpha(t.palette.success.main, 0.2),
+                      },
+                    }}
+                  >
+                    <CheckCircle2 size={22} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
+          </Stack>
+        </Grid>
+      </Grid>
+    </Card>
   );
 }

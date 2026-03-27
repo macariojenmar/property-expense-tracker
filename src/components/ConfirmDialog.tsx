@@ -13,12 +13,21 @@ import {
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
-  message: string;
+  message: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
+  color?:
+    | "inherit"
+    | "primary"
+    | "secondary"
+    | "success"
+    | "error"
+    | "info"
+    | "warning";
+  maxWidth?: "xs" | "sm" | "md" | "lg" | "xl";
 }
 
 export default function ConfirmDialog({
@@ -30,10 +39,12 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
   loading = false,
+  color = "error",
+  maxWidth = "xs",
 }: ConfirmDialogProps) {
   return (
     <Dialog
-      maxWidth="xs"
+      maxWidth={maxWidth}
       open={open}
       onClose={onCancel}
       aria-labelledby="confirm-dialog-title"
@@ -65,7 +76,7 @@ export default function ConfirmDialog({
           onClick={onConfirm}
           variant="contained"
           disabled={loading}
-          color="error"
+          color={color}
           autoFocus
           sx={{
             borderRadius: 1.5,
