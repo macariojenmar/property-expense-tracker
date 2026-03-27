@@ -16,7 +16,7 @@ export default function EditPayoutPage() {
   const params = useParams();
   const propertyId = params.id as string;
   const payoutId = params.payoutId as string;
-  const { properties, setIsSaving, refresh } = usePropertyStore();
+  const { properties, setIsSaving, fetchPropertyDetails } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
   const [initialItems, setInitialItems] = React.useState<PayoutItem[] | null>(
     null,
@@ -56,7 +56,7 @@ export default function EditPayoutPage() {
         date: item.date.toISOString(),
         name: item.label,
       });
-      await refresh();
+      await fetchPropertyDetails(propertyId, { force: true });
       router.push(`/properties/${propertyId}/payouts`);
     } catch (error: any) {
       console.error("Failed to update payout:", error);
@@ -75,7 +75,7 @@ export default function EditPayoutPage() {
     setIsSaving(true);
     try {
       await softDeletePayout(payoutId);
-      await refresh();
+      await fetchPropertyDetails(propertyId, { force: true });
       router.push(`/properties/${propertyId}/payouts`);
     } catch (error: any) {
       console.error("Failed to delete payout:", error);

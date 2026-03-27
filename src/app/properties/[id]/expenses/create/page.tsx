@@ -31,7 +31,7 @@ export default function CreateExpensePage() {
   const router = useRouter();
   const params = useParams();
   const propertyId = params.id as string;
-  const { setIsSaving, refresh } = usePropertyStore();
+  const { setIsSaving, fetchPropertyDetails } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
   const [pricingDialogOpen, setPricingDialogOpen] = React.useState(false);
   const [isExpired, setIsExpired] = React.useState(false);
@@ -108,7 +108,7 @@ export default function CreateExpensePage() {
           pendingToId: item.status === "PENDING" ? item.pendingToId : undefined,
         });
       }
-      await refresh();
+      await fetchPropertyDetails(propertyId, { force: true });
       router.push(`/properties/${propertyId}/expenses`);
     } catch (error: any) {
       if (

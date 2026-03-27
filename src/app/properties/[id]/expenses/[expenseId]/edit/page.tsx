@@ -33,7 +33,7 @@ export default function EditExpensePage() {
   const params = useParams();
   const propertyId = params.id as string;
   const expenseId = params.expenseId as string;
-  const { properties, setIsSaving, refresh, isLoading } = usePropertyStore();
+  const { properties, setIsSaving, fetchPropertyDetails, isLoading } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
   const [initialized, setInitialized] = React.useState(false);
   const [showConfirm, setShowConfirm] = React.useState(false);
@@ -105,7 +105,7 @@ export default function EditExpensePage() {
         status: item.status,
         pendingToId: item.status === "PENDING" ? item.pendingToId : null,
       });
-      await refresh();
+      await fetchPropertyDetails(propertyId, { force: true });
       router.push(`/properties/${propertyId}/expenses`);
     } catch (error) {
       console.error("Failed to update expense:", error);
@@ -123,7 +123,7 @@ export default function EditExpensePage() {
     setIsSaving(true);
     try {
       await softDeleteExpense(expenseId);
-      await refresh();
+      await fetchPropertyDetails(propertyId, { force: true });
       router.push(`/properties/${propertyId}/expenses`);
     } catch (error) {
       console.error("Failed to delete expense:", error);

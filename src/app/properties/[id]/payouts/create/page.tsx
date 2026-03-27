@@ -14,7 +14,7 @@ export default function CreatePayoutPage() {
   const router = useRouter();
   const params = useParams();
   const propertyId = params.id as string;
-  const { setIsSaving, refresh } = usePropertyStore();
+  const { setIsSaving, fetchPropertyDetails } = usePropertyStore();
   const [loading, setLoading] = React.useState(false);
   const [pricingDialogOpen, setPricingDialogOpen] = React.useState(false);
   const [isExpired, setIsExpired] = React.useState(false);
@@ -37,7 +37,7 @@ export default function CreatePayoutPage() {
           name: item.label,
         });
       }
-      await refresh();
+      await fetchPropertyDetails(propertyId, { force: true });
       router.push(`/properties/${propertyId}/payouts`);
     } catch (error: any) {
       if (error?.message === "LIMIT_REACHED" || error?.message === "ACCOUNT_EXPIRED") {

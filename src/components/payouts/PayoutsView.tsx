@@ -340,13 +340,11 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   };
 
   const handleRefundConfirm = async (amount: number) => {
-    if (selectedPayout) {
+    if (selectedPayout && propertyId) {
       try {
         setIsSaving(true);
         await refundPayoutAction(selectedPayout.id, amount);
-        await refresh();
-        const updated = usePropertyStore.getState().selectedProperty;
-        if (updated) setPayouts((updated as any).payouts || []);
+        await fetchPropertyDetails(propertyId, { force: true });
       } catch (error) {
         console.error("Failed to refund payout:", error);
       } finally {
@@ -697,14 +695,11 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         onClose={() => setRevertDialogOpen(false)}
         payout={selectedPayout}
         onConfirm={async () => {
-          if (selectedPayout) {
+          if (selectedPayout && propertyId) {
             try {
               setIsSaving(true);
               await revertRefundAction(selectedPayout.id);
-              await refresh();
-              const updated = usePropertyStore.getState().selectedProperty;
-              if (updated)
-                setPayouts((updated as unknown as Property).payouts || []);
+              await fetchPropertyDetails(propertyId, { force: true });
             } catch (error) {
               console.error("Failed to revert refund:", error);
             } finally {

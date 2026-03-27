@@ -129,11 +129,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     try {
       setIsSaving(true);
       await settleExpenses([id], propertyId as string);
-      setExpenses((prev) =>
-        prev.map((exp) =>
-          exp.id === id ? { ...exp, status: "SETTLED" } : exp,
-        ),
-      );
+      await fetchPropertyDetails(propertyId, { force: true });
     } catch (error) {
       console.error("Failed to settle expense:", error);
     } finally {
@@ -319,26 +315,15 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   const handleWaive = async (recurringExpId: string) => {
     if (!propertyId) return;
 
-    if (waivedSet.has(recurringExpId)) {
-      try {
-        setIsSaving(true);
+    setIsSaving(true);
+    try {
+      if (waivedSet.has(recurringExpId)) {
         await unwaiveRecurringExpense({
           recurringExpenseId: recurringExpId,
           monthKey,
           propertyId,
         });
-        // State will refresh from getProperty in useEffect or we can update locally
-        await refresh();
-        const updated = usePropertyStore.getState().selectedProperty;
-        if (updated) setExpenses((updated as any).expenses || []);
-      } catch (error) {
-        console.error("Failed to unwaive:", error);
-      } finally {
-        setIsSaving(false);
-      }
-    } else {
-      try {
-        setIsSaving(true);
+      } else {
         await waiveRecurringExpense({
           recurringExpenseId: recurringExpId,
           monthKey,
@@ -347,15 +332,12 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         const nextChecked = new Set(checkedSet);
         nextChecked.delete(recurringExpId);
         setCheckedSet(nextChecked);
-
-        await refresh();
-        const updated = usePropertyStore.getState().selectedProperty;
-        if (updated) setExpenses((updated as any).expenses || []);
-      } catch (error) {
-        console.error("Failed to waive:", error);
-      } finally {
-        setIsSaving(false);
       }
+      await fetchPropertyDetails(propertyId, { force: true });
+    } catch (error) {
+      console.error("Failed to waive/unwaive:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -406,11 +388,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         });
       }
 
-      await refresh();
-      const updated = usePropertyStore.getState().selectedProperty;
-      if (updated) {
-        setExpenses((updated as any).expenses || []);
-      }
+      await fetchPropertyDetails(propertyId, { force: true });
 
       // Deselect the just-added ones
       const nextChecked = new Set(checkedSet);
@@ -448,11 +426,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         pendingToId: recurring.pendingToId || undefined,
       });
 
-      await refresh();
-      const updated = usePropertyStore.getState().selectedProperty;
-      if (updated) {
-        setExpenses((updated as unknown as Property).expenses || []);
-      }
+      await fetchPropertyDetails(propertyId, { force: true });
     } catch (error: any) {
       if (error?.message === "LIMIT_REACHED") {
         setPricingDialogOpen(true);
@@ -475,7 +449,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         const { deleteExpense } = await import("@/lib/actions/expense");
         await deleteExpense(expenseToDelele.id);
 
-        await refresh();
+        await fetchPropertyDetails(propertyId, { force: true });
       } catch (error) {
         console.error("Failed to revert expense:", error);
       } finally {
@@ -499,11 +473,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         }
       }
 
-      await refresh();
-      const updated = usePropertyStore.getState().selectedProperty;
-      if (updated) {
-        setExpenses((updated as any).expenses || []);
-      }
+      await fetchPropertyDetails(propertyId, { force: true });
 
       // Deselect
       const nextChecked = new Set(checkedSet);
@@ -531,9 +501,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         });
       }
 
-      await refresh();
-      const updated = usePropertyStore.getState().selectedProperty;
-      if (updated) setExpenses((updated as any).expenses || []);
+      await fetchPropertyDetails(propertyId, { force: true });
 
       // Deselect
       const nextChecked = new Set(checkedSet);
@@ -561,9 +529,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         });
       }
 
-      await refresh();
-      const updated = usePropertyStore.getState().selectedProperty;
-      if (updated) setExpenses((updated as any).expenses || []);
+      await fetchPropertyDetails(propertyId, { force: true });
 
       // Deselect
       const nextChecked = new Set(checkedSet);
