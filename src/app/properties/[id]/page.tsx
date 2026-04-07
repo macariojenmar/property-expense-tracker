@@ -128,12 +128,6 @@ const FinanceCard = ({
               fontWeight={700}
               sx={{
                 letterSpacing: "-0.02em",
-                color:
-                  currentValue > 0
-                    ? GREEN
-                    : currentValue < 0
-                      ? RED
-                      : "text.secondary",
               }}
             >
               {formatAmount(currentValue)}
@@ -149,13 +143,7 @@ const FinanceCard = ({
             <Typography
               variant="h6"
               fontWeight={600}
-              color={
-                estimatedValue > 0
-                  ? GREEN
-                  : estimatedValue < 0
-                    ? RED
-                    : "text.secondary"
-              }
+              color={color}
               sx={{ opacity: 0.9 }}
             >
               {formatAmount(estimatedValue)}
@@ -411,13 +399,7 @@ export default function PropertyDetailsPage() {
             icon={TrendingUp}
             currentValue={stats.currentProfit}
             estimatedValue={stats.estimatedProfit}
-            color={
-              stats.currentProfit > 0
-                ? GREEN
-                : stats.currentProfit < 0
-                  ? RED
-                  : undefined
-            }
+            color={stats.estimatedProfit < 0 ? RED : GREEN}
             formatAmount={formatAmount}
             description="Net income for the selected period (Payouts minus Expenses)."
             onAction={() => router.push(`/properties/${property.id}/payouts`)}
@@ -429,7 +411,7 @@ export default function PropertyDetailsPage() {
             icon={Receipt}
             currentValue={stats.currentExpenses}
             estimatedValue={stats.estimatedExpenses}
-            color={stats.currentExpenses !== 0 ? RED : undefined}
+            color={RED}
             formatAmount={formatAmount}
             description="Total costs incurred during the selected period."
             onAction={() => router.push(`/properties/${property.id}/expenses`)}
