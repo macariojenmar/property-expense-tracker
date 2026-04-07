@@ -283,10 +283,6 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   });
   const [searchQuery, setSearchQuery] = React.useState("");
 
-  // Pagination state
-  const [page, setPage] = React.useState(1);
-  const itemsPerPage = 5;
-
   const filteredPayouts = React.useMemo(() => {
     return payouts.filter((payout: Payout) => {
       // Filter by propertyId if provided
@@ -320,11 +316,6 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
     });
   }, [filterRange, propertyId, payouts, searchQuery]);
 
-  const totalPages = Math.ceil(filteredPayouts.length / itemsPerPage);
-  const paginatedPayouts = filteredPayouts.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage,
-  );
 
   const totalAmount = React.useMemo(() => {
     return filteredPayouts.reduce((sum, payout) => {
@@ -411,7 +402,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         }
       />
 
-      {(totalPages > 1 || filteredPayouts.length > 0) && (
+      {filteredPayouts.length > 0 && (
         <Box
           sx={{
             display: "flex",
@@ -433,38 +424,23 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
             Total: {formatAmount(totalAmount)}
           </Typography>
 
-          {totalPages > 1 && (
-            <Stack
-              direction="row"
-              spacing={2}
-              alignItems="center"
-              sx={{ alignSelf: { xs: "flex-end", sm: "center" } }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                {(page - 1) * itemsPerPage + 1}–
-                {Math.min(page * itemsPerPage, filteredPayouts.length)} of{" "}
-                {filteredPayouts.length}
-              </Typography>
-              <Stack direction="row" spacing={1}>
-                <IconButton
-                  size="small"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  sx={{ color: "text.secondary" }}
-                >
-                  <ChevronLeft size={22} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  sx={{ color: "text.secondary" }}
-                >
-                  <ChevronRight size={22} />
-                </IconButton>
-              </Stack>
-            </Stack>
-          )}
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              fontWeight: 600,
+              fontSize: "0.9rem",
+              bgcolor: (t) => alpha(t.palette.divider, 0.05),
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1.5,
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            {filteredPayouts.length}{" "}
+            {filteredPayouts.length === 1 ? "entry" : "entries"}
+          </Typography>
         </Box>
       )}
 
@@ -472,7 +448,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
         spacing={2}
         sx={{ flexGrow: 1, display: "flex", flexDirection: "column", mb: 4 }}
       >
-        {paginatedPayouts.map((payout: Payout) => {
+        {filteredPayouts.map((payout: Payout) => {
           const isRefunded = payout.status === "REFUNDED";
           const isPartiallyRefunded = payout.status === "PARTIALLY_REFUNDED";
           const displayAmount = payout.amount - (payout.refundAmount || 0);
@@ -674,7 +650,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
           );
         })}
 
-        {paginatedPayouts.length === 0 && (
+        {filteredPayouts.length === 0 && (
           <EmptyState
             icon={WalletCards}
             title="No payouts found"

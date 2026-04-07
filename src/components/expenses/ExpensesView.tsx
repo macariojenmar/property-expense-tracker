@@ -214,10 +214,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     fetchEntities();
   }, []);
 
-  // Pagination state
-  const [page, setPage] = React.useState(1);
-  const itemsPerPage = 5;
-
   const filteredExpenses = React.useMemo(() => {
     return expenses.filter((expense) => {
       if (
@@ -317,11 +313,6 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     });
   };
 
-  const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
-  const paginatedExpenses = filteredExpenses.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage,
-  );
 
   const totalAmount = React.useMemo(() => {
     return filteredExpenses.reduce(
@@ -1356,7 +1347,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         </Stack>
       </Box>
 
-      {(totalPages > 1 || filteredExpenses.length > 0) && (
+      {filteredExpenses.length > 0 && (
         <Box
           sx={{
             display: "flex",
@@ -1378,38 +1369,23 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
             Total: {formatAmount(totalAmount)}
           </Typography>
 
-          {totalPages > 1 && (
-            <Stack
-              direction="row"
-              spacing={2}
-              alignItems="center"
-              sx={{ alignSelf: { xs: "flex-end", sm: "center" } }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                {(page - 1) * itemsPerPage + 1}–
-                {Math.min(page * itemsPerPage, filteredExpenses.length)} of{" "}
-                {filteredExpenses.length}
-              </Typography>
-              <Stack direction="row" spacing={1}>
-                <IconButton
-                  size="small"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  sx={{ color: "text.secondary" }}
-                >
-                  <ChevronLeft size={20} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  sx={{ color: "text.secondary" }}
-                >
-                  <ChevronRight size={20} />
-                </IconButton>
-              </Stack>
-            </Stack>
-          )}
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              fontWeight: 600,
+              fontSize: "0.9rem",
+              bgcolor: (t) => alpha(t.palette.divider, 0.05),
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1.5,
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            {filteredExpenses.length}{" "}
+            {filteredExpenses.length === 1 ? "entry" : "entries"}
+          </Typography>
         </Box>
       )}
 
@@ -1512,7 +1488,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
                 </Stack>
               </Box>
             ))
-          : paginatedExpenses.map((expense) => (
+          : filteredExpenses.map((expense) => (
               <ExpenseCard
                 key={expense.id}
                 expense={expense}
@@ -1526,7 +1502,7 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
               />
             ))}
 
-        {paginatedExpenses.length === 0 &&
+        {filteredExpenses.length === 0 &&
           (!statusFilter ||
             statusFilter !== "PENDING" ||
             !groupedPendingExpenses ||
