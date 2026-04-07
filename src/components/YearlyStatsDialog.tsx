@@ -183,7 +183,7 @@ export default function YearlyStatsDialog({
                 }}
               >
                 <Typography variant="subtitle1" fontWeight={700}>
-                  Total ({currentYear})
+                  Total
                 </Typography>
                 <Typography
                   variant="h6"
