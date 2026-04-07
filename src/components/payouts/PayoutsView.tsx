@@ -244,6 +244,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const router = useRouter();
   const {
     properties,
+    selectedProperty,
     setSelectedProperty,
     refresh,
     setIsSaving,
@@ -254,7 +255,10 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const [loading, setLoading] = React.useState(false);
   const [statsDialogOpen, setStatsDialogOpen] = React.useState(false);
 
-  const [payouts, setPayouts] = React.useState<Payout[]>([]);
+  // Local payouts state removed in favor of derived store state
+  const payouts = React.useMemo(() => {
+    return selectedProperty?.id === propertyId ? selectedProperty.payouts || [] : [];
+  }, [selectedProperty, propertyId]);
 
   const [refundDialogOpen, setRefundDialogOpen] = React.useState(false);
   const [revertDialogOpen, setRevertDialogOpen] = React.useState(false);
@@ -268,16 +272,15 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
     type: "this-month",
   });
 
-  // Initialize store if we're on a property-specific page but no property is selected
+  // Sync selected property in store if we're on a property page
   React.useEffect(() => {
     if (propertyId && properties.length > 0) {
       const found = properties.find((p) => p.id === propertyId);
-      if (found) {
+      if (found && selectedProperty?.id !== propertyId) {
         setSelectedProperty(found);
-        setPayouts(found.payouts || []);
       }
     }
-  }, [propertyId, properties, setSelectedProperty]);
+  }, [propertyId, properties, setSelectedProperty, selectedProperty]);
 
   React.useEffect(() => {
     if (propertyId && filterRange.start && filterRange.end) {

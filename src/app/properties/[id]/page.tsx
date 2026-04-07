@@ -13,6 +13,7 @@ import {
   alpha,
   Tooltip,
   IconButton,
+  useTheme,
 } from "@mui/material";
 import {
   ArrowLeft,
@@ -40,7 +41,7 @@ const FinanceCard = ({
   icon: Icon,
   currentValue,
   estimatedValue,
-  color,
+  color: propColor,
   formatAmount,
   description,
   onAction,
@@ -49,12 +50,15 @@ const FinanceCard = ({
   icon: React.ElementType;
   currentValue: number;
   estimatedValue: number;
-  color: string;
+  color?: string;
   formatAmount: (val: number) => string;
   description: string;
   onAction?: () => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const theme = useTheme();
+
+  const color = propColor || theme.palette.text.secondary;
 
   const handleTooltipClose = () => {
     setOpen(false);
@@ -124,7 +128,12 @@ const FinanceCard = ({
               fontWeight={700}
               sx={{
                 letterSpacing: "-0.02em",
-                color: currentValue < 0 ? RED : "text.primary",
+                color:
+                  currentValue > 0
+                    ? GREEN
+                    : currentValue < 0
+                      ? RED
+                      : "text.secondary",
               }}
             >
               {formatAmount(currentValue)}
@@ -140,7 +149,13 @@ const FinanceCard = ({
             <Typography
               variant="h6"
               fontWeight={600}
-              color={estimatedValue < 0 ? RED : color}
+              color={
+                estimatedValue > 0
+                  ? GREEN
+                  : estimatedValue < 0
+                    ? RED
+                    : "text.secondary"
+              }
               sx={{ opacity: 0.9 }}
             >
               {formatAmount(estimatedValue)}
@@ -162,8 +177,14 @@ const FinanceCard = ({
 export default function PropertyDetailsPage() {
   const router = useRouter();
   const params = useParams();
-  const { properties, setSelectedProperty, selectedProperty, isLoading, isFetchingDetails, fetchPropertyDetails } =
-    usePropertyStore();
+  const {
+    properties,
+    setSelectedProperty,
+    selectedProperty,
+    isLoading,
+    isFetchingDetails,
+    fetchPropertyDetails,
+  } = usePropertyStore();
   const { formatAmount } = useCurrency();
   const [statsDialogOpen, setStatsDialogOpen] = React.useState(false);
   const [filterRange, setFilterRange] = React.useState<DateRange>({
@@ -177,19 +198,19 @@ export default function PropertyDetailsPage() {
   React.useEffect(() => {
     if (propertyId && properties.length > 0) {
       const found = properties.find((p) => p.id === propertyId);
-      if (found) {
+      if (found && selectedProperty?.id !== propertyId) {
         setSelectedProperty(found);
       }
     }
-  }, [propertyId, properties, setSelectedProperty]);
+  }, [propertyId, properties, setSelectedProperty, selectedProperty]);
 
   React.useEffect(() => {
     if (propertyId && filterRange.start && filterRange.end) {
-      fetchPropertyDetails(propertyId, { 
-        filter: { 
-          start: filterRange.start.toISOString(), 
-          end: filterRange.end.toISOString() 
-        } 
+      fetchPropertyDetails(propertyId, {
+        filter: {
+          start: filterRange.start.toISOString(),
+          end: filterRange.end.toISOString(),
+        },
       });
     }
   }, [propertyId, filterRange, fetchPropertyDetails]);
@@ -348,7 +369,7 @@ export default function PropertyDetailsPage() {
               onClick={() => setStatsDialogOpen(true)}
               sx={{ width: { xs: "100%", sm: "auto" } }}
             >
-              Yearly Profits
+              Profit Overview
             </Button>
             <Button
               variant="outlined"
@@ -379,7 +400,7 @@ export default function PropertyDetailsPage() {
             icon={Wallet}
             currentValue={stats.currentFunds}
             estimatedValue={stats.estimatedFunds}
-            color={BLUE}
+            color={stats.currentFunds !== 0 ? BLUE : undefined}
             formatAmount={formatAmount}
             description="Total cash available for the property, including initial funds and all net profits to date."
           />
@@ -390,7 +411,13 @@ export default function PropertyDetailsPage() {
             icon={TrendingUp}
             currentValue={stats.currentProfit}
             estimatedValue={stats.estimatedProfit}
-            color={GREEN}
+            color={
+              stats.currentProfit > 0
+                ? GREEN
+                : stats.currentProfit < 0
+                  ? RED
+                  : undefined
+            }
             formatAmount={formatAmount}
             description="Net income for the selected period (Payouts minus Expenses)."
             onAction={() => router.push(`/properties/${property.id}/payouts`)}
@@ -402,7 +429,7 @@ export default function PropertyDetailsPage() {
             icon={Receipt}
             currentValue={stats.currentExpenses}
             estimatedValue={stats.estimatedExpenses}
-            color={RED}
+            color={stats.currentExpenses !== 0 ? RED : undefined}
             formatAmount={formatAmount}
             description="Total costs incurred during the selected period."
             onAction={() => router.push(`/properties/${property.id}/expenses`)}

@@ -129,10 +129,15 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
     try {
       const data = await getProperties() as unknown as Property[];
       const currentSelected = get().selectedProperty;
+      const currentProperties = get().properties;
       
       const mergedData = data.map((p) => {
         if (currentSelected && p.id === currentSelected.id && currentSelected.expenses) {
            return { ...p, expenses: currentSelected.expenses, payouts: currentSelected.payouts };
+        }
+        const existing = currentProperties.find((ep) => ep.id === p.id);
+        if (existing && existing.expenses && existing.expenses.length > 0) {
+           return { ...p, expenses: existing.expenses, payouts: existing.payouts };
         }
         return p;
       });

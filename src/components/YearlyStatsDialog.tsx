@@ -74,7 +74,7 @@ export default function YearlyStatsDialog({
       } else if (type === "profits") {
         Promise.all([
           getYearlyPayoutStats(propertyId, currentYear),
-          getYearlyExpenseStats(propertyId, currentYear)
+          getYearlyExpenseStats(propertyId, currentYear),
         ])
           .then(([payoutsRes, expensesRes]) => {
             if (payoutsRes && expensesRes) {
@@ -99,8 +99,8 @@ export default function YearlyStatsDialog({
         {type === "expenses"
           ? "Monthly Expenses"
           : type === "payouts"
-          ? "Monthly Payouts"
-          : "Monthly Profits"}{" "}
+            ? "Monthly Payouts"
+            : "Monthly Profits"}{" "}
         ({currentYear})
       </DialogTitle>
       <DialogContent sx={{ p: 0, display: "flex", flexDirection: "column" }}>
@@ -147,7 +147,15 @@ export default function YearlyStatsDialog({
                         sx={{
                           fontWeight: 700,
                           color:
-                            type === "expenses" ? "error.main" : "success.main",
+                            (data[index] || 0) === 0
+                              ? "text.disabled"
+                              : type === "expenses"
+                                ? "error.main"
+                                : type === "payouts"
+                                  ? "success.main"
+                                  : (data[index] || 0) > 0
+                                    ? "success.main"
+                                    : "error.main",
                         }}
                       >
                         {formatAmount(data[index] || 0)}
@@ -181,7 +189,16 @@ export default function YearlyStatsDialog({
                   variant="h6"
                   sx={{
                     fontWeight: 800,
-                    color: type === "expenses" ? "error.main" : "success.main",
+                    color:
+                      total === 0
+                        ? "text.secondary"
+                        : type === "expenses"
+                          ? "error.main"
+                          : type === "payouts"
+                            ? "success.main"
+                            : total > 0
+                              ? "success.main"
+                              : "error.main",
                   }}
                 >
                   {formatAmount(total)}

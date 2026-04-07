@@ -90,7 +90,10 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   } = usePropertyStore();
   const { formatAmount, currency } = useCurrency();
   const [loading, setLoading] = React.useState(false);
-  const [expenses, setExpenses] = React.useState<Expense[]>([]);
+  // Local expenses state removed in favor of derived store state
+  const expenses = React.useMemo(() => {
+    return selectedProperty?.id === propertyId ? selectedProperty.expenses || [] : [];
+  }, [selectedProperty, propertyId]);
   const [pricingDialogOpen, setPricingDialogOpen] = React.useState(false);
   const [confirmSettleData, setConfirmSettleData] = React.useState<{
     open: boolean;
@@ -112,16 +115,15 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     type: "this-month",
   });
 
-  // Initialize store if we're on a property-specific page but no property is selected
+  // Sync selected property in store if we're on a property page
   React.useEffect(() => {
     if (propertyId && properties.length > 0) {
       const found = properties.find((p) => p.id === propertyId);
-      if (found) {
+      if (found && selectedProperty?.id !== propertyId) {
         setSelectedProperty(found);
-        setExpenses(found.expenses || []);
       }
     }
-  }, [propertyId, properties, setSelectedProperty]);
+  }, [propertyId, properties, setSelectedProperty, selectedProperty]);
 
   React.useEffect(() => {
     if (propertyId && filterRange.start && filterRange.end) {

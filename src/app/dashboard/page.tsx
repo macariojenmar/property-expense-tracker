@@ -51,8 +51,9 @@ const StatCard = ({
           sx={{
             p: 1.5,
             borderRadius: 2,
-            backgroundColor: alpha(color || BLUE, 0.1),
-            color: color || BLUE,
+            backgroundColor: (theme) =>
+              color ? alpha(color, 0.1) : alpha(theme.palette.text.secondary, 0.05),
+            color: color || "text.secondary",
             display: "flex",
           }}
         >
@@ -65,7 +66,11 @@ const StatCard = ({
       {loading ? (
         <Skeleton variant="text" width="60%" height={40} sx={{ mb: 1 }} />
       ) : (
-        <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+        <Typography
+          variant="h4"
+          fontWeight={800}
+          sx={{ mb: 1, color: color || "text.secondary" }}
+        >
           {amount}
         </Typography>
       )}
@@ -148,7 +153,7 @@ export default function DashboardPage() {
             amount={formatAmount(stats?.totalRevenue.value || 0)}
             icon={TrendingUp}
             trend={stats?.totalRevenue.trend}
-            color={GREEN}
+            color={(stats?.totalRevenue.value || 0) > 0 ? GREEN : undefined}
             loading={isLoading}
           />
         </Grid>
@@ -158,7 +163,13 @@ export default function DashboardPage() {
             amount={formatAmount(stats?.netProfit.value || 0)}
             icon={Wallet}
             trend={stats?.netProfit.trend}
-            color={BLUE}
+            color={
+              (stats?.netProfit.value || 0) > 0
+                ? GREEN
+                : (stats?.netProfit.value || 0) < 0
+                ? RED
+                : undefined
+            }
             loading={isLoading}
           />
         </Grid>
@@ -168,7 +179,7 @@ export default function DashboardPage() {
             amount={formatAmount(stats?.totalExpenses.value || 0)}
             icon={TrendingDown}
             trend={stats?.totalExpenses.trend}
-            color={RED}
+            color={(stats?.totalExpenses.value || 0) > 0 ? RED : undefined}
             loading={isLoading}
           />
         </Grid>
@@ -178,7 +189,11 @@ export default function DashboardPage() {
             amount={stats?.profitMargin.value || "0%"}
             icon={Calculator}
             trend={stats?.profitMargin.trend}
-            color={ORANGE}
+            color={
+              stats && parseFloat(stats.profitMargin.value) > 0
+                ? ORANGE
+                : undefined
+            }
             loading={isLoading}
           />
         </Grid>
