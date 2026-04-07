@@ -53,7 +53,7 @@ export async function getProperties() {
   });
 }
 
-export async function getProperty(id: string) {
+export async function getProperty(id: string, filter?: { start: string; end: string }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     throw new Error("Unauthorized");
@@ -62,15 +62,6 @@ export async function getProperty(id: string) {
   const property = await prisma.property.findFirst({
     where: { id, userId: session.user.id },
     include: {
-      expenses: {
-        where: { status: { not: "DELETED" } },
-        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
-        include: { pendingTo: true }
-      },
-      payouts: {
-        where: { status: { not: "DELETED" } },
-        orderBy: [{ date: "desc" }, { createdAt: "desc" }]
-      },
       recurringExpenses: { include: { pendingTo: true } },
       waivedRecurringExpenses: true,
     },
@@ -78,22 +69,62 @@ export async function getProperty(id: string) {
 
   if (!property) return null;
 
-  const totalPayouts = property.payouts.reduce(
-    (sum: number, p: { amount: number; refundAmount: number | null }) => 
-      sum + (p.amount - (p.refundAmount || 0)),
-    0
-  );
-  const totalExpenses = property.expenses.reduce(
-    (sum: number, e: { amount: number }) => sum + e.amount,
-    0
-  );
+  const expenses = await prisma.expense.findMany({
+    where: {
+      propertyId: id,
+      status: { not: "DELETED" },
+      ...(filter?.start && filter?.end ? { date: { gte: new Date(filter.start), lte: new Date(filter.end) } } : {})
+    },
+    orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+    include: { pendingTo: true }
+  });
+
+  const payouts = await prisma.payout.findMany({
+    where: {
+      propertyId: id,
+      status: { not: "DELETED" },
+      ...(filter?.start && filter?.end ? { date: { gte: new Date(filter.start), lte: new Date(filter.end) } } : {})
+    },
+    orderBy: [{ date: "desc" }, { createdAt: "desc" }]
+  });
+
+  const allTimePayoutsAgg = await prisma.payout.aggregate({
+    where: { propertyId: id, status: { not: "DELETED" } },
+    _sum: { amount: true, refundAmount: true }
+  });
+  const allTimeExpensesAgg = await prisma.expense.aggregate({
+    where: { propertyId: id, status: { not: "DELETED" } },
+    _sum: { amount: true }
+  });
+  
+  const totalPayouts = (allTimePayoutsAgg._sum.amount || 0) - (allTimePayoutsAgg._sum.refundAmount || 0);
+  const totalExpenses = allTimeExpensesAgg._sum.amount || 0;
   const profit = totalPayouts - totalExpenses;
+
+  // Calculate cumulative stats up to end date (if provided, else same as all time)
+  let cumulativeProfit = profit;
+  if (filter?.end) {
+    const cumPayoutsAgg = await prisma.payout.aggregate({
+      where: { propertyId: id, status: { not: "DELETED" }, date: { lte: new Date(filter.end) } },
+      _sum: { amount: true, refundAmount: true }
+    });
+    const cumExpensesAgg = await prisma.expense.aggregate({
+      where: { propertyId: id, status: { not: "DELETED" }, date: { lte: new Date(filter.end) } },
+      _sum: { amount: true }
+    });
+    const cumPayouts = (cumPayoutsAgg._sum.amount || 0) - (cumPayoutsAgg._sum.refundAmount || 0);
+    const cumExpenses = cumExpensesAgg._sum.amount || 0;
+    cumulativeProfit = cumPayouts - cumExpenses;
+  }
 
   return {
     ...property,
+    expenses,
+    payouts,
     profit,
     funds: (property.initialFunds || 0) + profit,
     currentExpense: totalExpenses,
+    cumulativeProfit,
   };
 }
 

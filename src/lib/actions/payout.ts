@@ -161,3 +161,38 @@ export async function softDeletePayout(id: string) {
   revalidatePath(`/properties/${payout.propertyId}`);
   return payout;
 }
+
+export async function getYearlyPayoutStats(propertyId: string, year: number) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+
+  const payouts = await prisma.payout.findMany({
+    where: {
+      propertyId,
+      property: { userId: session.user.id },
+      status: { not: "DELETED" },
+      date: { gte: startDate, lte: endDate },
+    },
+    select: {
+      amount: true,
+      refundAmount: true,
+      date: true,
+    },
+  });
+
+  const monthlyTotals = Array.from({ length: 12 }, () => 0);
+  payouts.forEach((payout) => {
+    const date = new Date(payout.date);
+    const month = date.getMonth();
+    // Default to 0 if amount is somehow undefined to avoid NaN
+    const amount = (payout.amount || 0) - (payout.refundAmount || 0);
+    monthlyTotals[month] += amount;
+  });
+
+  return monthlyTotals;
+}

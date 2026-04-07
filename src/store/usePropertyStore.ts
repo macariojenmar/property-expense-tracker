@@ -78,6 +78,7 @@ export interface Property {
   expenses: Expense[];
   payouts: Payout[];
   waivedRecurringExpenses: WaivedRecurringExpense[];
+  cumulativeProfit?: number;
 }
 
 interface PropertyStore {
@@ -88,6 +89,7 @@ interface PropertyStore {
   isInitialized: boolean;
   isFetchingDetails?: boolean;
   lastFetchedDetails: Record<string, number>;
+  lastFetchedFilters: Record<string, string>;
   setProperties: (properties: Property[] | ((prev: Property[]) => Property[])) => void;
   setSelectedProperty: (property: Property | null | ((prev: Property | null) => Property | null)) => void;
   setIsLoading: (isLoading: boolean) => void;
@@ -95,7 +97,7 @@ interface PropertyStore {
   setIsInitialized: (isInitialized: boolean) => void;
   setIsFetchingDetails: (isFetchingDetails: boolean) => void;
   refresh: () => Promise<void>;
-  fetchPropertyDetails: (id: string, options?: { force?: boolean }) => Promise<void>;
+  fetchPropertyDetails: (id: string, options?: { force?: boolean; filter?: { start: string; end: string } }) => Promise<void>;
   invalidateCache: (id?: string) => void;
 }
 
@@ -107,6 +109,7 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
   isInitialized: false,
   isFetchingDetails: false,
   lastFetchedDetails: {},
+  lastFetchedFilters: {},
   setProperties: (properties: Property[] | ((prev: Property[]) => Property[])) =>
     set((state) => ({
       properties: typeof properties === "function" ? properties(state.properties) : properties,
@@ -147,32 +150,35 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
       set({ isLoading: false });
     }
   },
-  fetchPropertyDetails: async (id: string, options?: { force?: boolean }) => {
+  fetchPropertyDetails: async (id: string, options?: { force?: boolean; filter?: { start: string; end: string } }) => {
     const { getProperty } = await import("@/lib/actions/property");
     
-    // Check cache: if we have details and stayed within 5 mins, skip unless forced
-    const lastFetched = get().lastFetchedDetails[id];
-    const property = get().properties.find(p => p.id === id);
-    const hasDetails = property && property.expenses && property.expenses.length > 0 || property?.payouts && property.payouts.length > 0;
+    const filterKey = options?.filter ? `${options.filter.start}_${options.filter.end}` : "all";
+    const lastFilter = get().lastFetchedFilters[id];
+    const lastFetchedTime = get().lastFetchedDetails[id] || 0;
+    const isSameFilter = filterKey === lastFilter;
+    const isFresh = Date.now() - lastFetchedTime < 5 * 60 * 1000;
+    const hasExpenses = get().properties.find(p => p.id === id)?.expenses !== undefined;
     
-    // If we have any expenses/payouts or it was fetched recently, we consider it "cached"
-    // We use a 5-minute stale-time for auto-refresh if needed, but for now just check if it exists
-    if (!options?.force && hasDetails) {
-      // Still set selected property if it's not set correctly
+    // Fetch if forced, filter changed, cache expired, or expenses list missing
+    const needsFetch = options?.force || !isSameFilter || !isFresh || !hasExpenses;
+    
+    if (!needsFetch) {
       if (get().selectedProperty?.id !== id) {
-        set({ selectedProperty: property || null });
+        set({ selectedProperty: get().properties.find(p => p.id === id) || null });
       }
       return;
     }
 
     set({ isFetchingDetails: true });
     try {
-      const data = await getProperty(id) as unknown as Property;
+      const data = await getProperty(id, options?.filter) as unknown as Property;
       if (data) {
         set((state) => ({
           properties: state.properties.map((p) => (p.id === id ? data : p)),
-          selectedProperty: state.selectedProperty?.id === id ? data : state.selectedProperty,
-          lastFetchedDetails: { ...state.lastFetchedDetails, [id]: Date.now() }
+          selectedProperty: data,
+          lastFetchedDetails: { ...state.lastFetchedDetails, [id]: Date.now() },
+          lastFetchedFilters: { ...state.lastFetchedFilters, [id]: filterKey }
         }));
       }
     } catch (error) {
@@ -184,11 +190,15 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
   invalidateCache: (id?: string) => {
     if (id) {
       set((state) => {
-        const { [id]: _, ...rest } = state.lastFetchedDetails;
-        return { lastFetchedDetails: rest };
+        const { [id]: _, ...restLogs } = state.lastFetchedDetails;
+        const { [id]: __, ...restFilters } = state.lastFetchedFilters;
+        return { 
+          lastFetchedDetails: restLogs,
+          lastFetchedFilters: restFilters
+        };
       });
     } else {
-      set({ lastFetchedDetails: {} });
+      set({ lastFetchedDetails: {}, lastFetchedFilters: {} });
     }
   },
 }));

@@ -31,6 +31,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  FileText,
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { format, startOfMonth, endOfMonth, endOfDay } from "date-fns";
@@ -46,6 +47,7 @@ import {
 import NumericFormatInput from "@/components/NumericFormatInput";
 import EmptyState from "@/components/EmptyState";
 import Loader from "@/components/Loader";
+import YearlyStatsDialog from "@/components/YearlyStatsDialog";
 
 // Local interfaces removed in favor of store interfaces
 
@@ -250,6 +252,7 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   } = usePropertyStore();
   const { formatAmount } = useCurrency();
   const [loading, setLoading] = React.useState(false);
+  const [statsDialogOpen, setStatsDialogOpen] = React.useState(false);
 
   const [payouts, setPayouts] = React.useState<Payout[]>([]);
 
@@ -258,6 +261,12 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   const [selectedPayout, setSelectedPayout] = React.useState<Payout | null>(
     null,
   );
+
+  const [filterRange, setFilterRange] = React.useState<DateRange>({
+    start: startOfMonth(new Date()),
+    end: endOfMonth(new Date()),
+    type: "this-month",
+  });
 
   // Initialize store if we're on a property-specific page but no property is selected
   React.useEffect(() => {
@@ -271,16 +280,16 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
   }, [propertyId, properties, setSelectedProperty]);
 
   React.useEffect(() => {
-    if (propertyId) {
-      fetchPropertyDetails(propertyId);
+    if (propertyId && filterRange.start && filterRange.end) {
+      fetchPropertyDetails(propertyId, { 
+        filter: { 
+          start: filterRange.start.toISOString(), 
+          end: filterRange.end.toISOString() 
+        } 
+      });
     }
-  }, [propertyId, fetchPropertyDetails]);
+  }, [propertyId, filterRange, fetchPropertyDetails]);
 
-  const [filterRange, setFilterRange] = React.useState<DateRange>({
-    start: startOfMonth(new Date()),
-    end: endOfMonth(new Date()),
-    type: "this-month",
-  });
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const filteredPayouts = React.useMemo(() => {
@@ -385,6 +394,15 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
             <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
               <MonthFilter value={filterRange} onChange={setFilterRange} />
             </Box>
+            <Button
+              variant="outlined"
+              startIcon={<FileText size={18} />}
+              onClick={() => setStatsDialogOpen(true)}
+              fullWidth
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              Overview
+            </Button>
             <Button
               variant="contained"
               startIcon={<Plus size={18} />}
@@ -684,6 +702,13 @@ export default function PayoutsView({ propertyId }: PayoutsViewProps) {
           }
           setRevertDialogOpen(false);
         }}
+      />
+
+      <YearlyStatsDialog
+        open={statsDialogOpen}
+        onClose={() => setStatsDialogOpen(false)}
+        propertyId={propertyId}
+        type="payouts"
       />
     </DashboardLayout>
   );

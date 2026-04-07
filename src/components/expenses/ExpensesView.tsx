@@ -57,6 +57,7 @@ import Loader from "@/components/Loader";
 import EmptyState from "@/components/EmptyState";
 import PricingDialog from "@/components/PricingDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import YearlyStatsDialog from "@/components/YearlyStatsDialog";
 
 // Local interfaces removed in favor of store interfaces
 
@@ -103,6 +104,13 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
     message: "",
   });
   const [isSettling, setIsSettling] = React.useState(false);
+  const [statsDialogOpen, setStatsDialogOpen] = React.useState(false);
+
+  const [filterRange, setFilterRange] = React.useState<DateRange>({
+    start: startOfMonth(new Date()),
+    end: endOfMonth(new Date()),
+    type: "this-month",
+  });
 
   // Initialize store if we're on a property-specific page but no property is selected
   React.useEffect(() => {
@@ -116,16 +124,16 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
   }, [propertyId, properties, setSelectedProperty]);
 
   React.useEffect(() => {
-    if (propertyId) {
-      fetchPropertyDetails(propertyId);
+    if (propertyId && filterRange.start && filterRange.end) {
+      fetchPropertyDetails(propertyId, { 
+        filter: { 
+          start: filterRange.start.toISOString(), 
+          end: filterRange.end.toISOString() 
+        } 
+      });
     }
-  }, [propertyId, fetchPropertyDetails]);
+  }, [propertyId, filterRange, fetchPropertyDetails]);
 
-  const [filterRange, setFilterRange] = React.useState<DateRange>({
-    start: startOfMonth(new Date()),
-    end: endOfMonth(new Date()),
-    type: "this-month",
-  });
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
@@ -660,6 +668,14 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
             gap={2}
             sx={{ width: { xs: "100%", md: "auto" } }}
           >
+            <Button
+              variant="outlined"
+              startIcon={<FileText size={18} />}
+              onClick={() => setStatsDialogOpen(true)}
+              sx={{ width: { xs: "100%", md: "auto" } }}
+            >
+              Overview
+            </Button>
             <Button
               variant="contained"
               startIcon={<Plus size={18} />}
@@ -1533,6 +1549,12 @@ export default function ExpensesView({ propertyId }: ExpensesViewProps) {
         loading={isSettling}
         confirmLabel="Settle"
         color="primary"
+      />
+      <YearlyStatsDialog
+        open={statsDialogOpen}
+        onClose={() => setStatsDialogOpen(false)}
+        propertyId={propertyId}
+        type="expenses"
       />
     </DashboardLayout>
   );

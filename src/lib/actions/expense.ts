@@ -170,3 +170,35 @@ export async function unsettleExpenses(ids: string[], propertyId: string) {
   revalidatePath(`/properties/${propertyId}`);
   return result;
 }
+
+export async function getYearlyExpenseStats(propertyId: string, year: number) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+
+  const expenses = await prisma.expense.findMany({
+    where: {
+      propertyId,
+      property: { userId: session.user.id },
+      status: { not: "DELETED" },
+      date: { gte: startDate, lte: endDate },
+    },
+    select: {
+      amount: true,
+      date: true,
+    },
+  });
+
+  const monthlyTotals = Array.from({ length: 12 }, () => 0);
+  expenses.forEach((expense) => {
+    const date = new Date(expense.date);
+    const month = date.getMonth();
+    monthlyTotals[month] += expense.amount;
+  });
+
+  return monthlyTotals;
+}

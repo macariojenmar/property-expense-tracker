@@ -182,10 +182,15 @@ export default function PropertyDetailsPage() {
   }, [propertyId, properties, setSelectedProperty]);
 
   React.useEffect(() => {
-    if (propertyId) {
-      fetchPropertyDetails(propertyId);
+    if (propertyId && filterRange.start && filterRange.end) {
+      fetchPropertyDetails(propertyId, { 
+        filter: { 
+          start: filterRange.start.toISOString(), 
+          end: filterRange.end.toISOString() 
+        } 
+      });
     }
-  }, [propertyId, fetchPropertyDetails]);
+  }, [propertyId, filterRange, fetchPropertyDetails]);
 
   const property = selectedProperty;
 
@@ -244,17 +249,8 @@ export default function PropertyDetailsPage() {
     } = rangeData;
 
     // Funds is cumulative up to the 'end' date
-    const allPriorExpenses = (property.expenses || []).filter(
-      (e) => new Date(e.date) <= end,
-    );
-    const allPriorPayouts = (property.payouts || []).filter(
-      (p) => new Date(p.date) <= end,
-    );
-    const cumulativeProfit =
-      allPriorPayouts.reduce(
-        (sum, p) => sum + (p.amount - (p.refundAmount || 0)),
-        0,
-      ) - allPriorExpenses.reduce((sum, e) => sum + e.amount, 0);
+    // We now get cumulativeProfit pre-calculated from the backend based on the end date
+    const cumulativeProfit = property.cumulativeProfit ?? 0;
     const currentFunds = (property.initialFunds || 0) + cumulativeProfit;
 
     // Estimations
