@@ -108,7 +108,7 @@ export default function PropertiesPage() {
                 <Divider sx={{ my: 2 }} />
 
                 <Grid container spacing={2}>
-                  <Grid size={6}>
+                  <Grid size={12}>
                     <Stack
                       direction="row"
                       spacing={0.5}
@@ -128,28 +128,6 @@ export default function PropertiesPage() {
                       }
                     >
                       {formatAmount(property.profit)}
-                    </Typography>
-                  </Grid>
-
-                  <Grid size={6}>
-                    <Stack
-                      direction="row"
-                      spacing={0.5}
-                      alignItems="center"
-                      sx={{ mb: 0.5 }}
-                    >
-                      <Wallet size={14} color="gray" />
-                      <Typography variant="caption" color="text.secondary">
-                        Funds
-                      </Typography>
-                    </Stack>
-                    <Typography
-                      variant="h6"
-                      fontWeight={600}
-                      color={property.funds < 0 ? "error.main" : "text.primary"}
-                      sx={{ opacity: property.funds < 0 ? 1 : 0.8 }}
-                    >
-                      {formatAmount(property.funds)}
                     </Typography>
                   </Grid>
                 </Grid>

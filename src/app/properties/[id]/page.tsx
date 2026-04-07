@@ -32,6 +32,7 @@ import MonthFilter, { DateRange } from "@/components/MonthFilter";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import Loader from "@/components/Loader";
 import CompactFinancialStats from "@/components/CompactFinancialStats";
+import YearlyStatsDialog from "@/components/YearlyStatsDialog";
 import { BLUE, GREEN, RED } from "@/theme";
 
 const FinanceCard = ({
@@ -164,6 +165,7 @@ export default function PropertyDetailsPage() {
   const { properties, setSelectedProperty, selectedProperty, isLoading, isFetchingDetails, fetchPropertyDetails } =
     usePropertyStore();
   const { formatAmount } = useCurrency();
+  const [statsDialogOpen, setStatsDialogOpen] = React.useState(false);
   const [filterRange, setFilterRange] = React.useState<DateRange>({
     start: startOfMonth(new Date()),
     end: endOfMonth(new Date()),
@@ -334,15 +336,30 @@ export default function PropertyDetailsPage() {
         subtitle={property.location || undefined}
         onBack={() => router.push("/properties")}
         actions={
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<Settings size={18} />}
-            onClick={() => router.push(`/properties/${property.id}/edit`)}
-            sx={{ width: { xs: "100%", sm: "auto" } }}
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            gap={2}
+            sx={{ width: { xs: "100%", md: "auto" } }}
           >
-            Edit Property
-          </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<TrendingUp size={18} />}
+              onClick={() => setStatsDialogOpen(true)}
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              Yearly Profits
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Settings size={18} />}
+              onClick={() => router.push(`/properties/${property.id}/edit`)}
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              Edit Property
+            </Button>
+          </Stack>
         }
       />
 
@@ -515,6 +532,12 @@ export default function PropertyDetailsPage() {
           </Grid>
         </Grid>
       </Box>
+      <YearlyStatsDialog
+        open={statsDialogOpen}
+        onClose={() => setStatsDialogOpen(false)}
+        propertyId={property.id}
+        type="profits"
+      />
     </DashboardLayout>
   );
 }

@@ -24,7 +24,7 @@ interface YearlyStatsDialogProps {
   open: boolean;
   onClose: () => void;
   propertyId: string | null;
-  type: "expenses" | "payouts";
+  type: "expenses" | "payouts" | "profits";
 }
 
 const months = [
@@ -64,10 +64,23 @@ export default function YearlyStatsDialog({
           })
           .catch((err) => console.error(err))
           .finally(() => setLoading(false));
-      } else {
+      } else if (type === "payouts") {
         getYearlyPayoutStats(propertyId, currentYear)
           .then((res) => {
             if (res) setData(res);
+          })
+          .catch((err) => console.error(err))
+          .finally(() => setLoading(false));
+      } else if (type === "profits") {
+        Promise.all([
+          getYearlyPayoutStats(propertyId, currentYear),
+          getYearlyExpenseStats(propertyId, currentYear)
+        ])
+          .then(([payoutsRes, expensesRes]) => {
+            if (payoutsRes && expensesRes) {
+              const profits = payoutsRes.map((p, i) => p - expensesRes[i]);
+              setData(profits);
+            }
           })
           .catch((err) => console.error(err))
           .finally(() => setLoading(false));
@@ -83,8 +96,12 @@ export default function YearlyStatsDialog({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>
-        {type === "expenses" ? "Monthly Expenses" : "Monthly Payouts"} (
-        {currentYear})
+        {type === "expenses"
+          ? "Monthly Expenses"
+          : type === "payouts"
+          ? "Monthly Payouts"
+          : "Monthly Profits"}{" "}
+        ({currentYear})
       </DialogTitle>
       <DialogContent sx={{ p: 0, display: "flex", flexDirection: "column" }}>
         {loading ? (

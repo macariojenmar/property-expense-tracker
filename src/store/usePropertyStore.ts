@@ -175,7 +175,9 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
       const data = await getProperty(id, options?.filter) as unknown as Property;
       if (data) {
         set((state) => ({
-          properties: state.properties.map((p) => (p.id === id ? data : p)),
+          properties: state.properties.some((p) => p.id === id)
+            ? state.properties.map((p) => (p.id === id ? data : p))
+            : [...state.properties, data],
           selectedProperty: data,
           lastFetchedDetails: { ...state.lastFetchedDetails, [id]: Date.now() },
           lastFetchedFilters: { ...state.lastFetchedFilters, [id]: filterKey }
