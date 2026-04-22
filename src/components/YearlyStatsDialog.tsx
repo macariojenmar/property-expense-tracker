@@ -16,6 +16,7 @@ import {
   alpha,
   CircularProgress,
 } from "@mui/material";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { useCurrency } from "@/components/CurrencyContext";
 import { getYearlyExpenseStats } from "@/lib/actions/expense";
 import { getYearlyPayoutStats } from "@/lib/actions/payout";
@@ -142,24 +143,45 @@ export default function YearlyStatsDialog({
                             : "text.primary",
                         }}
                       />
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          fontWeight: 700,
-                          color:
-                            (data[index] || 0) === 0
-                              ? "text.disabled"
-                              : type === "expenses"
-                                ? "error.main"
-                                : type === "payouts"
-                                  ? "success.main"
-                                  : (data[index] || 0) > 0
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        {index > 0 && data[index] !== undefined && data[index - 1] !== undefined && data[index - 1] !== 0 && data[index] !== 0 && (data[index] - data[index - 1]) !== 0 && (
+                          (() => {
+                            const diff = data[index] - data[index - 1];
+                            let color = "text.secondary";
+                            if (diff > 0) {
+                              color = type === "expenses" ? "error.main" : "success.main";
+                            } else {
+                              color = type === "expenses" ? "success.main" : "error.main";
+                            }
+                            return (
+                              <Box sx={{ display: "flex", alignItems: "center", color, gap: 0.5, opacity: 0.9 }}>
+                                {diff > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                <Typography variant="caption" fontWeight={600}>
+                                  {diff > 0 ? "+" : ""}{formatAmount(diff)}
+                                </Typography>
+                              </Box>
+                            );
+                          })()
+                        )}
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            fontWeight: 700,
+                            color:
+                              (data[index] || 0) === 0
+                                ? "text.disabled"
+                                : type === "expenses"
+                                  ? "error.main"
+                                  : type === "payouts"
                                     ? "success.main"
-                                    : "error.main",
-                        }}
-                      >
-                        {formatAmount(data[index] || 0)}
-                      </Typography>
+                                    : (data[index] || 0) > 0
+                                      ? "success.main"
+                                      : "error.main",
+                          }}
+                        >
+                          {formatAmount(data[index] || 0)}
+                        </Typography>
+                      </Box>
                     </ListItem>
                     {index < months.length - 1 && <Divider />}
                   </React.Fragment>
