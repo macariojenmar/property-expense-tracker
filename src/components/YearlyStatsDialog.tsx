@@ -15,6 +15,8 @@ import {
   Divider,
   alpha,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { useCurrency } from "@/components/CurrencyContext";
@@ -50,6 +52,8 @@ export default function YearlyStatsDialog({
   type,
 }: YearlyStatsDialogProps) {
   const { formatAmount } = useCurrency();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [data, setData] = React.useState<number[]>(Array(12).fill(0));
   const [loading, setLoading] = React.useState(false);
   const currentYear = new Date().getFullYear();
@@ -95,7 +99,7 @@ export default function YearlyStatsDialog({
   const total = data.reduce((a, b) => a + b, 0);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth fullScreen={isMobile}>
       <DialogTitle sx={{ fontWeight: 700 }}>
         {type === "expenses"
           ? "Monthly Expenses"
@@ -143,7 +147,7 @@ export default function YearlyStatsDialog({
                             : "text.primary",
                         }}
                       />
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 0.25 }}>
                         {index > 0 && data[index] !== undefined && data[index - 1] !== undefined && data[index - 1] !== 0 && data[index] !== 0 && (data[index] - data[index - 1]) !== 0 && (
                           (() => {
                             const diff = data[index] - data[index - 1];
