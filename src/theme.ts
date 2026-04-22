@@ -30,8 +30,7 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
       primary: mode === LIGHT ? "#000000" : "#ffffff",
       secondary: "#666666",
     },
-    divider:
-      mode === LIGHT ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)",
+    divider: mode === LIGHT ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)",
   },
   typography: {
     fontFamily: "var(--font-geist-sans), Inter, system-ui, sans-serif",
@@ -75,7 +74,7 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
     MuiCard: {
       styleOverrides: {
         root: {
-          border: `1px solid ${mode === LIGHT ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)"}`,
+          border: `1px solid ${mode === LIGHT ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)"}`,
           backgroundColor: mode === LIGHT ? "#ffffff" : "#000000",
           boxShadow: "none",
           borderRadius: 12,
@@ -88,7 +87,7 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
         root: {
           backgroundImage: "none",
           boxShadow: "none",
-          border: `1px solid ${mode === LIGHT ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)"}`,
+          border: `1px solid ${mode === LIGHT ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)"}`,
           backgroundColor: mode === LIGHT ? "#ffffff" : "#000000",
         },
       },
@@ -97,7 +96,7 @@ export const getThemeOptions = (mode: "light" | "dark"): ThemeOptions => ({
       styleOverrides: {
         root: {
           borderColor:
-            mode === LIGHT ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)",
+            mode === LIGHT ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)",
         },
       },
     },
